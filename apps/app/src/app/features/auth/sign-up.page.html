@@ -4,7 +4,7 @@
     <p hlmCardDescription>{{ 'auth.signUpTitle' | transloco }}</p>
   </div>
 
-  <form hlmCardContent class="space-y-4" (ngSubmit)="signUp()">
+  <form hlmCardContent class="space-y-4" (submit)="signUp($event)">
     <div class="space-y-2">
       <label hlmLabel for="name">{{ 'auth.name' | transloco }}</label>
       <input hlmInput id="name" autocomplete="name" class="w-full" [formField]="registration.name" />

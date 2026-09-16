@@ -51,7 +51,18 @@ export class SignInPage {
   /** Error code from the server, translated as `errors.<CODE>`. */
   protected readonly errorKey = signal<string | null>(null);
 
-  protected async signIn(): Promise<void> {
+  /**
+   * `(submit)` with an explicit preventDefault, not `(ngSubmit)`.
+   *
+   * `ngSubmit` is an output of NgForm, which only exists when FormsModule is imported.
+   * With Signal Forms there is no NgForm on the element, so the binding silently
+   * attaches to nothing, the browser performs a native GET submit, and the fields end
+   * up in the query string — including the password, which then reaches browser
+   * history, Referer headers and access logs.
+   */
+  protected async signIn(event: Event): Promise<void> {
+    event.preventDefault();
+
     if (this.credentials().invalid() || this.submitting()) return;
 
     this.submitting.set(true);

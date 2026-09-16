@@ -73,7 +73,14 @@ export class SignUpPage {
       .some((error) => error.kind === 'passwordMismatch'),
   );
 
-  protected async signUp(): Promise<void> {
+  /**
+   * `(submit)` with an explicit preventDefault — see the note in sign-in.page.ts.
+   * `(ngSubmit)` does nothing without FormsModule and lets the browser submit the
+   * form natively, putting the password in the URL.
+   */
+  protected async signUp(event: Event): Promise<void> {
+    event.preventDefault();
+
     if (this.registration().invalid() || this.submitting()) return;
 
     this.submitting.set(true);
