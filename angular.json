@@ -75,6 +75,16 @@
           "options": {
             "proxyConfig": "proxy.conf.json"
           }
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "buildTarget": "web:build:development",
+            "runner": "vitest",
+            "tsConfig": "apps/web/tsconfig.spec.json",
+            "include": ["src/**/*.spec.ts"],
+            "watch": false
+          }
         }
       }
     },
@@ -141,6 +151,34 @@
           "defaultConfiguration": "development",
           "options": {
             "proxyConfig": "proxy.conf.json"
+          }
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "buildTarget": "app:build:development",
+            "runner": "vitest",
+            "tsConfig": "apps/app/tsconfig.spec.json",
+            "include": ["apps/app/src/**/*.spec.ts"],
+            "watch": false
+          }
+        }
+      }
+    },
+    "libs": {
+      "projectType": "library",
+      "root": "libs",
+      "sourceRoot": "libs",
+      "prefix": "dui",
+      "architect": {
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "buildTarget": "app:build:development",
+            "runner": "vitest",
+            "tsConfig": "libs/tsconfig.spec.json",
+            "include": ["libs/**/*.spec.ts"],
+            "watch": false
           }
         }
       }

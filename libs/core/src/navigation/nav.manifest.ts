@@ -10,6 +10,10 @@ import type { NavItem } from './nav.model';
  * Adding a feature means adding an entry here — it is a mandatory step of the
  * end-to-end checklist in CLAUDE.md, because a route guarded by permissions but
  * missing from the manifest is a page nobody can find.
+ *
+ * The converse is enforced by a test: an entry without a matching route is a dead
+ * link, so entries arrive together with the screen they open, never before it.
+ * Members, billing, audit and settings will appear here with their features.
  */
 export const NAV_MANIFEST: readonly NavItem[] = [
   {
@@ -24,34 +28,6 @@ export const NAV_MANIFEST: readonly NavItem[] = [
     icon: 'lucideFolderKanban',
     route: '/projects',
     permissions: [PERMISSIONS.PROJECTS_READ],
-  },
-  {
-    id: 'members',
-    labelKey: 'nav.members',
-    icon: 'lucideUsers',
-    route: '/members',
-    permissions: [PERMISSIONS.MEMBERS_READ],
-  },
-  {
-    id: 'billing',
-    labelKey: 'nav.billing',
-    icon: 'lucideCreditCard',
-    route: '/billing',
-    permissions: [PERMISSIONS.BILLING_READ],
-  },
-  {
-    id: 'audit',
-    labelKey: 'nav.audit',
-    icon: 'lucideScrollText',
-    route: '/audit',
-    permissions: [PERMISSIONS.AUDIT_READ],
-  },
-  {
-    id: 'settings',
-    labelKey: 'nav.settings',
-    icon: 'lucideSettings',
-    route: '/settings',
-    permissions: [PERMISSIONS.SETTINGS_READ],
   },
 ];
 
