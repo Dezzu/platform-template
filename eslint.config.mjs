@@ -146,6 +146,19 @@ export default tseslint.config(
   },
 
   {
+    /**
+     * NestJS resolves constructor dependencies through `emitDecoratorMetadata`, so a
+     * service that only ever appears in a type position is still needed at runtime.
+     * `consistent-type-imports` cannot see that: its autofix rewrites those imports to
+     * `import type`, the import vanishes from the emitted JS, the metadata becomes
+     * `Object`, and dependency injection fails at runtime with an error that points
+     * nowhere near the import. The rule stays on everywhere else.
+     */
+    files: ['apps/api/**/*.ts'],
+    rules: { '@typescript-eslint/consistent-type-imports': 'off' },
+  },
+
+  {
     // libs/core must stay environment-agnostic: it receives its configuration through
     // provideCore(), so the same library works in apps/web and apps/app unchanged.
     files: ['libs/core/**/*.ts'],
