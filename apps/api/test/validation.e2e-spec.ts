@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm';
 import { user } from '@app/db';
 import { db } from '../src/database/db';
 import { createTestApp } from './app.factory';
+import { toCookieHeader } from './helpers/auth';
 
 const ORIGIN = 'http://localhost:4300';
 const EMAIL = `e2e-validation-${Date.now()}@test.local`;
@@ -22,7 +23,7 @@ describe('request validation (e2e)', () => {
       .send({ email: EMAIL, password: PASSWORD, name: 'E2E' })
       .expect(200);
 
-    cookie = (signUp.headers['set-cookie'] as unknown as string[]).join('; ');
+    cookie = toCookieHeader(signUp.headers['set-cookie'] as unknown as string[]);
   });
 
   afterAll(async () => {

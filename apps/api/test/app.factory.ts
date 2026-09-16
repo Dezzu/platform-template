@@ -1,7 +1,12 @@
 import { Logger, StandardSchemaValidationPipe, type INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../src/app.module';
-import { AppException, AppExceptionFilter, ResponseEnvelopeInterceptor } from '../src/common';
+import {
+  AppException,
+  AppExceptionFilter,
+  RequestContextInterceptor,
+  ResponseEnvelopeInterceptor,
+} from '../src/common';
 
 /**
  * Boots the real application the same way main.ts does.
@@ -36,7 +41,7 @@ export async function createTestApp(): Promise<INestApplication> {
         ),
     }),
   );
-  app.useGlobalInterceptors(new ResponseEnvelopeInterceptor());
+  app.useGlobalInterceptors(new RequestContextInterceptor(), new ResponseEnvelopeInterceptor());
   app.useGlobalFilters(new AppExceptionFilter(false));
 
   await app.init();

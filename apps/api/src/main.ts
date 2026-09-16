@@ -2,7 +2,12 @@ import 'reflect-metadata';
 import { Logger, StandardSchemaValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { AppException, AppExceptionFilter, ResponseEnvelopeInterceptor } from './common';
+import {
+  AppException,
+  AppExceptionFilter,
+  RequestContextInterceptor,
+  ResponseEnvelopeInterceptor,
+} from './common';
 import { setupOpenApi } from './openapi';
 
 async function bootstrap(): Promise<void> {
@@ -63,7 +68,8 @@ async function bootstrap(): Promise<void> {
   // Applied globally so no controller can forget them: every success is wrapped in
   // the envelope, every failure becomes an envelope with a translatable messageCode
   // while keeping its real HTTP status.
-  app.useGlobalInterceptors(new ResponseEnvelopeInterceptor());
+  // Order matters: the request context must be open before anything else runs.
+  app.useGlobalInterceptors(new RequestContextInterceptor(), new ResponseEnvelopeInterceptor());
   app.useGlobalFilters(new AppExceptionFilter(process.env['NODE_ENV'] === 'production'));
 
   setupOpenApi(app);
