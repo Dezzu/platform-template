@@ -2,7 +2,8 @@ import { Component, inject, resource, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
-import { PERMISSIONS, type Project } from '@app/contracts';
+import { PERMISSIONS } from '@app/contracts/permissions';
+import type { Project } from '@app/contracts';
 import { AppError, CanDirective } from '@app/core';
 import { ProjectsApi } from './projects.api';
 
