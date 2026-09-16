@@ -59,9 +59,6 @@ export interface ProfileMenuEntry {
           @if (email(); as address) {
             <span class="text-muted-foreground truncate text-xs font-normal">{{ address }}</span>
           }
-          @if (subtitle(); as text) {
-            <span class="text-muted-foreground truncate text-xs font-normal">{{ text }}</span>
-          }
         </div>
 
         <hlm-dropdown-menu-separator />
@@ -95,8 +92,6 @@ export class ProfileMenuComponent {
 
   readonly name = input.required<string>();
   readonly email = input<string>();
-  /** Context line: the role, the company, whatever distinguishes this account. */
-  readonly subtitle = input<string>();
   readonly avatarUrl = input<string>();
   readonly entries = input<readonly ProfileMenuEntry[]>([]);
 

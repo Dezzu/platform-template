@@ -2,7 +2,6 @@ import { Component, computed, inject } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import { provideIcons } from '@ng-icons/core';
 import { lucideUser } from '@ng-icons/lucide';
-import { TranslocoService } from '@jsverse/transloco';
 import { AuthService, NAV_MANIFEST, PermissionsService } from '@app/core';
 import {
   AppShellComponent,
@@ -30,7 +29,6 @@ import { environment } from '../../environments/environment';
         shellHeaderEnd
         [name]="displayName()"
         [email]="user()?.email ?? ''"
-        [subtitle]="roleLabel()"
         [avatarUrl]="user()?.image ?? ''"
         [entries]="menuEntries"
         (signOut)="signOut()"
@@ -44,7 +42,6 @@ export class ShellPage {
   private readonly permissions = inject(PermissionsService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly transloco = inject(TranslocoService);
 
   protected readonly appName = environment.appName;
   protected readonly user = this.auth.user;
@@ -54,13 +51,6 @@ export class ShellPage {
     // Falls back to the address so the avatar never shows "?" for an account created
     // without a name.
     return current?.name?.trim() || current?.email || '';
-  });
-
-  protected readonly roleLabel = computed(() => {
-    const role = this.permissions.role();
-    // Translated here rather than in the menu: the component takes plain strings, so
-    // it stays usable from a context that has no role at all.
-    return role ? this.transloco.translate(`roles.${role}`) : '';
   });
 
   protected readonly menuEntries: readonly ProfileMenuEntry[] = [
