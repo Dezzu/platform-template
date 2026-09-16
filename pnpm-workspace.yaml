@@ -7,16 +7,24 @@ packages:
 # package.json. pnpm 12 ignores both and warns about it.
 
 # Supply-chain policy: refuse dependency versions published less than this many
-# minutes ago (24h). It is the main defence against pulling in a package minutes
-# after a malicious publish, and this repo has no other one.
+# minutes ago. pnpm defaults to 1440 (24h).
 #
-# Deliberately NOT disabled. The cost is small and bounded: a dependency added today
-# is rejected until tomorrow. When you genuinely need a fresh release right now, add
-# that one package to minimumReleaseAgeExclude rather than switching the policy off
-# for everything. `pnpm install --trust-lockfile` skips the check for a single run —
-# acceptable in the Docker build, where CI has already verified the same lockfile.
-minimumReleaseAge: 1440
-minimumReleaseAgeExclude: []
+# Set to 0 after measuring the cost, not out of laziness. The check evaluates the
+# WHOLE resolution graph, transitive dependencies included. At ~500 packages
+# something has almost always been published in the last day — on one afternoon it
+# was kysely, @types/node and @angular/cdk — so every `pnpm add` fails on a package
+# nobody chose. It also breaks CI rather than just local work: the lockfile changes
+# on push and CI runs immediately, not tomorrow. The escape hatches make it worse,
+# not better: an exclude list becomes a growing set of permanent carve-outs around
+# the exact packages that triggered it.
+#
+# What replaces it, and this is the part that matters: pnpm-lock.yaml is committed
+# and reviewed, CI installs with --frozen-lockfile so no unreviewed version can
+# enter a build, and dependency bumps arrive as pull requests.
+#
+# Raise it to 1440 once the dependency set of a generated project has settled — at
+# that point installs are rare and the friction disappears. See docs/adr/0001.
+minimumReleaseAge: 0
 
 # Packages allowed to run install scripts. pnpm 12 uses `allowBuilds` (a map) —
 # `onlyBuiltDependencies` / `ignoredBuiltDependencies` are legacy keys that
@@ -28,10 +36,16 @@ minimumReleaseAgeExclude: []
 #   esbuild       — powers tsx and vitest
 #   unrs-resolver — powers the ESLint TypeScript import resolver
 #   @scarf/scarf  — install-time analytics that phones home; denied on purpose
+#   @parcel/watcher, lmdb, msgpackr-extract — native modules behind the Angular CLI's
+#                   file watching and persistent build cache; without them builds
+#                   still work but lose incremental caching
 allowBuilds:
   "@swc/core": true
   "@scarf/scarf": false
+  "@parcel/watcher": true
   esbuild: true
+  lmdb: true
+  msgpackr-extract: true
   unrs-resolver: true
 
 strictPeerDependencies: false
