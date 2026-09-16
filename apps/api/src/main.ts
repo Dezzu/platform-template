@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { AppExceptionFilter, ResponseEnvelopeInterceptor } from './common';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, {
@@ -26,6 +27,12 @@ async function bootstrap(): Promise<void> {
     origin: origins.length > 0 ? origins : false,
     credentials: true,
   });
+
+  // Applied globally so no controller can forget them: every success is wrapped in
+  // the envelope, every failure becomes an envelope with a translatable messageCode
+  // while keeping its real HTTP status.
+  app.useGlobalInterceptors(new ResponseEnvelopeInterceptor());
+  app.useGlobalFilters(new AppExceptionFilter(process.env['NODE_ENV'] === 'production'));
 
   app.enableShutdownHooks();
 

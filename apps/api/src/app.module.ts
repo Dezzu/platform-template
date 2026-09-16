@@ -3,6 +3,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from '@thallesp/nestjs-better-auth';
 import { auth } from './auth/auth.config';
+import { configNamespaces } from './config/namespaces';
+import { validateEnv } from './config/validate-env';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './modules/health/health.module';
 import { MeModule } from './modules/me/me.module';
@@ -13,6 +15,10 @@ import { MeModule } from './modules/me/me.module';
       isGlobal: true,
       envFilePath: [resolve(__dirname, '../../../.env')],
       cache: true,
+      // Validates the whole environment up front and exits listing every problem
+      // rather than failing later on the first missing variable.
+      validate: validateEnv,
+      load: configNamespaces,
     }),
 
     DatabaseModule,

@@ -1,7 +1,14 @@
-import { Controller, Get, Inject, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Inject,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { AllowAnonymous } from '@thallesp/nestjs-better-auth';
 import type { Pool } from 'pg';
 import { PG_POOL } from '../../database/database.module';
+import { env, redactedConfig } from '../../config/validate-env';
 
 /**
  * Two endpoints with different meanings, and the distinction matters for the compose
@@ -35,5 +42,22 @@ export class HealthController {
       });
     }
     return { status: 'ok', checks: { database: 'ok' } };
+  }
+
+  /**
+   * The effective configuration with every secret masked — the fastest way to answer
+   * "is this container actually running the settings I think it is?".
+   *
+   * Not exposed in production: even redacted, the variable list tells an attacker
+   * which integrations exist. In production use the admin module instead, behind
+   * `platform.metrics.read`.
+   */
+  @Get('info')
+  @AllowAnonymous()
+  info(): Record<string, unknown> {
+    if (env().NODE_ENV === 'production') {
+      throw new NotFoundException();
+    }
+    return redactedConfig();
   }
 }

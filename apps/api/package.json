@@ -11,6 +11,7 @@
     "auth:generate": "npx --yes auth@latest generate --config src/auth/auth.config.ts --output ../../packages/db/src/schema/auth.schema.ts --yes && node ../../scripts/postprocess-auth-schema.mjs ../../packages/db/src/schema/auth.schema.ts"
   },
   "dependencies": {
+    "@app/contracts": "workspace:*",
     "@app/db": "workspace:*",
     "@nestjs/common": "^12.0.3",
     "@nestjs/config": "^12.0.0",

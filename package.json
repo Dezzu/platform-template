@@ -9,7 +9,7 @@
     "pnpm": ">=10.33.0"
   },
   "scripts": {
-    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "verify": "pnpm lint && pnpm env:check && pnpm typecheck && pnpm test && pnpm build",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -26,7 +26,8 @@
     "dev": "pnpm --filter @app/api dev",
     "docker:dev": "docker compose -f docker/compose.dev.yml up -d",
     "docker:dev:down": "docker compose -f docker/compose.dev.yml down",
-    "docker:dev:reset": "docker compose -f docker/compose.dev.yml down -v"
+    "docker:dev:reset": "docker compose -f docker/compose.dev.yml down -v",
+    "env:check": "node scripts/check-env-example.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

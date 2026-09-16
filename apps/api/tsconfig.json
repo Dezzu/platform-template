@@ -13,7 +13,7 @@
   // Workspace packages are consumed through node_modules (their built .d.ts), exactly
   // as they are at runtime and inside Docker. Project references let `tsc -b` rebuild
   // a stale dependency first instead of silently type-checking against old output.
-  "references": [{ "path": "../../packages/db" }],
+  "references": [{ "path": "../../packages/contracts" }, { "path": "../../packages/db" }],
   "include": ["src/**/*.ts"],
   "exclude": ["dist", "node_modules"]
 }
