@@ -1,0 +1,29 @@
+<header class="border-b">
+  <nav class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+    <span class="font-semibold">{{ appName }}</span>
+    <a href="http://localhost:4300" class="bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium">
+      Accedi
+    </a>
+  </nav>
+</header>
+
+<main class="mx-auto max-w-5xl px-6">
+  <section class="py-20 text-center">
+    <h1 class="text-4xl font-semibold tracking-tight sm:text-5xl">Il punto di partenza, non il foglio bianco</h1>
+    <p class="text-muted-foreground mx-auto mt-4 max-w-2xl text-lg">
+      Autenticazione, organizzazioni, permessi, abbonamenti e osservabilità già montati e verificati. Resta da scrivere
+      solo il dominio.
+    </p>
+  </section>
+
+  <section class="grid gap-6 pb-20 sm:grid-cols-3">
+    @for (feature of features; track feature.title) {
+    <article class="rounded-lg border p-5">
+      <h2 class="font-medium">{{ feature.title }}</h2>
+      <p class="text-muted-foreground mt-2 text-sm">{{ feature.body }}</p>
+    </article>
+    }
+  </section>
+</main>
+
+<footer class="text-muted-foreground border-t py-6 text-center text-sm">© {{ year }} {{ appName }}</footer>
