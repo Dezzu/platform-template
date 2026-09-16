@@ -1,0 +1,218 @@
+<div class="flex flex-col gap-3">
+  @if (!simpleTable()) {
+  <div class="flex flex-wrap items-center justify-between gap-2">
+    @if (title()) {
+    <div role="heading" [attr.aria-level]="titleLevel()" class="mr-auto text-lg font-semibold tracking-tight">
+      {{ title() }}
+    </div>
+    }
+
+    <div class="flex flex-wrap items-center gap-2">
+      @if (templateFor('customFilters'); as filtri) {
+      <ng-container [ngTemplateOutlet]="filtri" />
+      }
+
+      <button hlmBtn variant="outline" type="button" (click)="reload()">
+        <ng-icon name="lucideRefreshCw" />
+        Ricarica
+      </button>
+
+      @if (showColumnSelector() && removableColumns().length) {
+      <label class="sr-only" for="dui-table-columns">Colonne visibili</label>
+      <hlm-select-multiple
+        [value]="selectedFields()"
+        [itemToString]="columnsToString"
+        (valueChange)="selectedFields.set($any($event))"
+      >
+        <hlm-select-trigger buttonId="dui-table-columns" class="w-[190px]">
+          <hlm-select-value placeholder="Seleziona colonne" />
+        </hlm-select-trigger>
+        <hlm-select-content *hlmSelectPortal>
+          @for (col of removableColumns(); track col.field) {
+          <hlm-select-item [value]="col.field">{{ col.header }}</hlm-select-item>
+          }
+        </hlm-select-content>
+      </hlm-select-multiple>
+      } @if (showSearch()) {
+      <dui-text-input
+        class="w-[200px]"
+        type="search"
+        icon="lucideSearch"
+        placeholder="Cerca..."
+        [showClear]="true"
+        [ngModel]="filter()"
+        (ngModelChange)="onFilterChange($event)"
+      />
+      } @if (showAddButton()) {
+      <button hlmBtn type="button" (click)="openNew.emit()">
+        <ng-icon name="lucidePlus" />
+        Aggiungi
+      </button>
+      }
+    </div>
+  </div>
+  }
+
+  <div hlmTableContainer>
+    <table hlmTable>
+      @if (title()) {
+      <caption hlmCaption class="sr-only">
+        {{ title() }}
+      </caption>
+      }
+
+      <thead hlmTHead>
+        <tr hlmTr>
+          @if (expandable()) {
+          <th hlmTh class="w-10"><span class="sr-only">Espandi</span></th>
+          } @for (col of visibleColumns(); track col.field) {
+          <th hlmTh [attr.aria-sort]="ariaSort(col)">
+            @if (col.sortable === false) { {{ col.header }} } @else {
+            <button
+              type="button"
+              class="hover:text-foreground -mx-1 flex items-center gap-1 rounded px-1 outline-none focus-visible:ring-2"
+              [attr.aria-label]="'Ordina per ' + col.header"
+              (click)="toggleSort(col)"
+            >
+              {{ col.header }}
+              <ng-icon [name]="sortIcon(col)" class="text-[length:--spacing(3.5)]" />
+            </button>
+            }
+          </th>
+          } @if (actions().length) {
+          <th hlmTh class="text-end"><span class="sr-only">Azioni</span></th>
+          }
+        </tr>
+      </thead>
+
+      <tbody hlmTBody>
+        @if (loading()) { @for (skeleton of skeletonRows(); track $index) {
+        <tr hlmTr>
+          @for (cell of [].constructor(colspan()); track $index) {
+          <td hlmTd><hlm-skeleton class="h-4 w-full" /></td>
+          }
+        </tr>
+        } } @else { @for (row of displayedRows(); track rowKey(row, $index); let i = $index) {
+        <tr hlmTr>
+          @if (expandable()) {
+          <td hlmTd>
+            <button
+              hlmBtn
+              variant="ghost"
+              size="icon-xs"
+              type="button"
+              [attr.aria-expanded]="isExpanded(row, i)"
+              [attr.aria-label]="isExpanded(row, i) ? 'Comprimi riga' : 'Espandi riga'"
+              (click)="toggleExpanded(row, i)"
+            >
+              <ng-icon [name]="isExpanded(row, i) ? 'lucideChevronDown' : 'lucideChevronRight'" />
+            </button>
+          </td>
+          } @for (col of visibleColumns(); track col.field) {
+          <td hlmTd>
+            @if (templateFor(col.field); as cella) {
+            <ng-container
+              [ngTemplateOutlet]="cella"
+              [ngTemplateOutletContext]="{ $implicit: value(row, col.field), item: row }"
+            />
+            } @else if (value(row, col.field) == null) { - } @else if (col.pipe) { {{ value(row, col.field) |
+            dynamicPipe: getPipeToken(col.pipe) : col.pipeArgs }} } @else if (col.suffix) { {{ value(row, col.field) }}
+            {{ col.suffix }} } @else { {{ value(row, col.field) }} }
+          </td>
+          } @if (actions().length) {
+          <td hlmTd>
+            <div class="flex flex-row justify-end gap-1">
+              @if (actionsAsMenu()) {
+              <!--
+                        I tre puntini compaiono solo se questa riga ha davvero
+                        qualcosa da offrire: un pulsante che apre un menu vuoto
+                        e' peggio di nessun pulsante.
+
+                        The #actionsMenu ref lives inside the @for, so there is one
+                        per row: each menu carries its own row's actions.
+                      -->
+              @if (visibleActions(row); as azioni) { @if (azioni.length) {
+              <button
+                hlmBtn
+                size="icon-sm"
+                type="button"
+                variant="ghost"
+                align="end"
+                [hlmDropdownMenuTrigger]="menuAzioni"
+                aria-label="Azioni su questa riga"
+                title="Azioni"
+              >
+                <ng-icon name="lucideEllipsisVertical" />
+              </button>
+
+              <ng-template #menuAzioni>
+                <hlm-dropdown-menu class="w-56">
+                  @for (action of azioni; track $index) {
+                  <button
+                    hlmDropdownMenuItem
+                    type="button"
+                    [class]="actionMenuClass(action)"
+                    [disabled]="actionDisabled(action, row)"
+                    (click)="action.command(row, items())"
+                  >
+                    <ng-icon [name]="actionIcon(action, row)" />
+                    {{ actionLabel(action, row) }}
+                  </button>
+                  }
+                </hlm-dropdown-menu>
+              </ng-template>
+              } } } @else { @for (action of actions(); track $index) { @if (actionVisible(action, row)) {
+              <button
+                hlmBtn
+                size="icon-sm"
+                type="button"
+                [variant]="actionVariant(action)"
+                [class]="action.class"
+                [attr.aria-label]="action.tooltip"
+                [attr.title]="action.tooltip"
+                [disabled]="actionDisabled(action, row)"
+                (click)="action.command(row, items())"
+              >
+                <ng-icon [name]="actionIcon(action, row)" />
+              </button>
+              } } }
+            </div>
+          </td>
+          }
+        </tr>
+
+        @if (expandable() && isExpanded(row, i)) {
+        <tr hlmTr>
+          <td hlmTd [attr.colspan]="colspan()">
+            @if (templateFor('expandedRow'); as dettaglio) {
+            <ng-container [ngTemplateOutlet]="dettaglio" [ngTemplateOutletContext]="{ $implicit: row }" />
+            }
+          </td>
+        </tr>
+        } } @empty {
+        <tr hlmTr>
+          <td hlmTd [attr.colspan]="colspan()">
+            <hlm-empty class="py-10">
+              <hlm-empty-header>
+                <hlm-empty-media variant="icon">
+                  <ng-icon name="lucideInbox" />
+                </hlm-empty-media>
+                <div hlmEmptyTitle>{{ emptyMessage() }}</div>
+              </hlm-empty-header>
+            </hlm-empty>
+          </td>
+        </tr>
+        } }
+      </tbody>
+    </table>
+  </div>
+
+  @if (paginator() && total() > 0) {
+  <hlm-numbered-pagination
+    [(currentPage)]="page"
+    [(itemsPerPage)]="rowsPerPage"
+    [totalItems]="total()"
+    [pageSizes]="rowsPerPageOptions()"
+  />
+  }
+</div>

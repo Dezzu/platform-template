@@ -1,7 +1,7 @@
 import { Directive } from '@angular/core';
 import {
   BrnTooltip,
-  BrnTooltipPosition,
+  type BrnTooltipPosition,
   provideBrnTooltipDefaultOptions,
 } from '@spartan-ng/brain/tooltip';
 import { hlm } from '@spartan-ng/helm/utils';

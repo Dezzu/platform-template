@@ -1,4 +1,4 @@
-import { Directive, effect, EffectRef, inject, input, OnDestroy } from '@angular/core';
+import { Directive, effect, type EffectRef, inject, input, type OnDestroy } from '@angular/core';
 import { BrnFieldA11yService } from '@spartan-ng/brain/field';
 import { classes } from '@spartan-ng/helm/utils';
 

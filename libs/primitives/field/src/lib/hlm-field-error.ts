@@ -1,14 +1,14 @@
-import { BooleanInput } from '@angular/cdk/coercion';
+import { type BooleanInput } from '@angular/cdk/coercion';
 import {
   booleanAttribute,
   ChangeDetectionStrategy,
   Component,
   computed,
   effect,
-  EffectRef,
+  type EffectRef,
   inject,
   input,
-  OnDestroy,
+  type OnDestroy,
 } from '@angular/core';
 import { BrnField, BrnFieldA11yService } from '@spartan-ng/brain/field';
 import { classes } from '@spartan-ng/helm/utils';

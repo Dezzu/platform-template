@@ -50,7 +50,13 @@
       "@spartan-ng/helm/checkbox": ["./libs/primitives/checkbox/src/index.ts"],
       "@spartan-ng/helm/switch": ["./libs/primitives/switch/src/index.ts"],
       "@spartan-ng/helm/scroll-area": ["./libs/primitives/scroll-area/src/index.ts"],
-      "@spartan-ng/helm/alert": ["./libs/primitives/alert/src/index.ts"]
+      "@spartan-ng/helm/alert": ["./libs/primitives/alert/src/index.ts"],
+      "@spartan-ng/helm/dialog": ["./libs/primitives/dialog/src/index.ts"],
+      "@spartan-ng/helm/autocomplete": ["./libs/primitives/autocomplete/src/index.ts"],
+      "@spartan-ng/helm/popover": ["./libs/primitives/popover/src/index.ts"],
+      "@spartan-ng/helm/date-picker": ["./libs/primitives/date-picker/src/index.ts"],
+      "@spartan-ng/helm/calendar": ["./libs/primitives/calendar/src/index.ts"],
+      "@spartan-ng/helm/command": ["./libs/primitives/command/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "dist", "coverage", ".angular"]

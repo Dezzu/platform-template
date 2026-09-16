@@ -1,7 +1,7 @@
 import { Directive, input } from '@angular/core';
 import { BrnField } from '@spartan-ng/brain/field';
 import { classes } from '@spartan-ng/helm/utils';
-import { cva, VariantProps } from 'class-variance-authority';
+import { cva, type VariantProps } from 'class-variance-authority';
 
 const fieldVariants = cva(
   'data-[matches-spartan-invalid=true]:text-destructive gap-2 group/field flex w-full',

@@ -133,7 +133,12 @@ export default tseslint.config(
               allow: [{ to: { element: { type: 'pkg-contracts' } } }],
             },
             { from: { element: { type: 'lib-primitives' } }, allow: [] },
-            { from: { element: { type: 'lib-i18n' } }, allow: [] },
+            {
+              // Calendar localisation has to reference the spartan date-picker token
+              // it configures; there is no way to express it without the primitive.
+              from: { element: { type: 'lib-i18n' } },
+              allow: [{ to: { element: { type: 'lib-primitives' } } }],
+            },
             {
               from: { element: { type: 'pkg-db' } },
               allow: [{ to: { element: { type: 'pkg-contracts' } } }],
