@@ -36,6 +36,20 @@ describe('NAV_MANIFEST and the router', () => {
     }
   });
 
+  it('exposes both authentication screens, so each can link to the other', () => {
+    // A sign-in form with no way to reach sign-up is a dead end for a new visitor.
+    expect(paths).toContain('sign-in');
+    expect(paths).toContain('sign-up');
+  });
+
+  it('keeps the authentication screens out of reach once signed in', () => {
+    const authRoutes = routes.filter((r) => r.path === 'sign-in' || r.path === 'sign-up');
+    expect(authRoutes).toHaveLength(2);
+    for (const route of authRoutes) {
+      expect(route.canMatch ?? []).not.toHaveLength(0);
+    }
+  });
+
   it('uses unique ids, since navGuard() resolves entries by id', () => {
     const ids = NAV_MANIFEST.map((item) => item.id);
     expect(new Set(ids).size).toBe(ids.length);

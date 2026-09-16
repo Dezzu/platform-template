@@ -1,0 +1,67 @@
+<section hlmCard class="w-full max-w-sm">
+  <div hlmCardHeader>
+    <h1 hlmCardTitle>{{ appName }}</h1>
+    <p hlmCardDescription>{{ 'auth.signUpTitle' | transloco }}</p>
+  </div>
+
+  <form hlmCardContent class="space-y-4" (ngSubmit)="signUp()">
+    <div class="space-y-2">
+      <label hlmLabel for="name">{{ 'auth.name' | transloco }}</label>
+      <input hlmInput id="name" autocomplete="name" class="w-full" [formField]="registration.name" />
+    </div>
+
+    <div class="space-y-2">
+      <label hlmLabel for="email">{{ 'auth.email' | transloco }}</label>
+      <input hlmInput id="email" type="email" autocomplete="email" class="w-full" [formField]="registration.email" />
+    </div>
+
+    <div class="space-y-2">
+      <label hlmLabel for="password">{{ 'auth.password' | transloco }}</label>
+      <input
+        hlmInput
+        id="password"
+        type="password"
+        autocomplete="new-password"
+        class="w-full"
+        [formField]="registration.password"
+      />
+      <p class="text-muted-foreground text-xs">{{ 'auth.passwordHint' | transloco }}</p>
+    </div>
+
+    <div class="space-y-2">
+      <label hlmLabel for="confirmPassword">{{ 'auth.confirmPassword' | transloco }}</label>
+      <input
+        hlmInput
+        id="confirmPassword"
+        type="password"
+        autocomplete="new-password"
+        class="w-full"
+        [formField]="registration.confirmPassword"
+      />
+      @if (passwordsMismatch()) {
+      <p class="text-destructive text-sm" role="alert">{{ 'form.passwordMismatch' | transloco }}</p>
+      }
+    </div>
+
+    @if (errorKey(); as key) {
+    <p class="text-destructive text-sm" role="alert">{{ key | transloco }}</p>
+    }
+
+    <button hlmBtn type="submit" class="w-full" [disabled]="submitting()">
+      {{ (submitting() ? 'auth.signingUp' : 'auth.signUp') | transloco }}
+    </button>
+  </form>
+
+  <div hlmCardFooter class="flex-col gap-3">
+    <button hlmBtn variant="outline" class="w-full" type="button" (click)="signUpWithGoogle()">
+      {{ 'auth.withGoogle' | transloco }}
+    </button>
+
+    <p class="text-muted-foreground text-sm">
+      {{ 'auth.haveAccount' | transloco }}
+      <a routerLink="/sign-in" class="text-foreground font-medium underline underline-offset-4">
+        {{ 'auth.signIn' | transloco }}
+      </a>
+    </p>
+  </div>
+</section>

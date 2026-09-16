@@ -31,9 +31,16 @@
     </button>
   </form>
 
-  <div hlmCardFooter class="flex-col gap-2">
+  <div hlmCardFooter class="flex-col gap-3">
     <button hlmBtn variant="outline" class="w-full" type="button" (click)="signInWithGoogle()">
       {{ 'auth.withGoogle' | transloco }}
     </button>
+
+    <p class="text-muted-foreground text-sm">
+      {{ 'auth.noAccount' | transloco }}
+      <a routerLink="/sign-up" class="text-foreground font-medium underline underline-offset-4">
+        {{ 'auth.signUp' | transloco }}
+      </a>
+    </p>
   </div>
 </section>

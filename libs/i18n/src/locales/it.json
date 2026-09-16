@@ -19,17 +19,23 @@
     "settings": "Impostazioni"
   },
   "auth": {
+    "confirmPassword": "Conferma password",
+    "email": "Email",
+    "emailTaken": "Esiste già un account con questa email.",
+    "haveAccount": "Hai già un account?",
+    "invalidCredentials": "Email o password non corretti.",
+    "name": "Nome",
+    "noAccount": "Non hai un account?",
+    "password": "Password",
+    "passwordHint": "Almeno 12 caratteri.",
+    "passwordTooShort": "La password è troppo corta.",
     "signIn": "Accedi",
     "signOut": "Esci",
     "signUp": "Registrati",
-    "email": "Email",
-    "password": "Password",
-    "name": "Nome",
-    "withGoogle": "Continua con Google",
-    "noAccount": "Non hai un account?",
-    "haveAccount": "Hai già un account?",
+    "signUpTitle": "Crea il tuo account",
     "signingIn": "Accesso in corso…",
-    "invalidCredentials": "Email o password non corretti."
+    "signingUp": "Registrazione in corso…",
+    "withGoogle": "Continua con Google"
   },
   "form": {
     "required": "Campo obbligatorio",

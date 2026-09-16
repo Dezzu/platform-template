@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { email, form, FormField, minLength, required } from '@angular/forms/signals';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { HlmInputImports } from '@spartan-ng/helm/input';
@@ -19,6 +19,7 @@ import { environment } from '../../../environments/environment';
   selector: 'app-sign-in-page',
   imports: [
     FormField,
+    RouterLink,
     TranslocoPipe,
     HlmButtonImports,
     HlmCardImports,
@@ -32,7 +33,6 @@ export class SignInPage {
   private readonly auth = inject(AuthService);
   private readonly permissions = inject(PermissionsService);
   private readonly router = inject(Router);
-  private readonly transloco = inject(TranslocoService);
 
   protected readonly appName = environment.appName;
 
@@ -74,9 +74,5 @@ export class SignInPage {
 
   protected signInWithGoogle(): void {
     void this.auth.signInWithGoogle();
-  }
-
-  protected translate(key: string): string {
-    return this.transloco.translate(key);
   }
 }

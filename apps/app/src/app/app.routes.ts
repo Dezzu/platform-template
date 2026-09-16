@@ -13,6 +13,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/sign-in.page').then((m) => m.SignInPage),
   },
   {
+    path: 'sign-up',
+    canMatch: [guestGuard],
+    loadComponent: () => import('./features/auth/sign-up.page').then((m) => m.SignUpPage),
+  },
+  {
     path: '',
     canMatch: [authGuard],
     loadComponent: () => import('./layout/shell.page').then((m) => m.ShellPage),
