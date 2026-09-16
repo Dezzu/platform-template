@@ -56,7 +56,8 @@
       "@spartan-ng/helm/popover": ["./libs/primitives/popover/src/index.ts"],
       "@spartan-ng/helm/date-picker": ["./libs/primitives/date-picker/src/index.ts"],
       "@spartan-ng/helm/calendar": ["./libs/primitives/calendar/src/index.ts"],
-      "@spartan-ng/helm/command": ["./libs/primitives/command/src/index.ts"]
+      "@spartan-ng/helm/command": ["./libs/primitives/command/src/index.ts"],
+      "@spartan-ng/helm/sidebar": ["./libs/primitives/sidebar/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "dist", "coverage", ".angular"]

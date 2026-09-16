@@ -1,77 +1,112 @@
-<!--
-  The sidebar is a <nav> with a real landmark: a screen reader user has to be able to
-  find the menu and know when the mobile drawer has opened.
--->
-<nav
-  class="bg-sidebar text-sidebar-foreground fixed inset-y-0 left-0 z-40 w-64 -translate-x-full border-r transition-transform lg:static lg:translate-x-0"
-  [class.translate-x-0]="mobileOpen()"
-  [attr.aria-label]="appName()"
->
-  <!--
-    Same height and the same bottom border as the header on the right: without the
-    border the two rules sat at different heights and the corner looked misaligned.
-  -->
-  <div class="flex h-14 items-center justify-between border-b px-4">
-    <span class="truncate text-sm font-semibold">{{ appName() }}</span>
-    <button
-      hlmBtn
-      variant="ghost"
-      size="icon"
-      class="lg:hidden"
-      (click)="closeMobile()"
-      [attr.aria-label]="'common.close' | transloco"
-    >
-      <ng-icon name="lucideX" />
-    </button>
-  </div>
-
-  <ul class="space-y-1 p-2">
-    @for (item of items(); track item.id) {
-    <li>
-      <a
-        [routerLink]="item.route"
-        routerLinkActive="bg-sidebar-accent text-sidebar-accent-foreground"
-        [routerLinkActiveOptions]="{ exact: false }"
-        (click)="closeMobile()"
-        class="hover:bg-sidebar-accent/60 flex items-center gap-3 rounded-md px-3 py-2 text-sm"
+<div hlmSidebarWrapper class="h-svh min-h-svh">
+  <hlm-sidebar collapsible="icon" role="navigation" [attr.aria-label]="appName()">
+    <hlm-sidebar-header>
+      <!--
+        Collapsed, the column is only the width of an icon, and the header already
+        spends part of it on padding: the badge shrinks and centres, or it overflows.
+      -->
+      <div
+        class="flex items-center gap-2 px-2 py-1.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
       >
-        <ng-icon [name]="item.icon" class="shrink-0" />
-        <span class="truncate">{{ item.labelKey | transloco }}</span>
-      </a>
-    </li>
-    }
-  </ul>
-</nav>
+        <div
+          class="bg-sidebar-primary text-sidebar-primary-foreground grid size-8 shrink-0 place-items-center rounded-lg text-sm font-semibold group-data-[collapsible=icon]:size-7 group-data-[collapsible=icon]:text-xs"
+          aria-hidden="true"
+        >
+          {{ initial() }}
+        </div>
+        <!-- Hidden when icon-only: the badge stays as the visual anchor. -->
+        <span class="min-w-0 truncate text-sm font-semibold group-data-[collapsible=icon]:hidden">
+          {{ appName() }}
+        </span>
+      </div>
+    </hlm-sidebar-header>
 
-@if (mobileOpen()) {
-<!-- Backdrop: tapping outside closes, which is what a drawer is expected to do. -->
-<div class="fixed inset-0 z-30 bg-black/50 lg:hidden" (click)="closeMobile()" aria-hidden="true"></div>
-}
+    <hlm-sidebar-content>
+      <hlm-sidebar-group>
+        <div hlmSidebarGroupContent>
+          <ul hlmSidebarMenu>
+            @for (item of items(); track item.id) {
+            <li hlmSidebarMenuItem>
+              @if (item.children?.length) { @let open = expansion.isOpen(item.id);
 
-<div class="flex min-w-0 flex-1 flex-col">
-  <header class="flex h-14 items-center gap-2 border-b px-4">
-    <button
-      hlmBtn
-      variant="ghost"
-      size="icon"
-      class="lg:hidden"
-      (click)="mobileOpen.set(true)"
-      [attr.aria-label]="appName()"
-      [attr.aria-expanded]="mobileOpen()"
+              <button
+                hlmSidebarMenuButton
+                type="button"
+                [tooltip]="item.labelKey | transloco"
+                [attr.aria-expanded]="open"
+                (click)="expansion.toggle(item.id)"
+              >
+                <ng-icon [name]="item.icon" />
+                <span>{{ item.labelKey | transloco }}</span>
+                <ng-icon
+                  name="lucideChevronRight"
+                  class="ms-auto transition-transform duration-200"
+                  [class.rotate-90]="open"
+                  aria-hidden="true"
+                />
+              </button>
+
+              @if (open) {
+              <ul hlmSidebarMenuSub>
+                @for (child of item.children; track child.id) {
+                <li hlmSidebarMenuSubItem>
+                  <a
+                    hlmSidebarMenuSubButton
+                    [routerLink]="child.route"
+                    routerLinkActive
+                    #childActive="routerLinkActive"
+                    [isActive]="childActive.isActive"
+                  >
+                    <span>{{ child.labelKey | transloco }}</span>
+                  </a>
+                </li>
+                }
+              </ul>
+              } } @else {
+              <a
+                hlmSidebarMenuButton
+                [routerLink]="item.route"
+                routerLinkActive
+                #active="routerLinkActive"
+                [isActive]="active.isActive"
+                [tooltip]="item.labelKey | transloco"
+              >
+                <ng-icon [name]="item.icon" />
+                <span>{{ item.labelKey | transloco }}</span>
+              </a>
+              }
+            </li>
+            }
+          </ul>
+        </div>
+      </hlm-sidebar-group>
+    </hlm-sidebar-content>
+
+    <!-- Drag handle on the edge: collapsing the menu without hunting for a button. -->
+    <button hlmSidebarRail></button>
+  </hlm-sidebar>
+
+  <main hlmSidebarInset class="min-w-0 overflow-hidden">
+    <header
+      class="bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b px-4 backdrop-blur"
     >
-      <ng-icon name="lucideMenu" />
-    </button>
+      <button hlmSidebarTrigger [srOnlyText]="'common.toggleMenu' | transloco"></button>
 
-    <div class="flex-1"></div>
+      <div class="min-w-0 flex-1"></div>
+
+      <!--
+        Everything about the signed-in person goes here, in one control. The shell does
+        not build it: it knows nothing about sessions, so the application projects it in.
+      -->
+      <ng-content select="[shellHeaderEnd]" />
+    </header>
 
     <!--
-      Everything about the signed-in person goes here, in one control. The shell does
-      not build it: it knows nothing about sessions, so the application projects it in.
+      Only this area scrolls: sidebar and header stay put. tabindex="-1" makes it a
+      focus target after navigation without putting it in the tab order.
     -->
-    <ng-content select="[shellHeaderEnd]" />
-  </header>
-
-  <main class="min-w-0 flex-1 p-4 lg:p-6">
-    <ng-content />
+    <div tabindex="-1" class="flex-1 overflow-y-auto p-4 outline-none lg:p-6">
+      <ng-content />
+    </div>
   </main>
 </div>

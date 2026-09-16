@@ -70,3 +70,21 @@ nvm ls-remote --lts       # Node
 ```
 
 Le immagini Docker sono pinnate sul major in `docker/compose.dev.yml`.
+
+---
+
+## Nota: budget del bundle della dashboard
+
+Il budget iniziale di `apps/app` è stato alzato da 600/800 kB a 700/850 kB quando la
+shell è passata alla primitiva `hlm-sidebar` (collassabile a icone, rail, tooltip,
+pannello mobile). Costo misurato: **+41 kB trasferiti**, da 111 a 152 kB.
+
+Buona parte è `@spartan-ng/brain` che Angular sposta nel chunk `main` perché condiviso
+fra più rotte lazy — quindi si paga anche sulla pagina di login, dove la sidebar non
+c'è. È il prezzo di avere componenti comuni fra le schermate, e ridurlo significherebbe
+non usarli sull'autenticazione.
+
+Accettato perché è una dashboard dietro login, dove la prima visita è rara e la sessione
+lunga. Il **sito marketing resta a 81 kB trasferiti**: è quello giudicato sul primo
+caricamento, ed è volutamente un'applicazione separata proprio per non ereditare questo
+peso.

@@ -32,7 +32,8 @@
     "retry": "Try again",
     "save": "Save",
     "search": "Search",
-    "showPassword": "Show password"
+    "showPassword": "Show password",
+    "toggleMenu": "Open or close the menu"
   },
   "errors": {
     "INTERNAL_ERROR": "Something went wrong. Please try again.",

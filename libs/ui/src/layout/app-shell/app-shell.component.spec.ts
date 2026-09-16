@@ -39,11 +39,16 @@ describe('AppShellComponent', () => {
 
   it('renders one link per visible item, translated', async () => {
     const el = await render();
-    const links = el.querySelectorAll('nav a');
+    const links = el.querySelectorAll('hlm-sidebar a[href]');
 
     expect(links).toHaveLength(2);
     expect(links[0]?.getAttribute('href')).toBe('/dashboard');
-    expect(el.querySelector('nav')?.textContent).toContain('Progetti');
+    expect(el.querySelector('hlm-sidebar')?.textContent).toContain('Progetti');
+  });
+
+  it('collapses to icons, which is what makes the rail and tooltips worth having', async () => {
+    const el = await render();
+    expect(el.querySelector('hlm-sidebar')?.getAttribute('collapsible')).toBe('icon');
   });
 
   it('projects the account control into the header', async () => {
@@ -57,13 +62,14 @@ describe('AppShellComponent', () => {
     // Everything to do with the signed-in person lives in one control in the corner.
     // A sign-out button loose in the header is both easy to hit by accident and a
     // second place that has to know about sessions.
-    const ownButtons = [...el.querySelectorAll('header button')];
     const projected = el.querySelector('[data-testid="header-end"]');
-    const shellButtons = ownButtons.filter((b) => !projected?.contains(b));
+    const shellButtons = [...el.querySelectorAll('header button')].filter(
+      (button) => !projected?.contains(button),
+    );
 
-    // Only the mobile drawer toggle belongs to the shell.
+    // Only the sidebar trigger belongs to the shell.
     expect(shellButtons).toHaveLength(1);
-    expect(shellButtons[0]?.className).toContain('lg:hidden');
+    expect(shellButtons[0]?.hasAttribute('hlmSidebarTrigger')).toBe(true);
   });
 
   it('renders the routed content', async () => {

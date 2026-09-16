@@ -32,7 +32,8 @@
     "retry": "Riprova",
     "save": "Salva",
     "search": "Cerca",
-    "showPassword": "Mostra la password"
+    "showPassword": "Mostra la password",
+    "toggleMenu": "Apri o chiudi il menu"
   },
   "errors": {
     "INTERNAL_ERROR": "Si è verificato un errore imprevisto. Riprova.",
