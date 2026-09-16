@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output — NEVER commit build artifacts (the old template did; do not repeat it)
+dist/
+build/
+out/
+tmp/
+.angular/
+*.tsbuildinfo
+
+# Test output
+coverage/
+.nyc_output/
+test-results/
+
+# Environment — only .env.example is committed
+.env
+.env.*
+!.env.example
+.envrc
+
+# Terraform: state and lock contain secrets / machine-specific data
+infra/terraform/**/.terraform/
+infra/terraform/**/*.tfstate
+infra/terraform/**/*.tfstate.*
+infra/terraform/**/*.tfvars
+!infra/terraform/**/*.tfvars.example
+infra/terraform/**/crash.log
+
+# Editors / OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+.DS_Store
+
+# Claude Code local overrides (settings.json IS committed)
+.claude/settings.local.json

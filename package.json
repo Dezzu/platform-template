@@ -1,0 +1,47 @@
+{
+  "name": "saas-template",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Template SaaS: Angular 22 + NestJS 12 + Drizzle + Better Auth + Stripe",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22.14.0",
+    "pnpm": ">=10.33.0"
+  },
+  "scripts": {
+    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "lint": "eslint . --max-warnings=0",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test",
+    "build": "pnpm -r --if-present build",
+    "i18n:check": "node scripts/check-i18n.mjs",
+    "db:generate": "pnpm --filter @app/db generate",
+    "db:migrate": "pnpm --filter @app/db migrate",
+    "db:seed": "pnpm --filter @app/db seed",
+    "db:studio": "pnpm --filter @app/db studio",
+    "auth:generate": "pnpm --filter @app/api auth:generate",
+    "dev": "pnpm --filter @app/api dev",
+    "docker:dev": "docker compose -f docker/compose.dev.yml up -d",
+    "docker:dev:down": "docker compose -f docker/compose.dev.yml down",
+    "docker:dev:reset": "docker compose -f docker/compose.dev.yml down -v"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.10.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "eslint-plugin-boundaries": "^7.2.0",
+    "prettier": "^3.9.7",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.70.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "unrs-resolver"
+    ]
+  }
+}

@@ -1,0 +1,126 @@
+# Local development services only.
+#
+# The application itself runs on the host (`pnpm dev`) so you keep fast HMR and
+# debugger attachment. Use `--profile full` if you need to verify the containerised
+# build behaves the same as the host one.
+#
+# Host ports are deliberately offset from the defaults (5433 instead of 5432) because
+# the dev machine usually already has a shared Postgres running.
+
+name: saas-template-dev
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: tpl-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: app
+      # Deterministic collation so ORDER BY matches production regardless of host locale.
+      POSTGRES_INITDB_ARGS: "--locale-provider=icu --icu-locale=it-IT --encoding=UTF8"
+      TZ: Europe/Rome
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    container_name: tpl-valkey
+    restart: unless-stopped
+    command: ["valkey-server", "--save", "60", "1", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey-data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: tpl-mailpit
+    restart: unless-stopped
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # web UI -> http://localhost:8025
+    healthcheck:
+      test: ["CMD", "sh", "-c", "nc -z localhost 1025"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  minio:
+    # MinIO no longer publishes to Docker Hub — images live on quay.io.
+    # Pinned to the last release before the web console was removed from the
+    # community edition (RELEASE.2025-05-24), which is worth keeping for local
+    # debugging. Production uses the existing shared MinIO, not this container.
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    container_name: tpl-minio
+    restart: unless-stopped
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      # Must match S3_REGION in .env — the production MinIO is pinned to eu-west-1
+      # and presigned signatures are region-bound.
+      MINIO_REGION: eu-west-1
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # console -> http://localhost:9001
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  minio-init:
+    image: quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z
+    container_name: tpl-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    restart: "no"
+    entrypoint:
+      - sh
+      - -c
+      - |
+        mc alias set local http://minio:9000 minioadmin minioadmin
+        mc mb --ignore-existing local/app-dev
+        mc anonymous set none local/app-dev
+        echo "bucket app-dev ready"
+
+  adminer:
+    image: adminer:latest
+    container_name: tpl-adminer
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: dracula
+    ports:
+      - "8081:8080" # -> http://localhost:8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  valkey-data:
+  minio-data:

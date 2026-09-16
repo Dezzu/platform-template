@@ -1,0 +1,8 @@
+node_modules
+dist
+coverage
+.angular
+pnpm-lock.yaml
+packages/db/migrations
+packages/db/src/schema/auth.schema.ts
+infra/terraform/**/.terraform
