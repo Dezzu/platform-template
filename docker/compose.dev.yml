@@ -11,6 +11,9 @@ name: saas-template-dev
 
 services:
   postgres:
+    # Pinned to 17 to match the shared production Postgres, not because 18 is
+    # unavailable. Developing against a newer major than production is how you find
+    # out in production that a function does not exist. Bump both together.
     image: postgres:17-alpine
     container_name: tpl-postgres
     restart: unless-stopped
@@ -33,7 +36,7 @@ services:
       start_period: 10s
 
   valkey:
-    image: valkey/valkey:8-alpine
+    image: valkey/valkey:9-alpine
     container_name: tpl-valkey
     restart: unless-stopped
     command: ["valkey-server", "--save", "60", "1", "--appendonly", "no"]
@@ -48,7 +51,7 @@ services:
       retries: 10
 
   mailpit:
-    image: axllent/mailpit:latest
+    image: axllent/mailpit:v1.31
     container_name: tpl-mailpit
     restart: unless-stopped
     environment:
@@ -108,7 +111,7 @@ services:
         echo "bucket app-dev ready"
 
   adminer:
-    image: adminer:latest
+    image: adminer:6
     container_name: tpl-adminer
     restart: unless-stopped
     environment:

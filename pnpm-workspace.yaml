@@ -1,3 +1,38 @@
 packages:
   - "apps/api"
   - "packages/*"
+
+# ─── Settings ──────────────────────────────────────────────────────────────────
+# As of pnpm 11+ settings live here — not in .npmrc, and not in the `pnpm` field of
+# package.json. pnpm 12 ignores both and warns about it.
+
+# Supply-chain policy: refuse dependency versions published less than this many
+# minutes ago (24h). It is the main defence against pulling in a package minutes
+# after a malicious publish, and this repo has no other one.
+#
+# Deliberately NOT disabled. The cost is small and bounded: a dependency added today
+# is rejected until tomorrow. When you genuinely need a fresh release right now, add
+# that one package to minimumReleaseAgeExclude rather than switching the policy off
+# for everything. `pnpm install --trust-lockfile` skips the check for a single run —
+# acceptable in the Docker build, where CI has already verified the same lockfile.
+minimumReleaseAge: 1440
+minimumReleaseAgeExclude: []
+
+# Packages allowed to run install scripts. pnpm 12 uses `allowBuilds` (a map) —
+# `onlyBuiltDependencies` / `ignoredBuiltDependencies` are legacy keys that
+# `pnpm config get` still reports but the installer no longer honours.
+#
+# The install fails on any build script that is neither approved nor denied, so every
+# one is classified here and the decision stays visible:
+#   @swc/core     — supplies the decorator metadata NestJS DI needs (esbuild cannot)
+#   esbuild       — powers tsx and vitest
+#   unrs-resolver — powers the ESLint TypeScript import resolver
+#   @scarf/scarf  — install-time analytics that phones home; denied on purpose
+allowBuilds:
+  "@swc/core": true
+  "@scarf/scarf": false
+  esbuild: true
+  unrs-resolver: true
+
+strictPeerDependencies: false
+autoInstallPeers: true

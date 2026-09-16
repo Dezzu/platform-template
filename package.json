@@ -3,10 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "description": "Template SaaS: Angular 22 + NestJS 12 + Drizzle + Better Auth + Stripe",
-  "packageManager": "pnpm@10.33.0",
+  "packageManager": "pnpm@12.4.2",
   "engines": {
-    "node": ">=22.14.0",
-    "pnpm": ">=10.33.0"
+    "node": ">=24.0.0",
+    "pnpm": ">=12.4.0"
   },
   "scripts": {
     "verify": "pnpm lint && pnpm env:check && pnpm typecheck && pnpm test && pnpm build",
@@ -39,11 +39,5 @@
     "prettier": "^3.9.7",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.70.0"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "unrs-resolver"
-    ]
   }
 }
