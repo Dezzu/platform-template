@@ -9,7 +9,7 @@
     "pnpm": ">=12.4.0"
   },
   "scripts": {
-    "verify": "pnpm lint && pnpm env:check && pnpm typecheck && pnpm test && pnpm build",
+    "verify": "pnpm lint && pnpm env:check && pnpm i18n:check && pnpm typecheck && pnpm test && pnpm build",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -63,9 +63,11 @@
     "@angular/platform-server": "^22.1.6",
     "@angular/router": "^22.1.6",
     "@angular/ssr": "^22.1.8",
+    "@jsverse/transloco": "^8.4.0",
     "@ng-icons/core": "^36.0.0",
     "@ng-icons/lucide": "^36.0.0",
     "@spartan-ng/brain": "^1.4.1",
+    "better-auth": "1.7.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "ngx-scrollbar": "^19.1.5",

@@ -345,7 +345,7 @@ export class TableComponent<T> {
   // ---- template e azioni ----------------------------------------------------
 
   protected templateFor(name: string) {
-    return this.templates().find((t) => t.name === name)?.template ?? null;
+    return this.templates().find((t) => t.name() === name)?.template ?? null;
   }
 
   protected value(row: T, field: string): unknown {

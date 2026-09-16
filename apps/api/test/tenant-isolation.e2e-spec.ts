@@ -37,7 +37,9 @@ describe('tenant isolation and permissions (e2e)', () => {
 
     // Added directly rather than through the invitation flow, which needs email.
     await db.insert(member).values({
-      id: `m-${Date.now()}`,
+      // Random suffix, not just a timestamp: two inserts in the same millisecond
+      // would otherwise collide on the primary key.
+      id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       organizationId: orgA,
       userId: plain.id,
       role: 'member',
@@ -45,7 +47,7 @@ describe('tenant isolation and permissions (e2e)', () => {
     });
 
     const created = await request(app.getHttpServer())
-      .post('/projects')
+      .post('/api/projects')
       .set('Cookie', owner.cookie)
       .set('Origin', ORIGIN)
       .send({ name: 'Secret project of org A' })
@@ -70,7 +72,7 @@ describe('tenant isolation and permissions (e2e)', () => {
   describe('a user from another organization', () => {
     it('cannot read the project by id — and gets 404, not 403', async () => {
       const res = await request(app.getHttpServer())
-        .get(`/projects/${projectId}`)
+        .get(`/api/projects/${projectId}`)
         .set('Cookie', outsider.cookie)
         .expect(404);
 
@@ -80,7 +82,7 @@ describe('tenant isolation and permissions (e2e)', () => {
 
     it('does not see it in the list', async () => {
       const res = await request(app.getHttpServer())
-        .get('/projects')
+        .get('/api/projects')
         .set('Cookie', outsider.cookie)
         .expect(200);
 
@@ -90,7 +92,7 @@ describe('tenant isolation and permissions (e2e)', () => {
 
     it('cannot update it', async () => {
       await request(app.getHttpServer())
-        .patch(`/projects/${projectId}`)
+        .patch(`/api/projects/${projectId}`)
         .set('Cookie', outsider.cookie)
         .set('Origin', ORIGIN)
         .send({ name: 'hijacked' })
@@ -102,7 +104,7 @@ describe('tenant isolation and permissions (e2e)', () => {
 
     it('cannot delete it', async () => {
       await request(app.getHttpServer())
-        .delete(`/projects/${projectId}`)
+        .delete(`/api/projects/${projectId}`)
         .set('Cookie', outsider.cookie)
         .set('Origin', ORIGIN)
         .expect(404);
@@ -113,7 +115,7 @@ describe('tenant isolation and permissions (e2e)', () => {
 
     it('cannot reach org A by forging the X-Organization-Id header', async () => {
       const res = await request(app.getHttpServer())
-        .get('/projects')
+        .get('/api/projects')
         .set('Cookie', outsider.cookie)
         .set('X-Organization-Id', orgA)
         .expect(404);
@@ -125,7 +127,7 @@ describe('tenant isolation and permissions (e2e)', () => {
   describe('a plain member of the same organization', () => {
     it('can read', async () => {
       const res = await request(app.getHttpServer())
-        .get('/projects')
+        .get('/api/projects')
         .set('Cookie', plain.cookie)
         .expect(200);
 
@@ -134,7 +136,7 @@ describe('tenant isolation and permissions (e2e)', () => {
 
     it('cannot create — 403 listing the missing permission', async () => {
       const res = await request(app.getHttpServer())
-        .post('/projects')
+        .post('/api/projects')
         .set('Cookie', plain.cookie)
         .set('Origin', ORIGIN)
         .send({ name: 'should not exist' })
@@ -146,7 +148,7 @@ describe('tenant isolation and permissions (e2e)', () => {
 
     it('cannot delete', async () => {
       const res = await request(app.getHttpServer())
-        .delete(`/projects/${projectId}`)
+        .delete(`/api/projects/${projectId}`)
         .set('Cookie', plain.cookie)
         .set('Origin', ORIGIN)
         .expect(403);
@@ -173,7 +175,7 @@ describe('tenant isolation and permissions (e2e)', () => {
     it('records nothing when the transaction rolls back', async () => {
       // A duplicate name aborts the transaction after the insert would have happened.
       await request(app.getHttpServer())
-        .post('/projects')
+        .post('/api/projects')
         .set('Cookie', owner.cookie)
         .set('Origin', ORIGIN)
         .send({ name: 'Secret project of org A' })
@@ -191,7 +193,7 @@ describe('tenant isolation and permissions (e2e)', () => {
   describe('the owner', () => {
     it('can update and delete their own project', async () => {
       await request(app.getHttpServer())
-        .patch(`/projects/${projectId}`)
+        .patch(`/api/projects/${projectId}`)
         .set('Cookie', owner.cookie)
         .set('Origin', ORIGIN)
         .send({ status: 'archived' })
@@ -199,7 +201,7 @@ describe('tenant isolation and permissions (e2e)', () => {
         .expect((res) => expect(res.body.data.status).toBe('archived'));
 
       await request(app.getHttpServer())
-        .delete(`/projects/${projectId}`)
+        .delete(`/api/projects/${projectId}`)
         .set('Cookie', owner.cookie)
         .set('Origin', ORIGIN)
         .expect(204);

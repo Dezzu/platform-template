@@ -1,3 +1,35 @@
-import { type Routes } from '@angular/router';
+import { authGuard, guestGuard, navGuard } from '@app/core';
+import type { Routes } from '@angular/router';
 
-export const routes: Routes = [];
+/**
+ * Routes are guarded with `navGuard(id)`, which reads the permissions from the entry
+ * of the same id in NAV_MANIFEST. Spelling the permissions out again here is how a
+ * menu ends up offering a link that leads nowhere.
+ */
+export const routes: Routes = [
+  {
+    path: 'sign-in',
+    canMatch: [guestGuard],
+    loadComponent: () => import('./features/auth/sign-in.page').then((m) => m.SignInPage),
+  },
+  {
+    path: '',
+    canMatch: [authGuard],
+    loadComponent: () => import('./layout/shell.page').then((m) => m.ShellPage),
+    children: [
+      {
+        path: 'dashboard',
+        loadComponent: () =>
+          import('./features/dashboard/dashboard.page').then((m) => m.DashboardPage),
+      },
+      {
+        path: 'projects',
+        canMatch: [navGuard('projects')],
+        loadComponent: () =>
+          import('./features/projects/projects.page').then((m) => m.ProjectsPage),
+      },
+      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+    ],
+  },
+  { path: '**', redirectTo: '' },
+];

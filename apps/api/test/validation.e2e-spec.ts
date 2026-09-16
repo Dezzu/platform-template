@@ -33,7 +33,7 @@ describe('request validation (e2e)', () => {
 
   describe('GET /plans', () => {
     it('is public and returns the envelope', async () => {
-      const res = await request(app.getHttpServer()).get('/plans').expect(200);
+      const res = await request(app.getHttpServer()).get('/api/plans').expect(200);
 
       expect(res.body).toMatchObject({ success: true, message: null, messageCode: null });
       expect(Array.isArray(res.body.data)).toBe(true);
@@ -44,7 +44,7 @@ describe('request validation (e2e)', () => {
 
   describe('authentication default', () => {
     it('rejects an undecorated route without a session', async () => {
-      const res = await request(app.getHttpServer()).get('/me').expect(401);
+      const res = await request(app.getHttpServer()).get('/api/me').expect(401);
       expect(res.body.messageCode).toBe('UNAUTHENTICATED');
       expect(res.body.success).toBe(false);
     });
@@ -61,7 +61,7 @@ describe('request validation (e2e)', () => {
   describe('PATCH /me', () => {
     it('rejects values that violate the contract with 422 and field paths', async () => {
       const res = await request(app.getHttpServer())
-        .patch('/me')
+        .patch('/api/me')
         .set('Cookie', cookie)
         .set('Origin', ORIGIN)
         .send({ name: '   ', image: 'not-a-url' })
@@ -77,7 +77,7 @@ describe('request validation (e2e)', () => {
 
     it('rejects an empty patch', async () => {
       const res = await request(app.getHttpServer())
-        .patch('/me')
+        .patch('/api/me')
         .set('Cookie', cookie)
         .set('Origin', ORIGIN)
         .send({})
@@ -88,7 +88,7 @@ describe('request validation (e2e)', () => {
 
     it('applies a valid update and does not persist rejected values', async () => {
       await request(app.getHttpServer())
-        .patch('/me')
+        .patch('/api/me')
         .set('Cookie', cookie)
         .set('Origin', ORIGIN)
         .send({ name: 'Updated Name' })

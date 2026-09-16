@@ -1,0 +1,65 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "close": "Close",
+    "search": "Search",
+    "loading": "Loading…",
+    "empty": "No results",
+    "retry": "Try again"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "projects": "Projects",
+    "members": "Members",
+    "audit": "Audit log",
+    "settings": "Settings",
+    "billing": "Billing"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "signUp": "Sign up",
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "withGoogle": "Continue with Google",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "signingIn": "Signing in…",
+    "invalidCredentials": "Incorrect email or password."
+  },
+  "form": {
+    "required": "This field is required",
+    "minlength": "At least {requiredLength} characters",
+    "maxlength": "At most {requiredLength} characters",
+    "min": "Minimum value is {min}",
+    "max": "Maximum value is {max}",
+    "email": "Invalid email address",
+    "passwordMismatch": "Passwords do not match"
+  },
+  "errors": {
+    "INTERNAL_ERROR": "Something went wrong. Please try again.",
+    "VALIDATION_FAILED": "Some fields are not valid.",
+    "NOT_FOUND": "Item not found.",
+    "CONFLICT": "The operation conflicts with the current state.",
+    "RATE_LIMITED": "Too many requests. Please wait a moment.",
+    "UNAUTHENTICATED": "Your session expired. Please sign in again.",
+    "FORBIDDEN": "You do not have permission to do this.",
+    "FORBIDDEN_MISSING_PERMISSION": "You do not have permission to do this.",
+    "ORGANIZATION_NOT_FOUND": "Organization not found.",
+    "ORGANIZATION_REQUIRED": "Select an organization to continue.",
+    "SUBSCRIPTION_REQUIRED": "This feature requires an active subscription.",
+    "PLAN_LIMIT_REACHED": "You have reached your plan limit.",
+    "MAINTENANCE_MODE": "Under maintenance. Please check back shortly.",
+    "FEATURE_DISABLED": "This feature is not available.",
+    "NETWORK_ERROR": "The server is unreachable. Check your connection."
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  }
+}

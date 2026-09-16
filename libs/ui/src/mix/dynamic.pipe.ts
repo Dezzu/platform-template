@@ -12,15 +12,14 @@ import { inject, Injector, Pipe, type PipeTransform, type ProviderToken } from '
 export class DynamicPipe implements PipeTransform {
   private readonly injector = inject(Injector);
 
-  transform(
-    value: unknown,
-    pipeToken: ProviderToken<PipeTransform> | null,
-    pipeArgs: unknown[] = [],
-  ): unknown {
+  transform(value: unknown, pipeToken: unknown, pipeArgs: unknown[] = []): unknown {
     if (!pipeToken) return value;
 
     try {
-      return this.injector.get(pipeToken).transform(value, ...pipeArgs);
+      // The cast is contained here: a column declares its pipe as data, so whatever
+      // the definition carries arrives untyped. A wrong token is caught below.
+      const pipe = this.injector.get(pipeToken as ProviderToken<PipeTransform>);
+      return pipe.transform(value, ...pipeArgs);
     } catch (error: unknown) {
       // A missing pipe is a configuration mistake in a column definition, not a reason
       // to blank the cell: show the raw value and say why.

@@ -1,0 +1,85 @@
+<!--
+  The sidebar is a <nav> with a real landmark and the mobile version is a dialog:
+  a screen reader user has to be able to find the menu and know when it has opened.
+-->
+<nav
+  class="bg-sidebar text-sidebar-foreground fixed inset-y-0 left-0 z-40 w-64 -translate-x-full border-r transition-transform lg:static lg:translate-x-0"
+  [class.translate-x-0]="mobileOpen()"
+  [attr.aria-label]="appName()"
+>
+  <div class="flex h-14 items-center justify-between px-4">
+    <span class="truncate text-sm font-semibold">{{ appName() }}</span>
+    <button
+      hlmBtn
+      variant="ghost"
+      size="icon"
+      class="lg:hidden"
+      (click)="closeMobile()"
+      [attr.aria-label]="'common.close' | transloco"
+    >
+      <ng-icon name="lucideX" />
+    </button>
+  </div>
+
+  @if (contextLabel(); as context) {
+  <p class="text-muted-foreground truncate px-4 pb-2 text-xs">{{ context }}</p>
+  }
+
+  <hlm-separator />
+
+  <ul class="space-y-1 p-2">
+    @for (item of items(); track item.id) {
+    <li>
+      <a
+        [routerLink]="item.route"
+        routerLinkActive="bg-sidebar-accent text-sidebar-accent-foreground"
+        [routerLinkActiveOptions]="{ exact: false }"
+        (click)="closeMobile()"
+        class="hover:bg-sidebar-accent/60 flex items-center gap-3 rounded-md px-3 py-2 text-sm"
+      >
+        <ng-icon [name]="item.icon" class="shrink-0" />
+        <span class="truncate">{{ item.labelKey | transloco }}</span>
+      </a>
+    </li>
+    }
+  </ul>
+</nav>
+
+@if (mobileOpen()) {
+<!-- Backdrop: tapping outside closes, which is what a drawer is expected to do. -->
+<div class="fixed inset-0 z-30 bg-black/50 lg:hidden" (click)="closeMobile()" aria-hidden="true"></div>
+}
+
+<div class="flex min-w-0 flex-1 flex-col">
+  <header class="flex h-14 items-center gap-2 border-b px-4">
+    <button
+      hlmBtn
+      variant="ghost"
+      size="icon"
+      class="lg:hidden"
+      (click)="mobileOpen.set(true)"
+      [attr.aria-label]="appName()"
+      [attr.aria-expanded]="mobileOpen()"
+    >
+      <ng-icon name="lucideMenu" />
+    </button>
+
+    <div class="flex-1"></div>
+
+    <button
+      hlmBtn
+      variant="ghost"
+      size="icon"
+      (click)="toggleTheme()"
+      [attr.aria-label]="(isDark() ? 'theme.light' : 'theme.dark') | transloco"
+    >
+      <ng-icon [name]="isDark() ? 'lucideSun' : 'lucideMoon'" />
+    </button>
+
+    <button hlmBtn variant="outline" size="sm" (click)="signOut.emit()">{{ 'auth.signOut' | transloco }}</button>
+  </header>
+
+  <main class="min-w-0 flex-1 p-4 lg:p-6">
+    <ng-content />
+  </main>
+</div>

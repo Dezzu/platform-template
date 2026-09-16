@@ -1,0 +1,39 @@
+<section hlmCard class="w-full max-w-sm">
+  <div hlmCardHeader>
+    <h1 hlmCardTitle>{{ appName }}</h1>
+    <p hlmCardDescription>{{ 'auth.signIn' | transloco }}</p>
+  </div>
+
+  <form hlmCardContent class="space-y-4" (ngSubmit)="signIn()">
+    <div class="space-y-2">
+      <label hlmLabel for="email">{{ 'auth.email' | transloco }}</label>
+      <input hlmInput id="email" type="email" autocomplete="email" class="w-full" [formField]="credentials.email" />
+    </div>
+
+    <div class="space-y-2">
+      <label hlmLabel for="password">{{ 'auth.password' | transloco }}</label>
+      <input
+        hlmInput
+        id="password"
+        type="password"
+        autocomplete="current-password"
+        class="w-full"
+        [formField]="credentials.password"
+      />
+    </div>
+
+    @if (errorKey(); as key) {
+    <p class="text-destructive text-sm" role="alert">{{ key | transloco }}</p>
+    }
+
+    <button hlmBtn type="submit" class="w-full" [disabled]="submitting()">
+      {{ (submitting() ? 'auth.signingIn' : 'auth.signIn') | transloco }}
+    </button>
+  </form>
+
+  <div hlmCardFooter class="flex-col gap-2">
+    <button hlmBtn variant="outline" class="w-full" type="button" (click)="signInWithGoogle()">
+      {{ 'auth.withGoogle' | transloco }}
+    </button>
+  </div>
+</section>

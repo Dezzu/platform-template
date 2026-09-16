@@ -15,12 +15,13 @@
     "noUncheckedIndexedAccess": true,
     "paths": {
       "@spartan-ng/helm/*": ["./libs/primitives/*/src/index.ts", "./libs/primitives/*"],
-      "@app/ui": ["./libs/ui/src/index.ts"],
       "@app/ui/*": ["./libs/ui/src/*"],
       "@app/core": ["./libs/core/src/index.ts"],
       "@app/core/*": ["./libs/core/src/*"],
       "@app/i18n": ["./libs/i18n/src/index.ts"],
-      "@app/contracts": ["./packages/contracts/src/index.ts"]
+      "@app/contracts": ["./packages/contracts/src/index.ts"],
+      "@app/contracts/permissions": ["./packages/contracts/src/common/permissions.ts"],
+      "@app/contracts/errors": ["./packages/contracts/src/common/error-codes.ts"]
     }
   },
   "angularCompilerOptions": {

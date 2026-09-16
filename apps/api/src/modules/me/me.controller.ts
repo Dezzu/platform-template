@@ -2,6 +2,7 @@ import { Body, Controller, Get, Patch } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import {
+  platformPermissionsForRole,
   UpdateProfileSchema,
   UserProfileSchema,
   MeSchema,
@@ -10,6 +11,8 @@ import {
   type UserProfile,
 } from '@app/contracts';
 import { ApiEnvelope, ApiStandardErrors } from '../../common';
+import { CurrentOrgOptional, type OrgContext } from '../../auth/org-context';
+import { OrgOptional } from '../../auth/permissions.decorator';
 import { MeService } from './me.service';
 
 /**
@@ -23,10 +26,19 @@ import { MeService } from './me.service';
 export class MeController {
   constructor(private readonly me: MeService) {}
 
+  /**
+   * Everything the shell needs in one call: who you are, which organization is active,
+   * and the effective permission set.
+   *
+   * @OrgOptional() makes the guard resolve the tenant when there is one without
+   * refusing the request when there is not — a user who has just signed up and has no
+   * organization yet still has to be able to load the application.
+   */
   @Get()
-  @ApiOperation({ summary: 'Current session user and active organization' })
+  @OrgOptional()
+  @ApiOperation({ summary: 'Current session user, active organization and permissions' })
   @ApiEnvelope(MeSchema)
-  get(@Session() session: UserSession): Me {
+  get(@Session() session: UserSession, @CurrentOrgOptional() org: OrgContext | null): Me {
     return {
       user: {
         id: session.user.id,
@@ -37,10 +49,17 @@ export class MeController {
         twoFactorEnabled:
           (session.user as { twoFactorEnabled?: boolean | null }).twoFactorEnabled ?? false,
       },
-      // Populated once the user selects an organization; the org-scoping layer
-      // resolves it for every request.
-      activeOrganizationId:
-        (session.session as { activeOrganizationId?: string | null }).activeOrganizationId ?? null,
+      activeOrganizationId: org?.organizationId ?? null,
+      role: org?.role ?? null,
+      // Resolved server-side: the role-to-permission mapping has one owner. The client
+      // uses this to decide what to show, never to decide what is allowed.
+      permissions: org ? [...org.permissions] : [],
+      // Derived from the session role, not from the organization context: platform
+      // rights cross tenant boundaries, so a superadmin who has not picked an
+      // organization must not silently lose them.
+      platformPermissions: [
+        ...platformPermissionsForRole((session.user as { role?: string | null }).role),
+      ],
     };
   }
 

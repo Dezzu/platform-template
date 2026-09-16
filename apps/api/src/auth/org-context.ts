@@ -21,6 +21,17 @@ export interface OrgContext {
 export const ORG_CONTEXT_KEY = 'orgContext';
 
 /** Injects the resolved OrgContext into a handler parameter. */
+/**
+ * Like @CurrentOrg() but yields null instead of throwing when the user has no active
+ * organization. For the handful of endpoints that must answer before one is chosen.
+ */
+export const CurrentOrgOptional = createParamDecorator(
+  (_data: unknown, ctx: ExecutionContext): OrgContext | null => {
+    const request = ctx.switchToHttp().getRequest<Record<string, unknown>>();
+    return (request[ORG_CONTEXT_KEY] as OrgContext | undefined) ?? null;
+  },
+);
+
 export const CurrentOrg = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): OrgContext => {
     const request = ctx.switchToHttp().getRequest<Record<string, unknown>>();

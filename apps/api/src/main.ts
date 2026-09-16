@@ -23,6 +23,19 @@ async function bootstrap(): Promise<void> {
     bodyParser: false,
   });
 
+  /**
+   * Every controller lives under /api, which is what the frontends and the nginx
+   * proxy expect. Better Auth is mounted as middleware on its own basePath
+   * (/api/auth) and is unaffected by this.
+   *
+   * Health is excluded on purpose: container health checks and the post-deploy smoke
+   * test should not have to know about the API's prefix, and keeping the probes at
+   * the root means they survive a change to it.
+   */
+  app.setGlobalPrefix('api', {
+    exclude: ['health/live', 'health/ready', 'health/info'],
+  });
+
   // Never "*". The previous template allowed every origin on every route.
   const origins = (process.env['AUTH_TRUSTED_ORIGINS'] ?? '')
     .split(',')

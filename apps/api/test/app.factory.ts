@@ -22,6 +22,10 @@ export async function createTestApp(): Promise<INestApplication> {
   const app = moduleRef.createNestApplication({ bodyParser: false, logger: false });
   Logger.overrideLogger(false);
 
+  // Mirrors main.ts: without it the specs would hit paths that do not exist in the
+  // running application.
+  app.setGlobalPrefix('api', { exclude: ['health/live', 'health/ready', 'health/info'] });
+
   app.useGlobalPipes(
     new StandardSchemaValidationPipe({
       transform: true,

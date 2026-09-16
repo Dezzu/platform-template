@@ -1,0 +1,65 @@
+{
+  "common": {
+    "cancel": "Annulla",
+    "save": "Salva",
+    "delete": "Elimina",
+    "confirm": "Conferma",
+    "close": "Chiudi",
+    "search": "Cerca",
+    "loading": "Caricamento…",
+    "empty": "Nessun risultato",
+    "retry": "Riprova"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "projects": "Progetti",
+    "members": "Membri",
+    "billing": "Abbonamento",
+    "audit": "Registro attività",
+    "settings": "Impostazioni"
+  },
+  "auth": {
+    "signIn": "Accedi",
+    "signOut": "Esci",
+    "signUp": "Registrati",
+    "email": "Email",
+    "password": "Password",
+    "name": "Nome",
+    "withGoogle": "Continua con Google",
+    "noAccount": "Non hai un account?",
+    "haveAccount": "Hai già un account?",
+    "signingIn": "Accesso in corso…",
+    "invalidCredentials": "Email o password non corretti."
+  },
+  "form": {
+    "required": "Campo obbligatorio",
+    "minlength": "Minimo {requiredLength} caratteri",
+    "maxlength": "Massimo {requiredLength} caratteri",
+    "min": "Il valore minimo è {min}",
+    "max": "Il valore massimo è {max}",
+    "email": "Indirizzo email non valido",
+    "passwordMismatch": "Le password non coincidono"
+  },
+  "errors": {
+    "INTERNAL_ERROR": "Si è verificato un errore imprevisto. Riprova.",
+    "VALIDATION_FAILED": "Alcuni campi non sono validi.",
+    "NOT_FOUND": "Elemento non trovato.",
+    "CONFLICT": "L'operazione è in conflitto con lo stato attuale.",
+    "RATE_LIMITED": "Troppe richieste. Attendi qualche istante.",
+    "UNAUTHENTICATED": "Sessione scaduta. Accedi di nuovo.",
+    "FORBIDDEN": "Non hai i permessi per questa operazione.",
+    "FORBIDDEN_MISSING_PERMISSION": "Non hai i permessi per questa operazione.",
+    "ORGANIZATION_NOT_FOUND": "Organizzazione non trovata.",
+    "ORGANIZATION_REQUIRED": "Seleziona un'organizzazione per continuare.",
+    "SUBSCRIPTION_REQUIRED": "Questa funzionalità richiede un abbonamento attivo.",
+    "PLAN_LIMIT_REACHED": "Hai raggiunto il limite del tuo piano.",
+    "MAINTENANCE_MODE": "Manutenzione in corso. Torna tra poco.",
+    "FEATURE_DISABLED": "Funzionalità non disponibile.",
+    "NETWORK_ERROR": "Server non raggiungibile. Controlla la connessione."
+  },
+  "theme": {
+    "light": "Chiaro",
+    "dark": "Scuro",
+    "system": "Sistema"
+  }
+}
