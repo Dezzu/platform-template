@@ -5,22 +5,13 @@
   </div>
 
   <form hlmCardContent class="space-y-4" (submit)="signIn($event)">
-    <div class="space-y-2">
-      <label hlmLabel for="email">{{ 'auth.email' | transloco }}</label>
-      <input hlmInput id="email" type="email" autocomplete="email" class="w-full" [formField]="credentials.email" />
-    </div>
+    <dui-text-input type="email" autocomplete="on" [label]="'auth.email' | transloco" [formField]="credentials.email" />
 
-    <div class="space-y-2">
-      <label hlmLabel for="password">{{ 'auth.password' | transloco }}</label>
-      <input
-        hlmInput
-        id="password"
-        type="password"
-        autocomplete="current-password"
-        class="w-full"
-        [formField]="credentials.password"
-      />
-    </div>
+    <dui-password-input
+      autocompleteHint="current-password"
+      [label]="'auth.password' | transloco"
+      [formField]="credentials.password"
+    />
 
     @if (errorKey(); as key) {
     <p class="text-destructive text-sm" role="alert">{{ key | transloco }}</p>

@@ -36,6 +36,15 @@ describe('Better Auth error codes the UI depends on (e2e)', () => {
     await app.close();
   });
 
+  it('gives a new account the configured platform role, not an elevated one', async () => {
+    const [row] = await db.select().from(user).where(eq(user.email, email));
+
+    // AUTH_DEFAULT_ROLE. 'user' carries no platform permissions at all, so a
+    // misconfiguration that handed out 'admin' here would be a silent privilege
+    // escalation for every registration.
+    expect(row?.role).toBe('user');
+  });
+
   it('signing up with an address already in use', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/auth/sign-up/email')

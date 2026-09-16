@@ -69,6 +69,28 @@ describe('tenant isolation and permissions (e2e)', () => {
     await app.close();
   });
 
+  describe('roles on joining', () => {
+    it('makes the creator of an organization its owner', async () => {
+      const [row] = await db
+        .select()
+        .from(member)
+        .where(and(eq(member.organizationId, orgA), eq(member.userId, owner.id)));
+
+      // ORG_CREATOR_ROLE.
+      expect(row?.role).toBe('owner');
+    });
+
+    it('gives someone who joins later the default role', async () => {
+      const [row] = await db
+        .select()
+        .from(member)
+        .where(and(eq(member.organizationId, orgA), eq(member.userId, plain.id)));
+
+      // ORG_DEFAULT_ROLE.
+      expect(row?.role).toBe('member');
+    });
+  });
+
   describe('a user from another organization', () => {
     it('cannot read the project by id — and gets 404, not 403', async () => {
       const res = await request(app.getHttpServer())

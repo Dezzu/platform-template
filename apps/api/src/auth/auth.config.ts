@@ -83,9 +83,17 @@ export const auth = betterAuth({
     // creates the team/teamMember/organizationRole tables and changes how invitations
     // and member queries behave, for features v1 does not use. Turning either on later
     // is one `pnpm auth:generate` plus one migration — see CLAUDE.md.
-    organization(),
+    organization({
+      // Whoever creates the organization owns it.
+      creatorRole: env('ORG_CREATOR_ROLE') ?? 'owner',
+    }),
     // Platform-level roles, user banning and support impersonation.
-    admin(),
+    admin({
+      // The role every new account starts with. Least privilege by default: the
+      // permission catalogue gives 'user' no platform rights at all, so promoting
+      // someone has to be an explicit act.
+      defaultRole: env('AUTH_DEFAULT_ROLE') ?? 'user',
+    }),
     // TOTP + backup codes.
     twoFactor(),
   ],

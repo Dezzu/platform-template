@@ -4,7 +4,6 @@ import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideMenu, lucideX } from '@ng-icons/lucide';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
-import { HlmSeparatorImports } from '@spartan-ng/helm/separator';
 
 /**
  * A menu entry as the shell needs it.
@@ -33,14 +32,7 @@ export interface ShellNavItem {
  */
 @Component({
   selector: 'dui-app-shell',
-  imports: [
-    RouterLink,
-    RouterLinkActive,
-    NgIcon,
-    TranslocoPipe,
-    HlmButtonImports,
-    HlmSeparatorImports,
-  ],
+  imports: [RouterLink, RouterLinkActive, NgIcon, TranslocoPipe, HlmButtonImports],
   providers: [provideIcons({ lucideMenu, lucideX })],
   host: { class: 'flex min-h-screen w-full bg-background text-foreground' },
   templateUrl: './app-shell.component.html',

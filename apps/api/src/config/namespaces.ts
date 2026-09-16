@@ -41,6 +41,11 @@ export const authConfig = registerAs('auth', () => {
     sessionExpiresIn: e.SESSION_EXPIRES_IN,
     sessionUpdateAge: e.SESSION_UPDATE_AGE,
     cookieDomain: e.COOKIE_DOMAIN,
+    roles: {
+      platformDefault: e.AUTH_DEFAULT_ROLE,
+      organizationCreator: e.ORG_CREATOR_ROLE,
+      organizationDefault: e.ORG_DEFAULT_ROLE,
+    },
     google: { clientId: e.GOOGLE_CLIENT_ID, clientSecret: e.GOOGLE_CLIENT_SECRET },
   };
 });

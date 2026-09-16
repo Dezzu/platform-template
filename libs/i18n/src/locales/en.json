@@ -20,14 +20,19 @@
   },
   "common": {
     "cancel": "Cancel",
-    "save": "Save",
-    "delete": "Delete",
-    "confirm": "Confirm",
+    "clearDate": "Clear date",
+    "clearField": "Clear field",
+    "clearSelection": "Clear selection",
     "close": "Close",
-    "search": "Search",
-    "loading": "Loading…",
+    "confirm": "Confirm",
+    "delete": "Delete",
     "empty": "No results",
-    "retry": "Try again"
+    "hidePassword": "Hide password",
+    "loading": "Loading…",
+    "retry": "Try again",
+    "save": "Save",
+    "search": "Search",
+    "showPassword": "Show password"
   },
   "errors": {
     "INTERNAL_ERROR": "Something went wrong. Please try again.",

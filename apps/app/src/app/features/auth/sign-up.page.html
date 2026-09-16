@@ -5,37 +5,28 @@
   </div>
 
   <form hlmCardContent class="space-y-4" (submit)="signUp($event)">
-    <div class="space-y-2">
-      <label hlmLabel for="name">{{ 'auth.name' | transloco }}</label>
-      <input hlmInput id="name" autocomplete="name" class="w-full" [formField]="registration.name" />
-    </div>
+    <dui-text-input autocomplete="on" [label]="'auth.name' | transloco" [formField]="registration.name" />
 
-    <div class="space-y-2">
-      <label hlmLabel for="email">{{ 'auth.email' | transloco }}</label>
-      <input hlmInput id="email" type="email" autocomplete="email" class="w-full" [formField]="registration.email" />
-    </div>
+    <dui-text-input
+      type="email"
+      autocomplete="on"
+      [label]="'auth.email' | transloco"
+      [formField]="registration.email"
+    />
 
-    <div class="space-y-2">
-      <label hlmLabel for="password">{{ 'auth.password' | transloco }}</label>
-      <input
-        hlmInput
-        id="password"
-        type="password"
-        autocomplete="new-password"
-        class="w-full"
+    <div class="space-y-1">
+      <dui-password-input
+        autocompleteHint="new-password"
+        [label]="'auth.password' | transloco"
         [formField]="registration.password"
       />
       <p class="text-muted-foreground text-xs">{{ 'auth.passwordHint' | transloco }}</p>
     </div>
 
-    <div class="space-y-2">
-      <label hlmLabel for="confirmPassword">{{ 'auth.confirmPassword' | transloco }}</label>
-      <input
-        hlmInput
-        id="confirmPassword"
-        type="password"
-        autocomplete="new-password"
-        class="w-full"
+    <div class="space-y-1">
+      <dui-password-input
+        autocompleteHint="new-password"
+        [label]="'auth.confirmPassword' | transloco"
         [formField]="registration.confirmPassword"
       />
       @if (passwordsMismatch()) {

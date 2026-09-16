@@ -1,5 +1,6 @@
 import { Component, computed, input } from '@angular/core';
 import { NG_VALUE_ACCESSOR } from '@angular/forms';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideX } from '@ng-icons/lucide';
 import { HlmDatePickerImports } from '@spartan-ng/helm/date-picker';
@@ -25,6 +26,7 @@ const toTimeValue = (date: Date | null | undefined): string => {
     HlmInputImports,
     ValidatorErrorsComponent,
     NgIcon,
+    TranslocoPipe,
   ],
   providers: [
     provideIcons({ lucideX }),
@@ -85,7 +87,7 @@ const toTimeValue = (date: Date | null | undefined): string => {
             hlmInputGroupButton
             size="icon-xs"
             class="text-muted-foreground absolute end-1 top-1/2 -translate-y-1/2"
-            aria-label="Svuota la data"
+            [attr.aria-label]="'common.clearDate' | transloco"
             [disabled]="disabled()"
             (click)="handleClear()"
           >

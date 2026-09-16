@@ -4,8 +4,7 @@ import { email, form, FormField, minLength, required } from '@angular/forms/sign
 import { TranslocoPipe } from '@jsverse/transloco';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
-import { HlmInputImports } from '@spartan-ng/helm/input';
-import { HlmLabelImports } from '@spartan-ng/helm/label';
+import { TextInputComponent, PasswordInputComponent } from '@app/ui/input';
 import { AuthService, PermissionsService } from '@app/core';
 import { environment } from '../../../environments/environment';
 
@@ -18,13 +17,13 @@ import { environment } from '../../../environments/environment';
 @Component({
   selector: 'app-sign-in-page',
   imports: [
+    TextInputComponent,
+    PasswordInputComponent,
     FormField,
     RouterLink,
     TranslocoPipe,
     HlmButtonImports,
     HlmCardImports,
-    HlmInputImports,
-    HlmLabelImports,
   ],
   templateUrl: './sign-in.page.html',
   host: { class: 'flex min-h-screen items-center justify-center bg-background p-4' },

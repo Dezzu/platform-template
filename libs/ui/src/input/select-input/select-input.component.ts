@@ -1,5 +1,6 @@
 import { Component, computed, effect, input, isDevMode } from '@angular/core';
 import { NG_VALUE_ACCESSOR } from '@angular/forms';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideX } from '@ng-icons/lucide';
 import { HlmFieldImports } from '@spartan-ng/helm/field';
@@ -40,6 +41,7 @@ export type SelectOption = {
     HlmSpinnerImports,
     ValidatorErrorsComponent,
     NgIcon,
+    TranslocoPipe,
   ],
   providers: [
     provideIcons({ lucideX }),
@@ -119,7 +121,7 @@ export type SelectOption = {
             hlmInputGroupButton
             size="icon-xs"
             class="text-muted-foreground absolute end-1 top-1/2 -translate-y-1/2"
-            aria-label="Svuota la selezione"
+            [attr.aria-label]="'common.clearSelection' | transloco"
             [disabled]="disabled()"
             (click)="handleClear()"
           >

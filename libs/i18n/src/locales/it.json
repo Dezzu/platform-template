@@ -20,14 +20,19 @@
   },
   "common": {
     "cancel": "Annulla",
-    "save": "Salva",
-    "delete": "Elimina",
-    "confirm": "Conferma",
+    "clearDate": "Svuota la data",
+    "clearField": "Svuota il campo",
+    "clearSelection": "Svuota la selezione",
     "close": "Chiudi",
-    "search": "Cerca",
-    "loading": "Caricamento…",
+    "confirm": "Conferma",
+    "delete": "Elimina",
     "empty": "Nessun risultato",
-    "retry": "Riprova"
+    "hidePassword": "Nascondi la password",
+    "loading": "Caricamento…",
+    "retry": "Riprova",
+    "save": "Salva",
+    "search": "Cerca",
+    "showPassword": "Mostra la password"
   },
   "errors": {
     "INTERNAL_ERROR": "Si è verificato un errore imprevisto. Riprova.",

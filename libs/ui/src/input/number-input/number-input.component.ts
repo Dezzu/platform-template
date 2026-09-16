@@ -1,5 +1,6 @@
 import { Component, computed, input, signal } from '@angular/core';
 import { NG_VALUE_ACCESSOR } from '@angular/forms';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideChevronDown, lucideChevronUp, lucideX } from '@ng-icons/lucide';
 import { HlmFieldImports } from '@spartan-ng/helm/field';
@@ -30,7 +31,7 @@ function localeSeparators(): { group: string; decimal: string } {
  */
 @Component({
   selector: 'dui-number-input',
-  imports: [HlmFieldImports, HlmInputGroupImports, ValidatorErrorsComponent, NgIcon],
+  imports: [HlmFieldImports, HlmInputGroupImports, ValidatorErrorsComponent, NgIcon, TranslocoPipe],
   providers: [
     provideIcons({ lucideChevronUp, lucideChevronDown, lucideX }),
     {
@@ -84,7 +85,7 @@ function localeSeparators(): { group: string; decimal: string } {
             <button
               hlmInputGroupButton
               size="icon-xs"
-              aria-label="Svuota il campo"
+              [attr.aria-label]="'common.clearField' | transloco"
               [disabled]="disabled()"
               (click)="handleClear()"
             >

@@ -4,8 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
-import { HlmInputImports } from '@spartan-ng/helm/input';
-import { HlmLabelImports } from '@spartan-ng/helm/label';
+import { TextInputComponent } from '@app/ui/input';
 import { AppError, AuthService, MeApi } from '@app/core';
 
 /**
@@ -17,14 +16,7 @@ import { AppError, AuthService, MeApi } from '@app/core';
  */
 @Component({
   selector: 'app-profile-page',
-  imports: [
-    FormField,
-    TranslocoPipe,
-    HlmButtonImports,
-    HlmCardImports,
-    HlmInputImports,
-    HlmLabelImports,
-  ],
+  imports: [TextInputComponent, FormField, TranslocoPipe, HlmButtonImports, HlmCardImports],
   templateUrl: './profile.page.html',
 })
 export class ProfilePage {

@@ -71,7 +71,7 @@ export abstract class DuiInputBase<T> implements ControlValueAccessor {
   }
 
   /**
-   * Svuota il campo.
+   * Clears the field.
    *
    * Emits `null` rather than `undefined` on purpose: `undefined` disappears from a
    * payload once it goes through `JSON.stringify`, so the server would never learn

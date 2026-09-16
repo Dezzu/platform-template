@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ORG_ROLES } from '@app/contracts';
 
 const bool = (def: boolean) =>
   z
@@ -62,6 +63,17 @@ const baseEnvSchema = z.object({
     .positive()
     .default(60 * 60 * 24),
   COOKIE_DOMAIN: z.string().default(''),
+  /**
+   * Platform-level role given to every new account (Better Auth admin plugin).
+   * Deliberately the least privileged value: the permission catalogue grants 'user'
+   * no platform rights at all, so promoting someone has to be an explicit act.
+   */
+  AUTH_DEFAULT_ROLE: z.string().min(1).default('user'),
+  /** Role of whoever creates an organization. */
+  ORG_CREATOR_ROLE: z.enum(ORG_ROLES).default('owner'),
+  /** Role assigned to anyone who joins an existing organization. */
+  ORG_DEFAULT_ROLE: z.enum(ORG_ROLES).default('member'),
+
   GOOGLE_CLIENT_ID: z.string().default(''),
   GOOGLE_CLIENT_SECRET: z.string().default(''),
 

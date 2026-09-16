@@ -10,7 +10,7 @@ import { FormUtilityService } from '../../mix/form-utility.service';
  * Funziona in due modi:
  *
  * 1. **Explicit** — with `[control]` passed in. The
- *    condizione di visibilita' resta quella di prima (`dirty && touched`), cosi'
+ *    visibility condition is `dirty && touched`, so errors do not appear before the
  *    visibility condition is `dirty && touched`.
  * 2. **Contestuale** — dentro un `hlm-field`, senza `[control]`: legge errori e
  *    stato direttamente da `BrnField`, delegando a Spartan la decisione su

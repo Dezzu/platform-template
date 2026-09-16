@@ -1,24 +1,25 @@
-import { Component, computed, input, signal } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
 import { NG_VALUE_ACCESSOR } from '@angular/forms';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideEye, lucideEyeOff, lucideX } from '@ng-icons/lucide';
 import { HlmFieldImports } from '@spartan-ng/helm/field';
 import { HlmInputGroupImports } from '@spartan-ng/helm/input-group';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { DuiInputBase } from '../dui-input-base';
 import { ValidatorErrorsComponent } from '../validator-errors/validator-errors.component';
 
 /**
- * Campo password con toggle di visibilita'.
+ * Password field with a reveal toggle.
  *
- * The reveal toggle is an explicit button carrying `aria-pressed` and a label that
- * changes with its state.
+ * The toggle is a real button carrying `aria-pressed` and a label that changes with
+ * its state, so a screen reader announces whether the password is currently visible.
  *
- * Note: there is no strength meter here, and one was deliberately not
- * e' stato riprodotto. Se serviva, va reintrodotto come componente a parte.
+ * No strength meter: it belongs in its own component if it is ever needed, and a weak
+ * one trains people to game the indicator rather than choose a better password.
  */
 @Component({
   selector: 'dui-password-input',
-  imports: [HlmFieldImports, HlmInputGroupImports, ValidatorErrorsComponent, NgIcon],
+  imports: [HlmFieldImports, HlmInputGroupImports, ValidatorErrorsComponent, NgIcon, TranslocoPipe],
   providers: [
     provideIcons({ lucideEye, lucideEyeOff, lucideX }),
     {
@@ -41,7 +42,7 @@ import { ValidatorErrorsComponent } from '../validator-errors/validator-errors.c
           [class]="inputClass()"
           [type]="revealed() ? 'text' : 'password'"
           [placeholder]="placeholder()"
-          [autocomplete]="autocomplete() === 'on' ? 'current-password' : 'off'"
+          [autocomplete]="autocompleteHint()"
           [value]="value() ?? ''"
           [disabled]="disabled()"
           (input)="updateValue($any($event.target).value)"
@@ -54,7 +55,7 @@ import { ValidatorErrorsComponent } from '../validator-errors/validator-errors.c
               <button
                 hlmInputGroupButton
                 size="icon-xs"
-                aria-label="Svuota il campo"
+                [attr.aria-label]="'common.clearField' | transloco"
                 [disabled]="disabled()"
                 (click)="handleClear()"
               >
@@ -82,7 +83,19 @@ import { ValidatorErrorsComponent } from '../validator-errors/validator-errors.c
   `,
 })
 export class PasswordInputComponent extends DuiInputBase<string | null | undefined> {
+  private readonly transloco = inject(TranslocoService);
+
   readonly toggleMask = input(true);
+
+  /**
+   * Explicit rather than derived from the base `autocomplete` on/off input: password
+   * managers behave very differently for 'current-password' and 'new-password', and
+   * getting it wrong on a sign-up form makes them offer the existing password instead
+   * of generating one.
+   */
+  readonly autocompleteHint = input<'current-password' | 'new-password' | 'off'>(
+    'current-password',
+  );
 
   protected readonly revealed = signal(false);
 
@@ -92,7 +105,7 @@ export class PasswordInputComponent extends DuiInputBase<string | null | undefin
   });
 
   protected readonly toggleLabel = computed(() =>
-    this.revealed() ? 'Hide password' : 'Show password',
+    this.transloco.translate(this.revealed() ? 'common.hidePassword' : 'common.showPassword'),
   );
 
   protected toggleReveal(): void {

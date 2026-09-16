@@ -2,6 +2,7 @@ import { booleanAttribute, Component, computed, input, output } from '@angular/c
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideX } from '@ng-icons/lucide';
 import { HlmInputGroupImports } from '@spartan-ng/helm/input-group';
+import { TranslocoPipe } from '@jsverse/transloco';
 
 /**
  * Contenitore che aggiunge un pulsante "svuota" a un controllo.
@@ -16,7 +17,7 @@ import { HlmInputGroupImports } from '@spartan-ng/helm/input-group';
  */
 @Component({
   selector: 'dui-input-clear',
-  imports: [HlmInputGroupImports, NgIcon],
+  imports: [HlmInputGroupImports, NgIcon, TranslocoPipe],
   providers: [provideIcons({ lucideX })],
   template: `
     <hlm-input-group>
@@ -27,7 +28,7 @@ import { HlmInputGroupImports } from '@spartan-ng/helm/input-group';
           <button
             hlmInputGroupButton
             size="icon-xs"
-            [attr.aria-label]="clearLabel()"
+            [attr.aria-label]="clearLabel() | transloco"
             (click)="clear.emit()"
           >
             <ng-icon name="lucideX" />
@@ -42,7 +43,7 @@ import { HlmInputGroupImports } from '@spartan-ng/helm/input-group';
 export class InputClearComponent {
   readonly showClear = input(true, { transform: booleanAttribute });
   readonly value = input<unknown>();
-  readonly clearLabel = input('Clear field');
+  readonly clearLabel = input('common.clearField');
 
   readonly clear = output<void>();
 
