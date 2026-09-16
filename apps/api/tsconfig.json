@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "types": ["node"],
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    // NestJS resolves injected dependencies through constructor parameters, so
+    // properties are never "uninitialised" in the way this check assumes.
+    "strictPropertyInitialization": false
+  },
+  // Workspace packages are consumed through node_modules (their built .d.ts), exactly
+  // as they are at runtime and inside Docker. Project references let `tsc -b` rebuild
+  // a stale dependency first instead of silently type-checking against old output.
+  "references": [{ "path": "../../packages/db" }],
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules"]
+}

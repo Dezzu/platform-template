@@ -21,12 +21,7 @@
     "declarationMap": true,
     "sourceMap": true,
     "importHelpers": true,
-    "paths": {
-      "@app/contracts": ["./packages/contracts/src/index.ts"],
-      "@app/contracts/*": ["./packages/contracts/src/*"],
-      "@app/db": ["./packages/db/src/index.ts"],
-      "@app/db/*": ["./packages/db/src/*"]
-    }
+    "noEmitOnError": true
   },
   "exclude": ["node_modules", "dist", "coverage", ".angular"]
 }
