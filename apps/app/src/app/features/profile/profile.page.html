@@ -1,0 +1,23 @@
+<h1 class="mb-4 text-2xl font-semibold">{{ 'profile.title' | transloco }}</h1>
+
+<section hlmCard class="max-w-md">
+  <div hlmCardHeader>
+    <h2 hlmCardTitle>{{ 'profile.account' | transloco }}</h2>
+    <p hlmCardDescription>{{ user()?.email }}</p>
+  </div>
+
+  <form hlmCardContent class="space-y-4" (submit)="save($event)">
+    <div class="space-y-2">
+      <label hlmLabel for="name">{{ 'auth.name' | transloco }}</label>
+      <input hlmInput id="name" autocomplete="name" class="w-full" [formField]="profile.name" />
+    </div>
+
+    @if (errorKey(); as key) {
+    <p class="text-destructive text-sm" role="alert">{{ key | transloco }}</p>
+    } @if (savedAt()) {
+    <p class="text-sm text-green-600 dark:text-green-500" role="status">{{ 'profile.saved' | transloco }}</p>
+    }
+
+    <button hlmBtn type="submit" [disabled]="saving()">{{ 'common.save' | transloco }}</button>
+  </form>
+</section>

@@ -1,23 +1,4 @@
 {
-  "common": {
-    "cancel": "Annulla",
-    "save": "Salva",
-    "delete": "Elimina",
-    "confirm": "Conferma",
-    "close": "Chiudi",
-    "search": "Cerca",
-    "loading": "Caricamento…",
-    "empty": "Nessun risultato",
-    "retry": "Riprova"
-  },
-  "nav": {
-    "dashboard": "Dashboard",
-    "projects": "Progetti",
-    "members": "Membri",
-    "billing": "Abbonamento",
-    "audit": "Registro attività",
-    "settings": "Impostazioni"
-  },
   "auth": {
     "confirmPassword": "Conferma password",
     "email": "Email",
@@ -37,14 +18,16 @@
     "signingUp": "Registrazione in corso…",
     "withGoogle": "Continua con Google"
   },
-  "form": {
-    "required": "Campo obbligatorio",
-    "minlength": "Minimo {requiredLength} caratteri",
-    "maxlength": "Massimo {requiredLength} caratteri",
-    "min": "Il valore minimo è {min}",
-    "max": "Il valore massimo è {max}",
-    "email": "Indirizzo email non valido",
-    "passwordMismatch": "Le password non coincidono"
+  "common": {
+    "cancel": "Annulla",
+    "save": "Salva",
+    "delete": "Elimina",
+    "confirm": "Conferma",
+    "close": "Chiudi",
+    "search": "Cerca",
+    "loading": "Caricamento…",
+    "empty": "Nessun risultato",
+    "retry": "Riprova"
   },
   "errors": {
     "INTERNAL_ERROR": "Si è verificato un errore imprevisto. Riprova.",
@@ -63,9 +46,39 @@
     "FEATURE_DISABLED": "Funzionalità non disponibile.",
     "NETWORK_ERROR": "Server non raggiungibile. Controlla la connessione."
   },
+  "form": {
+    "required": "Campo obbligatorio",
+    "minlength": "Minimo {requiredLength} caratteri",
+    "maxlength": "Massimo {requiredLength} caratteri",
+    "min": "Il valore minimo è {min}",
+    "max": "Il valore massimo è {max}",
+    "email": "Indirizzo email non valido",
+    "passwordMismatch": "Le password non coincidono"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "projects": "Progetti",
+    "members": "Membri",
+    "billing": "Abbonamento",
+    "audit": "Registro attività",
+    "settings": "Impostazioni"
+  },
+  "profile": {
+    "account": "Il tuo account",
+    "menuFor": "Menu di {{name}}",
+    "saved": "Modifiche salvate.",
+    "title": "Profilo"
+  },
+  "roles": {
+    "admin": "Amministratore",
+    "member": "Membro",
+    "owner": "Proprietario"
+  },
   "theme": {
-    "light": "Chiaro",
     "dark": "Scuro",
+    "light": "Chiaro",
+    "switchToDark": "Tema scuro",
+    "switchToLight": "Tema chiaro",
     "system": "Sistema"
   }
 }

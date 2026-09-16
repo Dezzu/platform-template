@@ -1,6 +1,6 @@
 <!--
-  The sidebar is a <nav> with a real landmark and the mobile version is a dialog:
-  a screen reader user has to be able to find the menu and know when it has opened.
+  The sidebar is a <nav> with a real landmark: a screen reader user has to be able to
+  find the menu and know when the mobile drawer has opened.
 -->
 <nav
   class="bg-sidebar text-sidebar-foreground fixed inset-y-0 left-0 z-40 w-64 -translate-x-full border-r transition-transform lg:static lg:translate-x-0"
@@ -20,10 +20,6 @@
       <ng-icon name="lucideX" />
     </button>
   </div>
-
-  @if (contextLabel(); as context) {
-  <p class="text-muted-foreground truncate px-4 pb-2 text-xs">{{ context }}</p>
-  }
 
   <hlm-separator />
 
@@ -66,17 +62,11 @@
 
     <div class="flex-1"></div>
 
-    <button
-      hlmBtn
-      variant="ghost"
-      size="icon"
-      (click)="toggleTheme()"
-      [attr.aria-label]="(isDark() ? 'theme.light' : 'theme.dark') | transloco"
-    >
-      <ng-icon [name]="isDark() ? 'lucideSun' : 'lucideMoon'" />
-    </button>
-
-    <button hlmBtn variant="outline" size="sm" (click)="signOut.emit()">{{ 'auth.signOut' | transloco }}</button>
+    <!--
+      Everything about the signed-in person goes here, in one control. The shell does
+      not build it: it knows nothing about sessions, so the application projects it in.
+    -->
+    <ng-content select="[shellHeaderEnd]" />
   </header>
 
   <main class="min-w-0 flex-1 p-4 lg:p-6">

@@ -1,23 +1,4 @@
 {
-  "common": {
-    "cancel": "Cancel",
-    "save": "Save",
-    "delete": "Delete",
-    "confirm": "Confirm",
-    "close": "Close",
-    "search": "Search",
-    "loading": "Loading…",
-    "empty": "No results",
-    "retry": "Try again"
-  },
-  "nav": {
-    "dashboard": "Dashboard",
-    "projects": "Projects",
-    "members": "Members",
-    "audit": "Audit log",
-    "settings": "Settings",
-    "billing": "Billing"
-  },
   "auth": {
     "confirmPassword": "Confirm password",
     "email": "Email",
@@ -37,14 +18,16 @@
     "signingUp": "Creating account…",
     "withGoogle": "Continue with Google"
   },
-  "form": {
-    "required": "This field is required",
-    "minlength": "At least {requiredLength} characters",
-    "maxlength": "At most {requiredLength} characters",
-    "min": "Minimum value is {min}",
-    "max": "Maximum value is {max}",
-    "email": "Invalid email address",
-    "passwordMismatch": "Passwords do not match"
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "close": "Close",
+    "search": "Search",
+    "loading": "Loading…",
+    "empty": "No results",
+    "retry": "Try again"
   },
   "errors": {
     "INTERNAL_ERROR": "Something went wrong. Please try again.",
@@ -63,9 +46,39 @@
     "FEATURE_DISABLED": "This feature is not available.",
     "NETWORK_ERROR": "The server is unreachable. Check your connection."
   },
+  "form": {
+    "required": "This field is required",
+    "minlength": "At least {requiredLength} characters",
+    "maxlength": "At most {requiredLength} characters",
+    "min": "Minimum value is {min}",
+    "max": "Maximum value is {max}",
+    "email": "Invalid email address",
+    "passwordMismatch": "Passwords do not match"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "projects": "Projects",
+    "members": "Members",
+    "audit": "Audit log",
+    "settings": "Settings",
+    "billing": "Billing"
+  },
+  "profile": {
+    "account": "Your account",
+    "menuFor": "{{name}} menu",
+    "saved": "Changes saved.",
+    "title": "Profile"
+  },
+  "roles": {
+    "admin": "Admin",
+    "member": "Member",
+    "owner": "Owner"
+  },
   "theme": {
-    "light": "Light",
     "dark": "Dark",
+    "light": "Light",
+    "switchToDark": "Dark theme",
+    "switchToLight": "Light theme",
     "system": "System"
   }
 }

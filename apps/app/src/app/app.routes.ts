@@ -33,6 +33,12 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/projects/projects.page').then((m) => m.ProjectsPage),
       },
+      {
+        // Reached from the profile menu rather than the sidebar, so it is deliberately
+        // absent from NAV_MANIFEST.
+        path: 'profile',
+        loadComponent: () => import('./features/profile/profile.page').then((m) => m.ProfilePage),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],
   },
