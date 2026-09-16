@@ -1,1 +1,9 @@
-/* You can add global styles to this file, and also import other style files */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import 'tailwindcss/utilities.css';
+
+@import '@spartan-ng/brain/hlm-tailwind-preset.css';
+
+/* One design system for both apps — the tokens live in libs/ui, not here. */
+@import '../../../libs/ui/src/styles/theme.css';

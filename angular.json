@@ -24,9 +24,7 @@
                 "input": "apps/web/public"
               }
             ],
-            "styles": [
-              "apps/web/src/styles.scss"
-            ],
+            "styles": ["apps/web/src/styles.scss"],
             "server": "apps/web/src/main.server.ts",
             "outputMode": "static",
             "security": {
@@ -89,9 +87,7 @@
                 "input": "apps/app/public"
               }
             ],
-            "styles": [
-              "apps/app/src/styles.scss"
-            ]
+            "styles": ["apps/app/src/styles.scss"]
           },
           "configurations": {
             "production": {

@@ -1,0 +1,5 @@
+{
+  "componentsPath": "libs/primitives",
+  "importAlias": "@spartan-ng/helm",
+  "style": "nova"
+}
