@@ -286,7 +286,7 @@ export class TableComponent<T> {
     });
   }
 
-  private emitLazyLoad(event: TableLazyLoadEvent): void {
+  private emitLazyLoad(event: TableLazyLoadEvent, reload = false): void {
     this.lastEvent = event;
     const pageRequest: PageRequest = {
       size: event.rows!,
@@ -295,16 +295,21 @@ export class TableComponent<T> {
       sortOrder: event.sortOrder,
       query: event.globalFilter,
     };
-    this.onLazyLoad.emit({ ...event, pageRequest });
+    this.onLazyLoad.emit({ ...event, pageRequest, ...(reload ? { reload: true } : {}) });
   }
 
-  /** Reloads while keeping the current state. */
+  /**
+   * Reloads while keeping the current state.
+   *
+   * Flagged as a reload, because the state it emits is by definition the state the
+   * caller already has: without saying so, a caller that compares parameters before
+   * fetching sees no change and the button does nothing.
+   */
   reload(): void {
-    if (this.lastEvent) {
-      this.emitLazyLoad(this.lastEvent);
-      return;
-    }
-    this.emitLazyLoad({ first: 0, rows: this.rowsPerPage(), sortField: null, sortOrder: null });
+    const event =
+      this.lastEvent ??
+      ({ first: 0, rows: this.rowsPerPage(), sortField: null, sortOrder: null } as const);
+    this.emitLazyLoad(event, true);
   }
 
   // ---- interazioni ----------------------------------------------------------

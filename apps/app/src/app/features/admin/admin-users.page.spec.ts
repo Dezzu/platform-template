@@ -361,6 +361,35 @@ describe('AdminUsersPage', () => {
     expect(rowFor(unfiltered, 'plain@test.local')?.textContent).toContain('—');
   });
 
+  it('fetches again when reload is pressed, though nothing about the request changed', async () => {
+    const listUsers = vi.fn(() => pageOf([PLAIN]));
+    const fixture = setup({ listUsers });
+    await fixture.whenStable();
+    expect(listUsers).toHaveBeenCalledTimes(1);
+
+    const internals = fixture.componentInstance as unknown as {
+      onLazyLoad: (event: {
+        reload: boolean;
+        pageRequest: {
+          page: number;
+          size: number;
+          query: string;
+          sortField: null;
+          sortOrder: null;
+        };
+      }) => void;
+    };
+    internals.onLazyLoad({
+      reload: true,
+      pageRequest: { page: 0, size: 10, query: '', sortField: null, sortOrder: null },
+    });
+    await fixture.whenStable();
+
+    // The parameters are identical by definition, and the signal's equality exists to
+    // ignore exactly that — so an explicit reload has to bypass the comparison.
+    expect(listUsers).toHaveBeenCalledTimes(2);
+  });
+
   it('offers to re-send the verification only while the address is unverified', async () => {
     const unverified = account({ id: 'plain', emailVerified: false });
     const fixture = setup({ listUsers: () => pageOf([unverified]) });

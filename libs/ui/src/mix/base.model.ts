@@ -81,4 +81,13 @@ export interface PageRequest {
 
 export interface DuiTablelazyLoadEvent extends TableLazyLoadEvent {
   pageRequest: PageRequest;
+  /**
+   * True when the user pressed reload rather than changing page, sort or search.
+   *
+   * The state is identical either way, which is the point: a caller that keys its
+   * request off that state cannot tell the two apart, and an explicit "fetch this
+   * again" is exactly the case where it must. Without this flag the reload button
+   * emits, the caller compares the parameters, finds them unchanged, and does nothing.
+   */
+  reload?: boolean;
 }

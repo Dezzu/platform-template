@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { provideI18n } from '@app/i18n';
-import type { TableAction, TableColumn } from '../mix/base.model';
+import type { DuiTablelazyLoadEvent, TableAction, TableColumn } from '../mix/base.model';
 import { TableComponent } from './table.component';
 
 interface Row {
@@ -65,6 +65,38 @@ const labelAt = (
 
 describe('TableComponent', () => {
   beforeEach(() => TestBed.resetTestingModule());
+
+  it('marks the reload button as a reload, so an unchanged request still fires', async () => {
+    const fixture = setup();
+    fixture.componentRef.setInput('lazy', true);
+    await fixture.whenStable();
+
+    const emitted: DuiTablelazyLoadEvent[] = [];
+    fixture.componentInstance.onLazyLoad.subscribe((event) => emitted.push(event));
+
+    (fixture.componentInstance as unknown as { reload: () => void }).reload();
+    await fixture.whenStable();
+
+    expect(emitted).toHaveLength(1);
+    // Without the flag a caller that keys its request off page, sort and search sees
+    // no change and does nothing — which is a button that looks like it works.
+    expect(emitted[0]?.reload).toBe(true);
+  });
+
+  it('does not flag the ordinary state changes as reloads', async () => {
+    const fixture = setup();
+    fixture.componentRef.setInput('lazy', true);
+    await fixture.whenStable();
+
+    const emitted: DuiTablelazyLoadEvent[] = [];
+    fixture.componentInstance.onLazyLoad.subscribe((event) => emitted.push(event));
+
+    fixture.componentRef.setInput('rows', 20);
+    await fixture.whenStable();
+
+    expect(emitted.length).toBeGreaterThan(0);
+    expect(emitted.every((event) => !event.reload)).toBe(true);
+  });
 
   it('renders the rows it is given', async () => {
     const fixture = setup();

@@ -339,6 +339,16 @@ export class AdminUsersPage {
 
   /** The table announces what it wants; the server decides what it gets. */
   protected onLazyLoad(event: DuiTablelazyLoadEvent): void {
+    /**
+     * An explicit reload asks for the same parameters again, and the equality below is
+     * built precisely to ignore that — so it has to be handled before the comparison
+     * rather than through it, or the button does nothing.
+     */
+    if (event.reload) {
+      this.page.reload();
+      return;
+    }
+
     const request = event.pageRequest;
     const sort = typeof request.sortField === 'string' ? request.sortField : undefined;
     const search = typeof request.query === 'string' ? request.query : '';
