@@ -9,7 +9,7 @@ import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { ORG_ROLES, outranksOrEquals, PERMISSIONS, type OrgRole } from '@app/contracts/permissions';
 import type { Member } from '@app/contracts';
 import { TextInputComponent } from '@app/ui/input';
-import { AppError, AuthService, CanDirective, PermissionsService } from '@app/core';
+import { AuthService, CanDirective, PermissionsService, ToastService } from '@app/core';
 import { MembersApi } from './members.api';
 
 /**
@@ -30,10 +30,10 @@ export class MembersPage {
   private readonly api = inject(MembersApi);
   private readonly auth = inject(AuthService);
   private readonly permissions = inject(PermissionsService);
+  private readonly toasts = inject(ToastService);
 
   protected readonly permissionCatalogue = PERMISSIONS;
   protected readonly roles = ORG_ROLES;
-  protected readonly errorKey = signal<string | null>(null);
   protected readonly inviting = signal(false);
 
   protected readonly members = resource({
@@ -103,20 +103,21 @@ export class MembersPage {
 
     this.inviting.set(true);
     await this.run(async () => {
+      const email = this.model().email;
       await firstValueFrom(this.api.invite(this.model()));
       this.model.set({ email: '', role: 'member' });
       this.invitations.reload();
+      this.toasts.success('members.invitationSent', { email });
     });
     this.inviting.set(false);
   }
 
-  /** One place to translate a refusal, since every action here can be refused. */
+  /** One place to report a refusal, since every action here can be refused. */
   private async run(action: () => Promise<void>): Promise<void> {
-    this.errorKey.set(null);
     try {
       await action();
     } catch (error: unknown) {
-      this.errorKey.set(error instanceof AppError ? error.translationKey : 'errors.INTERNAL_ERROR');
+      this.toasts.error(error);
     }
   }
 }

@@ -41,10 +41,11 @@
     "showMembers": "Mostra i membri",
     "title": "Amministrazione",
     "unban": "Riattiva",
-    "unverified": "email non verificata",
+    "unverified": "Email non verificata",
     "users": "Utenti",
     "usersDescription": "Tutti gli account della piattaforma, oltre il confine delle organizzazioni.",
-    "verificationQueued": "Email di verifica accodata."
+    "verificationQueued": "Email di verifica inviata a {{email}}.",
+    "verified": "Email verificata"
   },
   "auth": {
     "backToSignIn": "Torna all’accesso",
@@ -175,6 +176,7 @@
     "acceptInvitation": "Accetta l’invito",
     "description": "Chi fa parte di questa organizzazione e chi è stato invitato.",
     "invitationLinkMissing": "Link incompleto. Apri il link dall’email così com’è.",
+    "invitationSent": "Invito inviato a {{email}}.",
     "invitationSentTo": "Invito inviato a {{email}}.",
     "invitationUnavailable": "Questo invito non è disponibile: potrebbe essere scaduto, annullato, o destinato a un altro indirizzo.",
     "invite": "Invita",

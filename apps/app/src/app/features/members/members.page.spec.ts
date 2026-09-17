@@ -3,9 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Member, OrgRole } from '@app/contracts';
-import { AppError, AuthService, PermissionsService, provideCore } from '@app/core';
+import { AppError, AuthService, PermissionsService, ToastService, provideCore } from '@app/core';
 import { provideI18n } from '@app/i18n';
-import { pageAlerts } from '../../../testing/alerts';
 import { MembersApi } from './members.api';
 import { MembersPage } from './members.page';
 
@@ -59,6 +58,7 @@ function setup(
         supportedLocales: ['it', 'en'],
       }),
       { provide: MembersApi, useValue: { listInvitations: () => of([]), ...api } },
+      ToastService,
       {
         provide: AuthService,
         useValue: { user: () => ({ id: options.viewerId ?? 'u-owner' }) },
@@ -146,7 +146,12 @@ describe('MembersPage', () => {
     select.dispatchEvent(new Event('change'));
     await fixture.whenStable();
 
-    expect(pageAlerts(fixture)).toContain('ruolo superiore al tuo');
+    // The outcome of an action is a toast, raised into the service the root renders.
+    expect(
+      TestBed.inject(ToastService)
+        .toasts()
+        .map((toast) => toast.messageKey),
+    ).toEqual(['errors.CANNOT_GRANT_HIGHER_ROLE']);
   });
 
   it('reloads the list after a role change', async () => {

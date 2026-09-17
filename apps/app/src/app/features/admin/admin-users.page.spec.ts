@@ -5,9 +5,8 @@ import { of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AdminUser } from '@app/contracts';
 import type { TableAction } from '@app/ui/mix';
-import { AppError, AuthService, PermissionsService, provideCore } from '@app/core';
+import { AppError, AuthService, PermissionsService, ToastService, provideCore } from '@app/core';
 import { provideI18n } from '@app/i18n';
-import { pageAlerts } from '../../../testing/alerts';
 import { AdminApi } from './admin.api';
 import { AdminUsersPage } from './admin-users.page';
 
@@ -73,6 +72,7 @@ function setup(
         supportedLocales: ['it', 'en'],
       }),
       { provide: AdminApi, useValue: api },
+      ToastService,
       { provide: AuthService, useValue: { user: () => viewer } },
       {
         provide: PermissionsService,
@@ -88,6 +88,16 @@ function setup(
 }
 
 const page = (fixture: { nativeElement: unknown }) => fixture.nativeElement as HTMLElement;
+
+/**
+ * The outcome of an action is a toast now, and the toaster is mounted at the root of
+ * the application rather than inside this page — so these cases read the service,
+ * which is where the page actually puts the message.
+ */
+const raised = (): { tone: string; messageKey: string }[] =>
+  TestBed.inject(ToastService)
+    .toasts()
+    .map(({ tone, messageKey }) => ({ tone, messageKey }));
 
 /**
  * Settles a rejected promise as well as the render that follows it. `whenStable` alone
@@ -147,9 +157,9 @@ describe('AdminUsersPage', () => {
     await fixture.whenStable();
 
     // A resource in an error state throws from `value()`, so reading it optimistically
-    // takes the render down and the message never appears. Not a bare querySelector:
-    // the table's search input renders a hidden `role="alert"` of its own.
-    expect(pageAlerts(fixture)).toContain('Si è verificato un errore');
+    // takes the render down and the message never appears. Inline rather than a toast:
+    // a list that failed to load is the state of the page, not the outcome of a click.
+    expect(page(fixture).textContent).toContain('Si è verificato un errore');
   });
 
   it('asks the server again when the table changes page or search', async () => {
@@ -244,7 +254,7 @@ describe('AdminUsersPage', () => {
     await settle(fixture);
 
     expect(sendPasswordReset).toHaveBeenCalledWith(PLAIN.id);
-    expect(page(fixture).querySelector('[role="status"]')?.textContent).toContain('accodato');
+    expect(raised()).toEqual([{ tone: 'success', messageKey: 'admin.resetLinkQueued' }]);
     // Nothing about the account changed, so the list must not be refetched.
     expect(listUsers).toHaveBeenCalledTimes(1);
   });
@@ -262,7 +272,7 @@ describe('AdminUsersPage', () => {
     promote?.command(PLAIN, []);
     await settle(fixture);
 
-    expect(pageAlerts(fixture)).toContain('ruolo superiore al tuo');
+    expect(raised()).toEqual([{ tone: 'error', messageKey: 'errors.CANNOT_GRANT_HIGHER_ROLE' }]);
   });
 
   it('narrows the list to one organization when the URL says so', async () => {
@@ -398,6 +408,23 @@ describe('AdminUsersPage', () => {
     expect(offered(fixture, unverified)).toContain('Invia email di verifica');
     // Already verified: re-sending confirms nothing and the API answers 409.
     expect(offered(fixture, PLAIN)).not.toContain('Invia email di verifica');
+  });
+
+  it('shows at a glance whether the address is verified, and says it in words too', async () => {
+    const unverified = account({ id: 'plain', emailVerified: false });
+    const fixture = setup({ listUsers: () => pageOf([unverified, SUPER]) });
+    await fixture.whenStable();
+
+    const unverifiedRow = rowFor(fixture, 'plain@test.local');
+    const verifiedRow = rowFor(fixture, 'super@test.local');
+
+    expect(unverifiedRow?.querySelector('.text-destructive')).not.toBeNull();
+    expect(verifiedRow?.querySelector('.text-green-600')).not.toBeNull();
+
+    // Colour alone says nothing to a screen reader, nor to a reader who cannot tell
+    // this green from this red.
+    expect(unverifiedRow?.textContent).toContain('Email non verificata');
+    expect(verifiedRow?.textContent).toContain('Email verificata');
   });
 
   it('marks as destructive the actions that cannot be undone', async () => {

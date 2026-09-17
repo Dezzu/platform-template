@@ -20,6 +20,7 @@ export * from './permissions/permissions.service';
 export * from './permissions/permission.guards';
 export * from './permissions/can.directive';
 export * from './permissions/can-platform.directive';
+export * from './notifications/toast.service';
 
 export * from './navigation/nav.model';
 export * from './navigation/nav.manifest';

@@ -4,10 +4,11 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs/operators';
 import { firstValueFrom, merge } from 'rxjs';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { provideIcons } from '@ng-icons/core';
+import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideBan,
   lucideCircleCheck,
+  lucideCircleX,
   lucideKeyRound,
   lucideLogOut,
   lucideMailCheck,
@@ -25,7 +26,7 @@ import type { AdminUser } from '@app/contracts';
 import { TableComponent } from '@app/ui/table';
 import { TemplateDirective } from '@app/ui/mix';
 import type { DuiTablelazyLoadEvent, TableAction, TableColumn } from '@app/ui/mix';
-import { AppError, AuthService, PermissionsService } from '@app/core';
+import { AuthService, PermissionsService, ToastService } from '@app/core';
 import { AdminApi } from './admin.api';
 
 /** What the table last asked the server for. */
@@ -57,7 +58,7 @@ const NO_ORGANIZATION = '';
  */
 @Component({
   selector: 'app-admin-users-page',
-  imports: [TranslocoPipe, RouterLink, TableComponent, TemplateDirective],
+  imports: [TranslocoPipe, RouterLink, NgIcon, TableComponent, TemplateDirective],
   providers: [
     provideIcons({
       lucideShield,
@@ -67,6 +68,7 @@ const NO_ORGANIZATION = '';
       lucideLogOut,
       lucideBan,
       lucideCircleCheck,
+      lucideCircleX,
     }),
   ],
   templateUrl: './admin-users.page.html',
@@ -77,6 +79,7 @@ export class AdminUsersPage {
   private readonly router = inject(Router);
   private readonly transloco = inject(TranslocoService);
   private readonly permissions = inject(PermissionsService);
+  private readonly toasts = inject(ToastService);
 
   /**
    * Re-translates the action labels when the translations change under them.
@@ -90,9 +93,6 @@ export class AdminUsersPage {
   private readonly translations = toSignal(
     merge(this.transloco.langChanges$, this.transloco.events$),
   );
-
-  protected readonly errorKey = signal<string | null>(null);
-  protected readonly notice = signal<string | null>(null);
 
   /**
    * The organization the list is narrowed to, from the URL rather than from component
@@ -373,7 +373,7 @@ export class AdminUsersPage {
     void this.run(async () => {
       await firstValueFrom(this.api.sendPasswordReset(account.id));
       // No reload: nothing about the account changed, an email was queued.
-      this.notice.set('admin.resetLinkQueued');
+      this.toasts.success('admin.resetLinkQueued');
     });
   }
 
@@ -394,7 +394,7 @@ export class AdminUsersPage {
   private sendVerificationEmail(account: AdminUser): void {
     void this.run(async () => {
       await firstValueFrom(this.api.sendVerificationEmail(account.id));
-      this.notice.set('admin.verificationQueued');
+      this.toasts.success('admin.verificationQueued', { email: account.email });
     });
   }
 
@@ -408,7 +408,7 @@ export class AdminUsersPage {
   private revokeSessions(account: AdminUser): void {
     void this.run(async () => {
       await firstValueFrom(this.api.revokeSessions(account.id));
-      this.notice.set('admin.sessionsRevoked');
+      this.toasts.success('admin.sessionsRevoked');
     });
   }
 
@@ -419,13 +419,16 @@ export class AdminUsersPage {
     return this.transloco.translate(key, params);
   }
 
+  /**
+   * One place to report a refusal, since every action here can be refused. A toast
+   * rather than a line at the top of the page: the outcome belongs to the click, and
+   * on a list that scrolls the top of the page is often not where the click was.
+   */
   private async run(action: () => Promise<void>): Promise<void> {
-    this.errorKey.set(null);
-    this.notice.set(null);
     try {
       await action();
     } catch (error: unknown) {
-      this.errorKey.set(error instanceof AppError ? error.translationKey : 'errors.INTERNAL_ERROR');
+      this.toasts.error(error);
     }
   }
 }

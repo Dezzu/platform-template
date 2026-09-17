@@ -16,10 +16,6 @@
     {{ 'admin.clearFilter' | transloco }}
   </button>
 </div>
-} @if (errorKey(); as key) {
-<p class="text-destructive mb-4 text-sm" role="alert">{{ key | transloco }}</p>
-} @if (notice(); as key) {
-<p class="text-muted-foreground mb-4 text-sm" role="status">{{ key | transloco }}</p>
 } @if (failed()) {
 <p class="text-destructive mb-4 text-sm" role="alert">{{ 'errors.INTERNAL_ERROR' | transloco }}</p>
 }
@@ -50,9 +46,21 @@
   </ng-template>
 
   <ng-template duiTemplate="email" let-value let-item="item">
-    @let row = asUser(item); {{ value }} @if (!row.emailVerified) {
-    <span class="text-muted-foreground text-xs">· {{ 'admin.unverified' | transloco }}</span>
-    }
+    @let row = asUser(item);
+    <span class="inline-flex items-center gap-1.5">
+      <!--
+        A title and an sr-only label, not colour alone: "green means verified" says
+        nothing to a screen reader, nor to the reader who cannot tell this green from
+        this red.
+      -->
+      <ng-icon
+        [name]="row.emailVerified ? 'lucideCircleCheck' : 'lucideCircleX'"
+        [class]="row.emailVerified ? 'text-green-600' : 'text-destructive'"
+        [attr.title]="(row.emailVerified ? 'admin.verified' : 'admin.unverified') | transloco"
+      />
+      <span class="sr-only"> {{ (row.emailVerified ? 'admin.verified' : 'admin.unverified') | transloco }} </span>
+      {{ value }}
+    </span>
   </ng-template>
 
   <ng-template duiTemplate="role" let-item="item"> {{ roleLabel(asUser(item)) }} </ng-template>

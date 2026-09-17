@@ -41,10 +41,11 @@
     "showMembers": "Show members",
     "title": "Administration",
     "unban": "Reinstate",
-    "unverified": "email not verified",
+    "unverified": "Email not verified",
     "users": "Users",
     "usersDescription": "Every account on the platform, across the organization boundary.",
-    "verificationQueued": "Verification email queued."
+    "verificationQueued": "Verification email sent to {{email}}.",
+    "verified": "Email verified"
   },
   "auth": {
     "backToSignIn": "Back to sign in",
@@ -175,6 +176,7 @@
     "acceptInvitation": "Accept the invitation",
     "description": "Who belongs to this organization, and who has been invited.",
     "invitationLinkMissing": "Incomplete link. Open the link from the email exactly as it is.",
+    "invitationSent": "Invitation sent to {{email}}.",
     "invitationSentTo": "Invitation sent to {{email}}.",
     "invitationUnavailable": "This invitation is unavailable: it may have expired, been cancelled, or been meant for a different address.",
     "invite": "Invite",

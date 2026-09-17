@@ -1,10 +1,6 @@
 <h1 class="mb-1 text-2xl font-semibold">{{ 'nav.members' | transloco }}</h1>
 <p class="text-muted-foreground mb-6 text-sm">{{ 'members.description' | transloco }}</p>
 
-@if (errorKey(); as key) {
-<p class="text-destructive mb-4 text-sm" role="alert">{{ key | transloco }}</p>
-}
-
 <form
   *appCan="[permissionCatalogue.MEMBERS_INVITE]"
   class="mb-8 flex flex-wrap items-end gap-3 rounded-md border p-4"
