@@ -8,8 +8,8 @@ const context = (locale: EmailLocale) => ({ appName: 'Acme Suite', locale });
 
 /** Parameters good enough to render each template, keyed by id. */
 const SAMPLES: Record<string, Record<string, unknown>> = {
-  'email-verification': { name: 'Sara', url: 'https://app.example.com/verify?token=abc' },
-  'password-reset': { name: 'Sara', url: 'https://app.example.com/reset?token=abc' },
+  'email-verification': { name: 'Erika', url: 'https://app.example.com/verify?token=abc' },
+  'password-reset': { name: 'Erika', url: 'https://app.example.com/reset?token=abc' },
   'organization-invitation': {
     organizationName: 'Acme Srl',
     inviterName: 'Fabio',
@@ -105,14 +105,14 @@ describe('layout', () => {
 describe('redactParams', () => {
   it('masks anything whose name suggests it unlocks something', () => {
     const redacted = redactParams({
-      name: 'Sara',
+      name: 'Erika',
       url: 'https://app.example.com/reset?token=secret',
       inviteCode: 'ABC123',
       role: 'member',
     });
 
     expect(redacted).toEqual({
-      name: 'Sara',
+      name: 'Erika',
       url: '[redacted]',
       inviteCode: '[redacted]',
       role: 'member',

@@ -11,7 +11,7 @@
     "resetLinkQueued": "Link di reset accodato: arriverà per email.",
     "revokeSessions": "Disconnetti ovunque",
     "roles": {
-      "admin": "Amministratore",
+      "admin": "Amministratore di piattaforma",
       "superadmin": "Super amministratore",
       "user": "Utente"
     },

@@ -305,11 +305,11 @@ Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-sna
 
 ### Ambiente locale già configurato
 
-- **Utenti demo** (password `password-demo-2026`): `fabio@demo.it` (owner
-  dell'organizzazione **e `superadmin` di piattaforma**, quindi vede l'area
-  Amministrazione), `sara@demo.it` (member), stessa organizzazione "Acme Srl",
-  4 progetti. Per promuovere qualcun altro la prima volta:
-  `update "user" set role = 'superadmin' where email = '…';`
+- **Utenti demo** (password `password-demo-2026`): `fabio@demo.it` / Fabio De Zuani
+  (owner dell'organizzazione **e `superadmin` di piattaforma**, quindi vede l'area
+  Amministrazione), `erika@demo.it` / Erika Bianchi (member), stessa organizzazione
+  "Acme Srl", 4 progetti. I due sistemi di ruoli, le regole di rango e come si crea il
+  primo superadmin sono spiegati con le tabelle nel [README](./README.md#ruoli).
 - **Stripe**: sandbox `acct_1UGTFAKHrPM9kztL`, già rivendicata dall'account dell'utente.
   Prodotti Pro e Business creati, price id nella tabella `plan`.
   ⚠️ La chiave `rkcs_test_...` è **ristretta**: checkout e abbonamenti funzionano, i

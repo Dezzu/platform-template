@@ -11,7 +11,7 @@
     "resetLinkQueued": "Reset link queued: it will arrive by email.",
     "revokeSessions": "Sign out everywhere",
     "roles": {
-      "admin": "Administrator",
+      "admin": "Platform administrator",
       "superadmin": "Super administrator",
       "user": "User"
     },

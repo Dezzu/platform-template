@@ -12,7 +12,7 @@ import { MembersApi } from './members.api';
 
 const PREVIEW: InvitationPreview = {
   id: 'inv-1',
-  email: 'sara@test.local',
+  email: 'erika@test.local',
   role: 'member',
   status: 'pending',
   organizationName: 'Acme Srl',
@@ -62,7 +62,7 @@ describe('AcceptInvitationPage', () => {
     await fixture.whenStable();
 
     expect(page(fixture).textContent).toContain('Acme Srl');
-    expect(page(fixture).textContent).toContain('sara@test.local');
+    expect(page(fixture).textContent).toContain('erika@test.local');
     // The load must never accept on its own: a link forwarded to a colleague would
     // otherwise add the colleague the moment they opened it.
     expect(accept).not.toHaveBeenCalled();
