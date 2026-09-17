@@ -50,6 +50,8 @@ export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 export const PLATFORM_PERMISSIONS = {
   USERS_READ: 'platform.users.read',
   USERS_MANAGE: 'platform.users.manage',
+  ORGANIZATIONS_READ: 'platform.organizations.read',
+  ORGANIZATIONS_MANAGE: 'platform.organizations.manage',
   IMPERSONATE: 'platform.impersonate',
   METRICS_READ: 'platform.metrics.read',
   FLAGS_MANAGE: 'platform.flags.manage',
@@ -104,10 +106,47 @@ export const ROLE_PERMISSIONS: Record<OrgRole, readonly Permission[]> = {
   member: [...ALL_READ, P.FILES_WRITE],
 };
 
-/** Platform roles come from `user.role`; only `superadmin` carries platform rights. */
+export const PLATFORM_ROLES = ['user', 'admin', 'superadmin'] as const;
+export type PlatformRole = (typeof PLATFORM_ROLES)[number];
+
+/**
+ * Rank among platform roles, for the same reason organizations have one: permissions
+ * say what you may do to things, rank says what you may do to *people*.
+ *
+ * Without it `admin` and `superadmin` collapse into the same role — an admin who may
+ * set anyone's role can set their own to superadmin, or somebody else's, and the
+ * distinction lasts exactly as long as nobody tries.
+ */
+export const PLATFORM_ROLE_RANK: Record<PlatformRole, number> = {
+  superadmin: 3,
+  admin: 2,
+  user: 1,
+};
+
+export function platformOutranksOrEquals(actor: string, target: string): boolean {
+  const actorRank = PLATFORM_ROLE_RANK[actor as PlatformRole] ?? 0;
+  const targetRank = PLATFORM_ROLE_RANK[target as PlatformRole] ?? 0;
+  return actorRank >= targetRank;
+}
+
+/**
+ * Platform roles come from `user.role`, not from membership.
+ *
+ * `admin` is the support role: it can see every account and every organization, change
+ * ordinary roles, send a reset link, ban and unban. What it deliberately cannot do is
+ * become somebody else (impersonation), change what the platform does for everyone
+ * (flags, maintenance), or touch a superadmin — the three things whose blast radius is
+ * the whole product rather than one customer.
+ */
 export const PLATFORM_ROLE_PERMISSIONS: Record<string, readonly PlatformPermission[]> = {
   superadmin: Object.values(PLATFORM_PERMISSIONS),
-  admin: [PLATFORM_PERMISSIONS.USERS_READ, PLATFORM_PERMISSIONS.METRICS_READ],
+  admin: [
+    PLATFORM_PERMISSIONS.USERS_READ,
+    PLATFORM_PERMISSIONS.USERS_MANAGE,
+    PLATFORM_PERMISSIONS.ORGANIZATIONS_READ,
+    PLATFORM_PERMISSIONS.ORGANIZATIONS_MANAGE,
+    PLATFORM_PERMISSIONS.METRICS_READ,
+  ],
   user: [],
 };
 

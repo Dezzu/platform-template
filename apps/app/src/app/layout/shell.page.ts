@@ -60,6 +60,9 @@ export class ShellPage {
 
   protected readonly visibleItems = computed<ShellNavItem[]>(() =>
     NAV_MANIFEST.filter((item) => {
+      const platform = item.platformPermissions ?? [];
+      if (platform.length > 0 && !this.permissions.anyOfPlatform(...platform)) return false;
+
       const required = item.permissions ?? [];
       if (required.length === 0) return true;
       return item.mode === 'all'

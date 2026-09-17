@@ -9,3 +9,4 @@ export * from './modules/projects/projects.contract';
 export * from './modules/insights/insights.contract';
 export * from './modules/files/files.contract';
 export * from './modules/members/members.contract';
+export * from './modules/admin/admin.contract';

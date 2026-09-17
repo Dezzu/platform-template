@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { admin, organization, twoFactor } from 'better-auth/plugins';
+import { adminAc, defaultAc, defaultStatements, userAc } from 'better-auth/plugins/admin/access';
 import { createStripePlugin } from '../modules/billing/stripe-plugin';
 import { authMailer } from '../modules/mail/mail.bridge';
 import * as schema from '@app/db';
@@ -58,6 +59,25 @@ const withCallback = (rawUrl: string, target: string): string => {
  * regenerated on every Better Auth upgrade and reviewed like any other diff.
  */
 const stripePlugin = createStripePlugin();
+
+/**
+ * The platform roles, declared to Better Auth's admin plugin.
+ *
+ * It only accepts `adminRoles` it knows, and it ships with `admin` and `user` only —
+ * so `superadmin` has to be defined here or every call it makes would be refused as
+ * coming from a non-admin. It gets every statement, including `impersonate-admins`,
+ * which `adminAc` deliberately lacks: a support admin who can become another admin can
+ * do anything that admin can, while the audit trail names the wrong person.
+ *
+ * This is Better Auth's own catalogue, not ours. Ours lives in
+ * packages/contracts/src/common/permissions.ts and is stricter — both run, in that
+ * order.
+ */
+const platformRoles = {
+  user: userAc,
+  admin: adminAc,
+  superadmin: defaultAc.newRole(defaultStatements),
+};
 
 export const auth = betterAuth({
   appName: env('APP_NAME') ?? 'saas-template',
@@ -169,6 +189,8 @@ export const auth = betterAuth({
       // permission catalogue gives 'user' no platform rights at all, so promoting
       // someone has to be an explicit act.
       defaultRole: env('AUTH_DEFAULT_ROLE') ?? 'user',
+      roles: platformRoles,
+      adminRoles: ['admin', 'superadmin'],
     }),
     // TOTP + backup codes.
     twoFactor(),

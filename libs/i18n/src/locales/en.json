@@ -1,4 +1,29 @@
 {
+  "admin": {
+    "ban": "Suspend",
+    "banned": "suspended",
+    "hideMembers": "Hide",
+    "memberCount": "{{count}} members",
+    "noPlan": "no plan",
+    "organizationCount": "{{count}} organizations",
+    "organizations": "Organizations",
+    "organizationsDescription": "Every organization, with its members and plan.",
+    "resetLinkQueued": "Reset link queued: it will arrive by email.",
+    "revokeSessions": "Sign out everywhere",
+    "roles": {
+      "admin": "Administrator",
+      "superadmin": "Super administrator",
+      "user": "User"
+    },
+    "sendReset": "Send password reset",
+    "sessionsRevoked": "Every session has been closed.",
+    "showMembers": "Show members",
+    "title": "Administration",
+    "unban": "Reinstate",
+    "unverified": "email not verified",
+    "users": "Users",
+    "usersDescription": "Every account on the platform, across the organization boundary."
+  },
   "auth": {
     "backToSignIn": "Back to sign in",
     "confirmPassword": "Confirm password",
@@ -147,6 +172,7 @@
     "you": "you"
   },
   "nav": {
+    "admin": "Administration",
     "audit": "Audit log",
     "billing": "Billing",
     "dashboard": "Dashboard",

@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { Router, type CanMatchFn } from '@angular/router';
-import type { Permission } from '@app/contracts';
+import type { Permission, PlatformPermission } from '@app/contracts';
 import { CORE_CONFIG } from '../config/core.config';
 import { AuthService } from '../auth/auth.service';
 import { findNavItem } from '../navigation/nav.manifest';
@@ -33,6 +33,16 @@ export function requireAllPermissions(...permissions: readonly Permission[]): Ca
 }
 
 /**
+ * Guards a route with a PLATFORM permission, which comes from `user.role` rather than
+ * from membership. For the administration area, where there is no tenant at all.
+ */
+export function requireAnyPlatformPermission(
+  ...permissions: readonly PlatformPermission[]
+): CanMatchFn {
+  return () => inject(PermissionsService).anyOfPlatform(...permissions);
+}
+
+/**
  * Guards a route with the permissions its menu entry declares.
  *
  * Prefer this over spelling the permissions out again in the route: `navGuard('projects')`
@@ -49,10 +59,14 @@ export function navGuard(id: string): CanMatchFn {
       throw new Error(`navGuard('${id}'): no entry with that id in NAV_MANIFEST.`);
     }
 
+    const service = inject(PermissionsService);
+
+    const platform = item.platformPermissions ?? [];
+    if (platform.length > 0 && !service.anyOfPlatform(...platform)) return false;
+
     const permissions = item.permissions ?? [];
     if (permissions.length === 0) return true;
 
-    const service = inject(PermissionsService);
     return item.mode === 'all' ? service.allOf(...permissions) : service.anyOf(...permissions);
   };
 }

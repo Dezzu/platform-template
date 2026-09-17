@@ -91,4 +91,13 @@ export class PermissionsService {
   hasPlatform(permission: PlatformPermission): boolean {
     return this.state().platform.has(permission);
   }
+
+  anyOfPlatform(...permissions: readonly PlatformPermission[]): boolean {
+    // Empty means "no platform right required", matching anyOf. An admin area entry
+    // that declared none would be visible to everyone, which is why every caller in
+    // the manifest states them explicitly.
+    if (permissions.length === 0) return true;
+    const held = this.state().platform;
+    return permissions.some((p) => held.has(p));
+  }
 }

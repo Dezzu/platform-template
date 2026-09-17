@@ -1,4 +1,4 @@
-import type { Permission } from '@app/contracts';
+import type { Permission, PlatformPermission } from '@app/contracts';
 
 /**
  * One entry of the application menu.
@@ -18,6 +18,15 @@ export interface NavItem {
   route: string;
   /** Permissions required to see and to enter. Empty means "any signed-in user". */
   permissions?: readonly Permission[];
+  /**
+   * Platform permissions required instead.
+   *
+   * A separate field rather than more entries in `permissions`, for the same reason the
+   * backend has a separate decorator: these come from `user.role` and cross tenant
+   * boundaries, and an entry that mixed the two would be one typo away from showing the
+   * platform administration area to an organization admin.
+   */
+  platformPermissions?: readonly PlatformPermission[];
   /** How to combine them. Defaults to 'any'. */
   mode?: 'any' | 'all';
   /** Hidden and unreachable while the flag is off. */

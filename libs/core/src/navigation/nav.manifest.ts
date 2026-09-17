@@ -1,7 +1,7 @@
 // Deep import on purpose: the '@app/contracts' barrel re-exports Zod schemas built
 // at module top level, which bundlers cannot tree-shake, and this file is on the
 // eager path. Importing the constants directly keeps Zod out of the initial bundle.
-import { PERMISSIONS } from '@app/contracts/permissions';
+import { PERMISSIONS, PLATFORM_PERMISSIONS } from '@app/contracts/permissions';
 import type { NavItem } from './nav.model';
 
 /**
@@ -57,6 +57,17 @@ export const NAV_MANIFEST: readonly NavItem[] = [
     icon: 'lucideCreditCard',
     route: '/billing',
     permissions: [PERMISSIONS.BILLING_READ],
+  },
+  {
+    /**
+     * Last, and gated on a PLATFORM permission rather than an organization one: it is
+     * not part of the tenant's product, it is the platform's own back office.
+     */
+    id: 'admin',
+    labelKey: 'nav.admin',
+    icon: 'lucideShieldCheck',
+    route: '/admin/users',
+    platformPermissions: [PLATFORM_PERMISSIONS.USERS_READ],
   },
 ];
 

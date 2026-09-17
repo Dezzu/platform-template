@@ -19,6 +19,7 @@ import { SubscriptionGuard } from './modules/billing/subscription.guard';
 import { InsightsModule } from './modules/insights/insights.module';
 import { FilesModule } from './modules/files/files.module';
 import { MembersModule } from './modules/members/members.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { MailModule } from './modules/mail/mail.module';
 import { MaintenanceModule } from './modules/maintenance/maintenance.module';
 import { PermissionsGuard } from './auth/permissions.guard';
@@ -76,6 +77,7 @@ import { PermissionsGuard } from './auth/permissions.guard';
     InsightsModule,
     FilesModule,
     MembersModule,
+    AdminModule,
     MaintenanceModule,
   ],
   providers: [

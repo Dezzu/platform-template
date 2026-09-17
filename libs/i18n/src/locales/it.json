@@ -1,4 +1,29 @@
 {
+  "admin": {
+    "ban": "Sospendi",
+    "banned": "sospeso",
+    "hideMembers": "Nascondi",
+    "memberCount": "{{count}} membri",
+    "noPlan": "nessun piano",
+    "organizationCount": "{{count}} organizzazioni",
+    "organizations": "Organizzazioni",
+    "organizationsDescription": "Tutte le organizzazioni, con i membri e il piano.",
+    "resetLinkQueued": "Link di reset accodato: arriverà per email.",
+    "revokeSessions": "Disconnetti ovunque",
+    "roles": {
+      "admin": "Amministratore",
+      "superadmin": "Super amministratore",
+      "user": "Utente"
+    },
+    "sendReset": "Invia reset password",
+    "sessionsRevoked": "Tutte le sessioni sono state chiuse.",
+    "showMembers": "Mostra i membri",
+    "title": "Amministrazione",
+    "unban": "Riattiva",
+    "unverified": "email non verificata",
+    "users": "Utenti",
+    "usersDescription": "Tutti gli account della piattaforma, oltre il confine delle organizzazioni."
+  },
   "auth": {
     "backToSignIn": "Torna all’accesso",
     "confirmPassword": "Conferma password",
@@ -147,6 +172,7 @@
     "you": "tu"
   },
   "nav": {
+    "admin": "Amministrazione",
     "audit": "Registro attività",
     "billing": "Abbonamento",
     "dashboard": "Dashboard",

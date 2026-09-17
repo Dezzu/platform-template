@@ -1,4 +1,5 @@
-import { authGuard, guestGuard, navGuard } from '@app/core';
+import { authGuard, guestGuard, navGuard, requireAnyPlatformPermission } from '@app/core';
+import { PLATFORM_PERMISSIONS } from '@app/contracts/permissions';
 import type { Routes } from '@angular/router';
 
 /**
@@ -74,6 +75,23 @@ export const routes: Routes = [
         path: 'billing',
         canMatch: [navGuard('billing')],
         loadComponent: () => import('./features/billing/billing.page').then((m) => m.BillingPage),
+      },
+      {
+        /**
+         * Platform administration. Guarded by a PLATFORM permission, which comes from
+         * `user.role` — an organization owner has none of these however many tenants
+         * they own.
+         */
+        path: 'admin/users',
+        canMatch: [navGuard('admin')],
+        loadComponent: () =>
+          import('./features/admin/admin-users.page').then((m) => m.AdminUsersPage),
+      },
+      {
+        path: 'admin/organizations',
+        canMatch: [requireAnyPlatformPermission(PLATFORM_PERMISSIONS.ORGANIZATIONS_READ)],
+        loadComponent: () =>
+          import('./features/admin/admin-organizations.page').then((m) => m.AdminOrganizationsPage),
       },
       {
         // Reached from the profile menu rather than the sidebar, so it is deliberately
