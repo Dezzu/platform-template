@@ -128,6 +128,17 @@ describe('platform administration (e2e)', () => {
       expect(hostile.body.data.items.length).toBeGreaterThan(0);
     });
 
+    it('sorts the organizations by the column asked for', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/api/admin/organizations')
+        .query({ sort: 'name', dir: 'asc', size: 200 })
+        .set(as(admin))
+        .expect(200);
+
+      const names = res.body.data.items.map((o: { name: string }) => o.name);
+      expect(names).toEqual([...names].sort());
+    });
+
     it('shows an account with the organizations it belongs to', async () => {
       const res = await request(app.getHttpServer())
         .get(`/api/admin/users/${victim.id}`)

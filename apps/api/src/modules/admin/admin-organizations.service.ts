@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, count, desc, eq, ilike, inArray, sql, type SQL } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, inArray, sql, type SQL } from 'drizzle-orm';
 import type {
   AdminOrganization,
   AdminOrganizationDetail,
@@ -44,12 +44,26 @@ export class AdminOrganizationsService {
       .from(member)
       .where(eq(member.organizationId, organization.id));
 
+    // A closed list, like the users one: the sort field comes from the client, and an
+    // ORDER BY built from caller input is an injection point. `memberCount` is absent
+    // on purpose — it is a correlated subquery, not a column.
+    const sortable = { name: organization.name, createdAt: organization.createdAt };
+    const column =
+      query.sort && query.sort in sortable
+        ? sortable[query.sort as keyof typeof sortable]
+        : undefined;
+    const orderBy = column
+      ? query.dir === 'asc'
+        ? asc(column)
+        : desc(column)
+      : desc(organization.createdAt);
+
     const [rows, totals] = await Promise.all([
       this.db
         .select({ organization, memberCount: sql<number>`(${memberCount})` })
         .from(organization)
         .where(where)
-        .orderBy(desc(organization.createdAt))
+        .orderBy(orderBy)
         .limit(query.size)
         .offset(query.page * query.size),
       this.db.select({ value: count() }).from(organization).where(where),

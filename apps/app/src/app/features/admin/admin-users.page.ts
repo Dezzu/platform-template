@@ -112,8 +112,15 @@ export class AdminUsersPage {
       ),
   });
 
-  protected readonly rows = computed(() => this.page.value()?.items ?? []);
-  protected readonly total = computed(() => this.page.value()?.meta.total ?? 0);
+  /**
+   * `hasValue()` rather than `value() ?? …`: a resource in an error state THROWS from
+   * `value()`, so reading it optimistically takes the whole render down with it — and
+   * the first casualty is the error message that was supposed to explain what happened.
+   */
+  protected readonly rows = computed(() => (this.page.hasValue() ? this.page.value().items : []));
+  protected readonly total = computed(() =>
+    this.page.hasValue() ? this.page.value().meta.total : 0,
+  );
   protected readonly loading = computed(() => this.page.isLoading());
   protected readonly failed = computed(() => this.page.error() !== undefined);
 

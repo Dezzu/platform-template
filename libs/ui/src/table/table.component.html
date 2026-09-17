@@ -185,7 +185,7 @@
         <tr hlmTr>
           <td hlmTd [attr.colspan]="colspan()">
             @if (templateFor('expandedRow'); as dettaglio) {
-            <ng-container [ngTemplateOutlet]="dettaglio" [ngTemplateOutletContext]="{ $implicit: row }" />
+            <ng-container [ngTemplateOutlet]="dettaglio" [ngTemplateOutletContext]="{ $implicit: row, item: row }" />
             }
           </td>
         </tr>

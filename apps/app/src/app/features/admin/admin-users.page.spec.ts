@@ -116,6 +116,16 @@ describe('AdminUsersPage', () => {
     expect(page(fixture).textContent).toContain('super@test.local');
   });
 
+  it('says so when the list fails, instead of a blank screen', async () => {
+    const fixture = setup({ listUsers: () => throwError(() => new Error('boom')) });
+    await fixture.whenStable();
+
+    // A resource in an error state throws from `value()`, so reading it optimistically
+    // takes the render down and the message never appears. Not a bare querySelector:
+    // the table's search input renders a hidden `role="alert"` of its own.
+    expect(pageAlerts(fixture)).toContain('Si è verificato un errore');
+  });
+
   it('asks the server again when the table changes page or search', async () => {
     const listUsers = vi.fn(() => pageOf([PLAIN]));
     const fixture = setup({ listUsers });

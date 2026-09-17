@@ -9,55 +9,46 @@
 </div>
 <p class="text-muted-foreground mb-6 text-sm">{{ 'admin.organizationsDescription' | transloco }}</p>
 
-<input
-  type="search"
-  class="border-input bg-background mb-4 h-9 w-full max-w-sm rounded-md border px-3 text-sm"
-  [placeholder]="'common.search' | transloco"
-  (input)="onSearch($event)"
-/>
+@if (failed()) {
+<p class="text-destructive mb-4 text-sm" role="alert">{{ 'errors.INTERNAL_ERROR' | transloco }}</p>
+}
 
-@if (organizations.isLoading()) {
-<p class="text-muted-foreground text-sm">{{ 'common.loading' | transloco }}</p>
-} @else if (organizations.error()) {
-<p class="text-destructive text-sm" role="alert">{{ 'errors.INTERNAL_ERROR' | transloco }}</p>
-} @else { @let page = organizations.value(); @if (!page || page.items.length === 0) {
-<p class="text-muted-foreground text-sm">{{ 'common.empty' | transloco }}</p>
-} @else {
-<ul class="divide-y rounded-md border">
-  @for (org of page.items; track org.id) {
-  <li class="p-3">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div class="min-w-0">
-        <p class="truncate font-medium">{{ org.name }}</p>
-        <p class="text-muted-foreground truncate text-sm">
-          {{ 'admin.memberCount' | transloco: { count: org.memberCount } }} @if (org.subscription; as plan) { · {{
-          'plans.' + plan.plan + '.name' | transloco }} ({{ plan.status }}) } @else { · {{ 'admin.noPlan' | transloco }}
-          }
-        </p>
-      </div>
-
-      <button hlmBtn variant="outline" size="sm" (click)="toggle(org)">
-        {{ (expandedId() === org.id ? 'admin.hideMembers' : 'admin.showMembers') | transloco }}
-      </button>
-    </div>
-
-    @if (expandedId() === org.id) {
-    <div class="mt-3 border-t pt-3">
-      @if (expanded.isLoading()) {
-      <p class="text-muted-foreground text-sm">{{ 'common.loading' | transloco }}</p>
-      } @else { @let detail = expanded.value(); @if (detail) {
-      <ul class="space-y-1">
-        @for (m of detail.members; track m.id) {
-        <li class="text-sm">
-          {{ m.user.name || m.user.email }}
-          <span class="text-muted-foreground">— {{ 'members.roles.' + m.role | transloco }}</span>
-        </li>
-        }
-      </ul>
-      } }
-    </div>
+<dui-table
+  dataKey="id"
+  emptyMessage="common.empty"
+  [cols]="columns()"
+  [items]="rows()"
+  [lazy]="true"
+  [expandable]="true"
+  [loading]="loading()"
+  [totalRecords]="total()"
+  [showAddButton]="false"
+  (onLazyLoad)="onLazyLoad($event)"
+  (expandedChange)="onExpand($event)"
+>
+  <ng-template duiTemplate="subscription" let-item="item">
+    @let organization = asOrganization(item); @if (organization.subscription; as plan) { {{ 'plans.' + plan.plan +
+    '.name' | transloco }}
+    <span class="text-muted-foreground text-xs">· {{ plan.status }}</span>
+    } @else {
+    <span class="text-muted-foreground">{{ 'admin.noPlan' | transloco }}</span>
     }
-  </li>
-  }
-</ul>
-} }
+  </ng-template>
+
+  <ng-template duiTemplate="expandedRow" let-item="item">
+    @let organization = asOrganization(item); @let detail = membersOf(organization); @if (!detail && detailLoading()) {
+    <p class="text-muted-foreground text-sm">{{ 'common.loading' | transloco }}</p>
+    } @else if (detail) { @if (detail.members.length === 0) {
+    <p class="text-muted-foreground text-sm">{{ 'admin.noMembers' | transloco }}</p>
+    } @else {
+    <ul class="space-y-1">
+      @for (member of detail.members; track member.id) {
+      <li class="text-sm">
+        {{ member.user.name || member.user.email }}
+        <span class="text-muted-foreground">— {{ 'members.roles.' + member.role | transloco }}</span>
+      </li>
+      }
+    </ul>
+    } }
+  </ng-template>
+</dui-table>

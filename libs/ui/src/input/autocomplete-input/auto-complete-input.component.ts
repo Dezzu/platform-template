@@ -2,23 +2,24 @@ import { Component, input, output } from '@angular/core';
 import { NG_VALUE_ACCESSOR } from '@angular/forms';
 import { HlmAutocompleteImports } from '@spartan-ng/helm/autocomplete';
 import { HlmFieldImports } from '@spartan-ng/helm/field';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { DuiInputBase } from '../dui-input-base';
 import { ValidatorErrorsComponent } from '../validator-errors/validator-errors.component';
 
 /**
- * Campo con suggerimenti.
+ * A text field with suggestions.
  *
- * Suggestions stay the caller's responsibility: `completeMethod` emits the typed
- * text and the component only renders what it is given
- * passato in `suggestions`.
+ * Producing the suggestions stays the caller's responsibility: `completeMethod` emits
+ * the typed text and the component renders only what it is handed back in
+ * `suggestions`. Debouncing, cancelling and caching belong to whoever owns the data
+ * source, which is the only place that knows what any of them should cost.
  *
- * `completeMethod` emits a plain string rather than an event object, so the handler
- * receives the query directly
- * chiamanti vanno adeguati.
+ * `completeMethod` emits a plain string rather than an event object, so a handler
+ * receives the query directly.
  */
 @Component({
   selector: 'dui-autocomplete-input',
-  imports: [HlmFieldImports, HlmAutocompleteImports, ValidatorErrorsComponent],
+  imports: [HlmFieldImports, HlmAutocompleteImports, ValidatorErrorsComponent, TranslocoPipe],
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
@@ -60,7 +61,7 @@ import { ValidatorErrorsComponent } from '../validator-errors/validator-errors.c
               </hlm-autocomplete-item>
             } @empty {
               @if (showEmptyMessage()) {
-                <div hlmAutocompleteEmpty>{{ emptyMessage() }}</div>
+                <div hlmAutocompleteEmpty>{{ emptyMessage() | transloco }}</div>
               }
             }
           </div>
@@ -75,7 +76,8 @@ export class AutoCompleteInputComponent extends DuiInputBase<unknown> {
   readonly suggestions = input<unknown[]>([]);
   readonly optionLabel = input<string>();
   readonly showEmptyMessage = input(true);
-  readonly emptyMessage = input('Nessun risultato');
+  /** i18n key, not a sentence — it is piped through transloco in the template. */
+  readonly emptyMessage = input('common.empty');
 
   /** The list opens as you type; there is no separate trigger button. */
   readonly dropdown = input(true);

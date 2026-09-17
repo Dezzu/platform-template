@@ -5,13 +5,17 @@
     "columns": {
       "createdAt": "Registered on",
       "email": "Email",
+      "members": "Members",
       "name": "Name",
+      "organization": "Organization",
       "organizations": "Organizations",
+      "plan": "Plan",
       "role": "Platform role"
     },
     "hideMembers": "Hide",
     "makeRole": "Make {{role}}",
     "memberCount": "{{count}} members",
+    "noMembers": "No members.",
     "noPlan": "no plan",
     "organizationCount": "{{count}} organizations",
     "organizations": "Organizations",

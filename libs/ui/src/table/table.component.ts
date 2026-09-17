@@ -143,6 +143,16 @@ export class TableComponent<T> {
   readonly onLazyLoad = output<DuiTablelazyLoadEvent>();
   readonly openNew = output<void>();
 
+  /**
+   * Announces which row was opened or closed.
+   *
+   * Expansion state stays inside the table — it is presentation — but the detail of a
+   * row is usually a second request, and without this the caller has no way to know it
+   * is wanted. Fetching every row's detail up front so that expanding is instant is the
+   * alternative, and it is the wrong one on a list of any size.
+   */
+  readonly expandedChange = output<{ row: T; expanded: boolean }>();
+
   // ---- stato ----------------------------------------------------------------
 
   /** Pagina corrente, 1-based come vuole HlmNumberedPagination. */
@@ -338,11 +348,16 @@ export class TableComponent<T> {
 
   protected toggleExpanded(row: T, index: number): void {
     const key = this.rowKey(row, index);
+    let opened = false;
+
     this.expanded.update((current) => {
       const next = new Set(current);
-      if (!next.delete(key)) next.add(key);
+      opened = !next.delete(key);
+      if (opened) next.add(key);
       return next;
     });
+
+    this.expandedChange.emit({ row, expanded: opened });
   }
 
   // ---- template e azioni ----------------------------------------------------
