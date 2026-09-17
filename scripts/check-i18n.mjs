@@ -1,15 +1,22 @@
 /**
- * Asserts every locale file declares exactly the same keys.
+ * Two checks over the locale files.
  *
- * The IT/EN pair drifts the moment someone adds a feature and updates one file — and
- * the symptom is a raw key rendered in the interface of whichever language they did
- * not speak. Cheapest guard rail in the repo.
+ * 1. Every locale declares exactly the same keys. The IT/EN pair drifts the moment
+ *    someone adds a feature and updates one file — and the symptom is a raw key
+ *    rendered in the interface of whichever language they did not speak.
+ * 2. Every ErrorCode has an `errors.<CODE>` entry. The envelope's whole point is that
+ *    the client renders `errors.${messageCode}`, so a code without a translation is a
+ *    screaming-snake-case string shown to a customer at the exact moment something has
+ *    already gone wrong.
+ *
+ * Cheapest guard rails in the repo.
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { exit } from 'node:process';
 
 const DIR = 'libs/i18n/src/locales';
+const ERROR_CODES_FILE = 'packages/contracts/src/common/error-codes.ts';
 
 const flatten = (value, prefix = '') =>
   Object.entries(value).flatMap(([key, v]) => {
@@ -41,9 +48,33 @@ for (const locale of locales) {
   }
 }
 
+// Every ErrorCode needs a translation. Read as text rather than imported: this script
+// runs before the workspace is built, and importing would make the check depend on it.
+const errorCodesSource = readFileSync(ERROR_CODES_FILE, 'utf8');
+const objectBody = errorCodesSource.slice(
+  errorCodesSource.indexOf('export const ERROR_CODES = {'),
+  errorCodesSource.indexOf('} as const;'),
+);
+const errorCodes = [...objectBody.matchAll(/^\s+([A-Z][A-Z0-9_]*):\s*'/gm)].map((m) => m[1]);
+
+if (errorCodes.length === 0) {
+  console.error(`could not parse any codes out of ${ERROR_CODES_FILE} — has its shape changed?`);
+  exit(1);
+}
+
+const untranslated = errorCodes.filter((code) => !union.has(`errors.${code}`)).sort();
+if (untranslated.length > 0) {
+  failed = true;
+  console.error('\nError codes with no translation:');
+  for (const code of untranslated) console.error(`  ✗ errors.${code}`);
+}
+
 if (failed) {
   console.error('');
   exit(1);
 }
 
-console.warn(`i18n: ${union.size} keys, ${locales.map((l) => l.name).join(' / ')} in sync`);
+console.warn(
+  `i18n: ${union.size} keys, ${locales.map((l) => l.name).join(' / ')} in sync; ` +
+    `${errorCodes.length} error codes translated`,
+);

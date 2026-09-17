@@ -56,6 +56,8 @@
     "toggleMenu": "Apri o chiudi il menu"
   },
   "errors": {
+    "CANNOT_GRANT_HIGHER_ROLE": "Non puoi assegnare un ruolo superiore al tuo.",
+    "CANNOT_MODIFY_SELF": "Non puoi eseguire questa operazione su te stesso.",
     "CONFLICT": "L'operazione è in conflitto con lo stato attuale.",
     "FEATURE_DISABLED": "Funzionalità non disponibile.",
     "FILE_NOT_READY": "Il file non è ancora disponibile.",
@@ -66,9 +68,14 @@
     "FORBIDDEN": "Non hai i permessi per questa operazione.",
     "FORBIDDEN_MISSING_PERMISSION": "Non hai i permessi per questa operazione.",
     "INTERNAL_ERROR": "Si è verificato un errore imprevisto. Riprova.",
+    "INVITATION_ALREADY_SENT": "A questo indirizzo è già stato inviato un invito.",
+    "INVITATION_EXPIRED": "L’invito è scaduto. Chiedine uno nuovo.",
+    "INVITATION_NOT_FOUND": "Invito non trovato.",
     "MAINTENANCE_MODE": "Manutenzione in corso. Torna tra poco.",
+    "MEMBER_ALREADY_EXISTS": "Questa persona fa già parte dell’organizzazione.",
     "NETWORK_ERROR": "Server non raggiungibile. Controlla la connessione.",
     "NOT_FOUND": "Elemento non trovato.",
+    "ORGANIZATION_LAST_OWNER": "L'organizzazione resterebbe senza owner.",
     "ORGANIZATION_NOT_FOUND": "Organizzazione non trovata.",
     "ORGANIZATION_REQUIRED": "Seleziona un'organizzazione per continuare.",
     "PLAN_LIMIT_REACHED": "Hai raggiunto il limite del tuo piano.",

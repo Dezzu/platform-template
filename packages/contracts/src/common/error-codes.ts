@@ -32,6 +32,18 @@ export const ERROR_CODES = {
   SUBSCRIPTION_REQUIRED: 'SUBSCRIPTION_REQUIRED',
   PLAN_LIMIT_REACHED: 'PLAN_LIMIT_REACHED',
 
+  // Membership and invitations
+  /** Removing or demoting this member would leave the organization without an owner. */
+  ORGANIZATION_LAST_OWNER: 'ORGANIZATION_LAST_OWNER',
+  MEMBER_ALREADY_EXISTS: 'MEMBER_ALREADY_EXISTS',
+  INVITATION_NOT_FOUND: 'INVITATION_NOT_FOUND',
+  INVITATION_ALREADY_SENT: 'INVITATION_ALREADY_SENT',
+  INVITATION_EXPIRED: 'INVITATION_EXPIRED',
+  /** Changing your own role or removing yourself has to go through a different door. */
+  CANNOT_MODIFY_SELF: 'CANNOT_MODIFY_SELF',
+  /** Granting a role you do not hold yourself. */
+  CANNOT_GRANT_HIGHER_ROLE: 'CANNOT_GRANT_HIGHER_ROLE',
+
   // Files and storage
   FILE_TOO_LARGE: 'FILE_TOO_LARGE',
   FILE_TYPE_NOT_ALLOWED: 'FILE_TYPE_NOT_ALLOWED',

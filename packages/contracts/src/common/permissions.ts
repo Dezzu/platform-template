@@ -61,6 +61,22 @@ export type PlatformPermission = (typeof PLATFORM_PERMISSIONS)[keyof typeof PLAT
 export const ORG_ROLES = ['owner', 'admin', 'member'] as const;
 export type OrgRole = (typeof ORG_ROLES)[number];
 
+/**
+ * How the organization roles rank against each other.
+ *
+ * Permissions say what you may do to *things*; rank says what you may do to *people*.
+ * The two are different questions, and conflating them is how an admin — who legitimately
+ * holds `members.remove` — ends up able to remove the owner and take the tenant over.
+ *
+ * The rule, enforced server-side: you may only act on a member whose rank is at or
+ * below yours, and only grant a role at or below your own.
+ */
+export const ORG_ROLE_RANK: Record<OrgRole, number> = { owner: 3, admin: 2, member: 1 };
+
+export function outranksOrEquals(actor: OrgRole, target: OrgRole): boolean {
+  return ORG_ROLE_RANK[actor] >= ORG_ROLE_RANK[target];
+}
+
 const P = PERMISSIONS;
 
 /** Every read permission — the baseline a plain member gets. */

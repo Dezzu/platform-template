@@ -56,6 +56,8 @@
     "toggleMenu": "Open or close the menu"
   },
   "errors": {
+    "CANNOT_GRANT_HIGHER_ROLE": "You cannot grant a role higher than your own.",
+    "CANNOT_MODIFY_SELF": "You cannot perform this action on yourself.",
     "CONFLICT": "The operation conflicts with the current state.",
     "FEATURE_DISABLED": "This feature is not available.",
     "FILE_NOT_READY": "The file is not available yet.",
@@ -66,9 +68,14 @@
     "FORBIDDEN": "You do not have permission to do this.",
     "FORBIDDEN_MISSING_PERMISSION": "You do not have permission to do this.",
     "INTERNAL_ERROR": "Something went wrong. Please try again.",
+    "INVITATION_ALREADY_SENT": "An invitation has already been sent to this address.",
+    "INVITATION_EXPIRED": "The invitation has expired. Ask for a new one.",
+    "INVITATION_NOT_FOUND": "Invitation not found.",
     "MAINTENANCE_MODE": "Under maintenance. Please check back shortly.",
+    "MEMBER_ALREADY_EXISTS": "This person is already a member of the organization.",
     "NETWORK_ERROR": "The server is unreachable. Check your connection.",
     "NOT_FOUND": "Item not found.",
+    "ORGANIZATION_LAST_OWNER": "The organization would be left without an owner.",
     "ORGANIZATION_NOT_FOUND": "Organization not found.",
     "ORGANIZATION_REQUIRED": "Select an organization to continue.",
     "PLAN_LIMIT_REACHED": "You have reached your plan limit.",

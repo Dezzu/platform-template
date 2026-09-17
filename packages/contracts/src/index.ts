@@ -8,3 +8,4 @@ export * from './modules/users/users.contract';
 export * from './modules/projects/projects.contract';
 export * from './modules/insights/insights.contract';
 export * from './modules/files/files.contract';
+export * from './modules/members/members.contract';
