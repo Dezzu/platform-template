@@ -100,6 +100,28 @@
     "projects": "Progetti",
     "settings": "Impostazioni"
   },
+  "plans": {
+    "free": {
+      "name": "Gratuito",
+      "description": "Per iniziare e valutare il prodotto."
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "Per chi lavora sul prodotto ogni giorno."
+    },
+    "business": {
+      "name": "Business",
+      "description": "Per team strutturati, senza limiti sui progetti."
+    },
+    "features": {
+      "basic": "Funzionalità di base",
+      "community_support": "Supporto della community",
+      "everything_free": "Tutto il piano Gratuito",
+      "email_support": "Supporto via email",
+      "everything_pro": "Tutto il piano Pro",
+      "priority_support": "Supporto prioritario"
+    }
+  },
   "profile": {
     "account": "Il tuo account",
     "menuFor": "Menu di {{name}}",

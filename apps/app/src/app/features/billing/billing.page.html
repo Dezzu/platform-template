@@ -10,8 +10,20 @@
     @if (subscriptions.isLoading()) {
     <p hlmCardDescription>{{ 'common.loading' | transloco }}</p>
     } @else if (current(); as subscription) {
-    <p hlmCardDescription>{{ subscription.plan }} · {{ 'billing.status.' + subscription.status | transloco }}</p>
-    } @else {
+    <p hlmCardDescription>
+      {{ 'plans.' + subscription.plan + '.name' | transloco }} · {{ 'billing.status.' + subscription.status | transloco
+      }}
+    </p>
+    @if (subscription.willNotRenew && subscription.cancelAt) {
+    <!--
+      Cancelled but still paid for. Saying only "cancelled" would be wrong while the
+      period runs, and saying nothing leaves someone wondering why they still have
+      access.
+    -->
+    <p class="text-sm text-amber-600 dark:text-amber-500">
+      {{ 'billing.endsOn' | transloco: { date: formatDate(subscription.cancelAt) } }}
+    </p>
+    } } @else {
     <p hlmCardDescription>{{ 'billing.noSubscription' | transloco }}</p>
     }
   </div>
