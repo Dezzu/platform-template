@@ -106,6 +106,28 @@ describe('platform administration (e2e)', () => {
       expect(res.body.data.items[0].email).toBe(victim.email);
     });
 
+    it('sorts by the column asked for, and ignores one it does not know', async () => {
+      const byEmail = await request(app.getHttpServer())
+        .get('/api/admin/users')
+        .query({ sort: 'email', dir: 'asc', size: 200 })
+        .set(as(admin))
+        .expect(200);
+
+      const emails = byEmail.body.data.items.map((u: { email: string }) => u.email);
+      expect(emails).toEqual([...emails].sort());
+
+      // An unknown sort field arrives from the client like any other. It must fall back
+      // to the default rather than reach the query builder, where an ORDER BY built from
+      // caller input is an injection point.
+      const hostile = await request(app.getHttpServer())
+        .get('/api/admin/users')
+        .query({ sort: 'email; drop table "user"', dir: 'asc', size: 5 })
+        .set(as(admin))
+        .expect(200);
+
+      expect(hostile.body.data.items.length).toBeGreaterThan(0);
+    });
+
     it('shows an account with the organizations it belongs to', async () => {
       const res = await request(app.getHttpServer())
         .get(`/api/admin/users/${victim.id}`)

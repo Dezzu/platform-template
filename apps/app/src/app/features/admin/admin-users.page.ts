@@ -1,53 +1,204 @@
 import { Component, computed, inject, resource, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
-import { TranslocoPipe } from '@jsverse/transloco';
-import { HlmButtonImports } from '@spartan-ng/helm/button';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { firstValueFrom, merge } from 'rxjs';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { provideIcons } from '@ng-icons/core';
 import {
-  PLATFORM_PERMISSIONS,
+  lucideBan,
+  lucideCircleCheck,
+  lucideKeyRound,
+  lucideLogOut,
+  lucideShield,
+} from '@ng-icons/lucide';
+import {
   PLATFORM_ROLES,
   platformOutranksOrEquals,
   type PlatformRole,
 } from '@app/contracts/permissions';
 import type { AdminUser } from '@app/contracts';
-import { AppError, AuthService, CanPlatformDirective } from '@app/core';
+import { TableComponent } from '@app/ui/table';
+import { TemplateDirective } from '@app/ui/mix';
+import type { DuiTablelazyLoadEvent, TableAction, TableColumn } from '@app/ui/mix';
+import { AppError, AuthService, PermissionsService } from '@app/core';
 import { AdminApi } from './admin.api';
+
+/** What the table last asked the server for. */
+interface Query {
+  page: number;
+  size: number;
+  q: string;
+  sort: string | undefined;
+  dir: 'asc' | 'desc';
+}
 
 /**
  * Every account on the platform.
  *
- * The controls mirror the server's rank rules, which matters more here than anywhere
- * else in the application: this screen is the one place where a mis-shown button is
- * not a 403 but a support person believing they did something they did not.
+ * The row actions live behind the three dots rather than in a row of icons: there are
+ * up to six of them and several are destructive, and a line of symbols makes you hover
+ * each one to find out what it does. A menu says it in words.
+ *
+ * The list is lazy — the table announces page, sort and search, and the server answers.
+ * Filtering client-side over one loaded page would quietly mean "search the 50 accounts
+ * you happen to be looking at", which on this screen is the wrong answer rather than a
+ * slow one.
+ *
+ * Every action mirrors the server's rank rules through `visible`. That matters more here
+ * than anywhere else in the application: elsewhere a wrongly-shown button is a 403, here
+ * it is a support person believing they did something they did not.
  */
 @Component({
   selector: 'app-admin-users-page',
-  imports: [TranslocoPipe, RouterLink, HlmButtonImports, CanPlatformDirective],
+  imports: [TranslocoPipe, RouterLink, TableComponent, TemplateDirective],
+  providers: [
+    provideIcons({ lucideShield, lucideKeyRound, lucideLogOut, lucideBan, lucideCircleCheck }),
+  ],
   templateUrl: './admin-users.page.html',
 })
 export class AdminUsersPage {
   private readonly api = inject(AdminApi);
   private readonly auth = inject(AuthService);
+  private readonly transloco = inject(TranslocoService);
+  private readonly permissions = inject(PermissionsService);
 
-  protected readonly platformPermissions = PLATFORM_PERMISSIONS;
-  protected readonly roles = PLATFORM_ROLES;
+  /**
+   * Re-translates the action labels when the translations change under them.
+   *
+   * `langChanges$` alone is not enough, and the difference is visible: translations
+   * load asynchronously, so on a cold page a `translate()` call inside a computed runs
+   * before the file has arrived, returns the key, and caches it. The labels would read
+   * `admin.sendReset` until the user switched language. `events$` covers the load;
+   * merging both covers the switch too.
+   */
+  private readonly translations = toSignal(
+    merge(this.transloco.langChanges$, this.transloco.events$),
+  );
 
-  protected readonly search = signal('');
   protected readonly errorKey = signal<string | null>(null);
   protected readonly notice = signal<string | null>(null);
 
-  protected readonly users = resource({
-    params: () => ({ q: this.search() }),
+  /**
+   * Custom equality, and it is load-bearing: `onLazyLoad` fires once on init with the
+   * table's starting state, which matches the defaults below. Without this the `set`
+   * would still produce a new object identity, the resource would see a changed
+   * parameter, and every page load would fetch the same page twice.
+   */
+  protected readonly query = signal<Query>(
+    // These must be exactly what `onLazyLoad` produces on init, or the equality below
+    // cannot recognise the table's opening announcement as "no change".
+    { page: 0, size: 10, q: '', sort: undefined, dir: 'asc' },
+    {
+      equal: (a, b) =>
+        a.page === b.page &&
+        a.size === b.size &&
+        a.q === b.q &&
+        a.sort === b.sort &&
+        a.dir === b.dir,
+    },
+  );
+
+  private readonly page = resource({
+    params: () => this.query(),
     loader: ({ params }) =>
-      firstValueFrom(this.api.listUsers({ size: 50, ...(params.q ? { q: params.q } : {}) })),
+      firstValueFrom(
+        this.api.listUsers({
+          page: params.page,
+          size: params.size,
+          dir: params.dir,
+          ...(params.q ? { q: params.q } : {}),
+          ...(params.sort ? { sort: params.sort } : {}),
+        }),
+      ),
   });
 
-  /** The viewer's platform role, which every rank decision below is measured against. */
-  private readonly myRole = computed(() => this.auth.user()?.role ?? 'user');
+  protected readonly rows = computed(() => this.page.value()?.items ?? []);
+  protected readonly total = computed(() => this.page.value()?.meta.total ?? 0);
+  protected readonly loading = computed(() => this.page.isLoading());
+  protected readonly failed = computed(() => this.page.error() !== undefined);
 
-  protected readonly grantableRoles = computed(() =>
-    PLATFORM_ROLES.filter((role) => platformOutranksOrEquals(this.myRole(), role)),
+  private readonly myRole = computed(() => this.auth.user()?.role ?? 'user');
+  private readonly mayManage = computed(() =>
+    this.permissions.anyOfPlatform('platform.users.manage'),
   );
+
+  protected readonly columns = computed<TableColumn[]>(() => {
+    const t = (key: string) => this.translate(`admin.columns.${key}`);
+    return [
+      { field: 'name', header: t('name'), sortable: true },
+      { field: 'email', header: t('email'), sortable: true },
+      { field: 'role', header: t('role'), sortable: false },
+      { field: 'organizationCount', header: t('organizations'), sortable: false },
+      {
+        field: 'createdAt',
+        header: t('createdAt'),
+        sortable: true,
+        pipe: 'date',
+        pipeArgs: ['mediumDate'],
+        removable: true,
+        defaultRemoved: true,
+      },
+    ];
+  });
+
+  /**
+   * One entry per role instead of a select, because a menu holds buttons.
+   *
+   * Only the roles this viewer may grant, and never the one the account already has —
+   * an entry that would be a no-op is an entry that makes the menu longer for nothing.
+   */
+  protected readonly actions = computed<TableAction<AdminUser>[]>(() => {
+    const grantable = PLATFORM_ROLES.filter((role) =>
+      platformOutranksOrEquals(this.myRole(), role),
+    );
+
+    const roleActions: TableAction<AdminUser>[] = grantable.map((role) => ({
+      icon: 'lucideShield',
+      label: this.translate('admin.makeRole', { role: this.translate(`admin.roles.${role}`) }),
+      visible: (row) => this.canChangeRoleOf(row) && (row.role ?? 'user') !== role,
+      command: (row) => this.setRole(row, role),
+    }));
+
+    return [
+      ...roleActions,
+      {
+        icon: 'lucideKeyRound',
+        label: this.translate('admin.sendReset'),
+        visible: (row) => this.canActOn(row),
+        command: (row) => this.sendPasswordReset(row),
+      },
+      {
+        icon: 'lucideLogOut',
+        label: this.translate('admin.revokeSessions'),
+        visible: (row) => this.canActOn(row),
+        command: (row) => this.revokeSessions(row),
+      },
+      {
+        icon: 'lucideBan',
+        severity: 'destructive',
+        label: this.translate('admin.ban'),
+        visible: (row) => this.canActOn(row) && !this.isSelf(row) && !row.banned,
+        command: (row) => this.ban(row),
+      },
+      {
+        icon: 'lucideCircleCheck',
+        label: this.translate('admin.unban'),
+        visible: (row) => this.canActOn(row) && row.banned,
+        command: (row) => this.unban(row),
+      },
+    ];
+  });
+
+  /**
+   * Narrows the row a projected template receives.
+   *
+   * `duiTemplate` hands over `unknown` — it is matched by name at runtime and cannot
+   * know what the table holds. One cast here, at the top of each template, beats
+   * scattering `$any()` through the markup.
+   */
+  protected asUser(value: unknown): AdminUser {
+    return value as AdminUser;
+  }
 
   protected isSelf(account: AdminUser): boolean {
     return account.id === this.auth.user()?.id;
@@ -55,7 +206,7 @@ export class AdminUsersPage {
 
   /** Mirrors `assertMayActOn`: never offer an action the API is going to refuse. */
   protected canActOn(account: AdminUser): boolean {
-    return platformOutranksOrEquals(this.myRole(), account.role ?? 'user');
+    return this.mayManage() && platformOutranksOrEquals(this.myRole(), account.role ?? 'user');
   }
 
   /** Changing your own platform role is refused server-side — see the lockout note. */
@@ -63,44 +214,66 @@ export class AdminUsersPage {
     return this.canActOn(account) && !this.isSelf(account);
   }
 
-  protected onSearch(event: Event): void {
-    this.search.set((event.target as HTMLInputElement).value.trim());
+  protected roleLabel(account: AdminUser): string {
+    return this.translate(`admin.roles.${account.role ?? 'user'}`);
   }
 
-  protected setRole(account: AdminUser, role: string): void {
-    void this.run(async () => {
-      await firstValueFrom(this.api.setRole(account.id, role as PlatformRole));
-      this.users.reload();
+  /** The table announces what it wants; the server decides what it gets. */
+  protected onLazyLoad(event: DuiTablelazyLoadEvent): void {
+    const request = event.pageRequest;
+    const sort = typeof request.sortField === 'string' ? request.sortField : undefined;
+    const search = typeof request.query === 'string' ? request.query : '';
+
+    this.query.set({
+      page: request.page,
+      size: request.size,
+      q: search,
+      sort,
+      dir: request.sortOrder === -1 ? 'desc' : 'asc',
     });
   }
 
-  protected sendPasswordReset(account: AdminUser): void {
+  private setRole(account: AdminUser, role: PlatformRole): void {
+    void this.run(async () => {
+      await firstValueFrom(this.api.setRole(account.id, role));
+      this.page.reload();
+    });
+  }
+
+  private sendPasswordReset(account: AdminUser): void {
     void this.run(async () => {
       await firstValueFrom(this.api.sendPasswordReset(account.id));
-      // No page reload: nothing about the account changed, an email was queued.
+      // No reload: nothing about the account changed, an email was queued.
       this.notice.set('admin.resetLinkQueued');
     });
   }
 
-  protected ban(account: AdminUser): void {
+  private ban(account: AdminUser): void {
     void this.run(async () => {
       await firstValueFrom(this.api.ban(account.id, { reason: 'Banned from the admin area' }));
-      this.users.reload();
+      this.page.reload();
     });
   }
 
-  protected unban(account: AdminUser): void {
+  private unban(account: AdminUser): void {
     void this.run(async () => {
       await firstValueFrom(this.api.unban(account.id));
-      this.users.reload();
+      this.page.reload();
     });
   }
 
-  protected revokeSessions(account: AdminUser): void {
+  private revokeSessions(account: AdminUser): void {
     void this.run(async () => {
       await firstValueFrom(this.api.revokeSessions(account.id));
       this.notice.set('admin.sessionsRevoked');
     });
+  }
+
+  private translate(key: string, params?: Record<string, unknown>): string {
+    // Reading the signal is what makes the calling computed re-run when the
+    // translations load, or when the language changes.
+    this.translations();
+    return this.transloco.translate(key, params);
   }
 
   private async run(action: () => Promise<void>): Promise<void> {

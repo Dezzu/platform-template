@@ -9,74 +9,44 @@
 </div>
 <p class="text-muted-foreground mb-6 text-sm">{{ 'admin.usersDescription' | transloco }}</p>
 
-<input
-  type="search"
-  class="border-input bg-background mb-4 h-9 w-full max-w-sm rounded-md border px-3 text-sm"
-  [placeholder]="'common.search' | transloco"
-  (input)="onSearch($event)"
-/>
-
 @if (errorKey(); as key) {
 <p class="text-destructive mb-4 text-sm" role="alert">{{ key | transloco }}</p>
 } @if (notice(); as key) {
 <p class="text-muted-foreground mb-4 text-sm" role="status">{{ key | transloco }}</p>
-} @if (users.isLoading()) {
-<p class="text-muted-foreground text-sm">{{ 'common.loading' | transloco }}</p>
-} @else if (users.error()) {
-<p class="text-destructive text-sm" role="alert">{{ 'errors.INTERNAL_ERROR' | transloco }}</p>
-} @else { @let page = users.value(); @if (!page || page.items.length === 0) {
-<p class="text-muted-foreground text-sm">{{ 'common.empty' | transloco }}</p>
-} @else {
-<ul class="divide-y rounded-md border">
-  @for (account of page.items; track account.id) {
-  <li class="flex flex-wrap items-center justify-between gap-3 p-3">
-    <div class="min-w-0">
-      <p class="truncate font-medium">
-        {{ account.name || account.email }} @if (isSelf(account)) {
-        <span class="text-muted-foreground text-xs">({{ 'members.you' | transloco }})</span>
-        } @if (account.banned) {
-        <span class="text-destructive text-xs font-semibold">· {{ 'admin.banned' | transloco }}</span>
-        }
-      </p>
-      <p class="text-muted-foreground truncate text-sm">
-        {{ account.email }} · {{ 'admin.organizationCount' | transloco: { count: account.organizationCount } }} @if
-        (!account.emailVerified) { · {{ 'admin.unverified' | transloco }} }
-      </p>
-    </div>
+} @if (failed()) {
+<p class="text-destructive mb-4 text-sm" role="alert">{{ 'errors.INTERNAL_ERROR' | transloco }}</p>
+}
 
-    <div class="flex shrink-0 flex-wrap items-center gap-2">
-      @if (canChangeRoleOf(account)) {
-      <select
-        *appCanPlatform="[platformPermissions.USERS_MANAGE]"
-        class="border-input bg-background h-9 rounded-md border px-2 text-sm"
-        [value]="account.role ?? 'user'"
-        (change)="setRole(account, $any($event.target).value)"
-      >
-        @for (role of grantableRoles(); track role) {
-        <option [value]="role">{{ 'admin.roles.' + role | transloco }}</option>
-        }
-      </select>
-      } @else {
-      <span class="text-muted-foreground text-sm">{{ 'admin.roles.' + (account.role ?? 'user') | transloco }}</span>
-      } @if (canActOn(account)) {
-      <ng-container *appCanPlatform="[platformPermissions.USERS_MANAGE]">
-        <button hlmBtn variant="outline" size="sm" (click)="sendPasswordReset(account)">
-          {{ 'admin.sendReset' | transloco }}
-        </button>
+<dui-table
+  dataKey="id"
+  emptyMessage="common.empty"
+  [cols]="columns()"
+  [items]="rows()"
+  [actions]="actions()"
+  [actionsAsMenu]="true"
+  [lazy]="true"
+  [loading]="loading()"
+  [totalRecords]="total()"
+  [showAddButton]="false"
+  (onLazyLoad)="onLazyLoad($event)"
+>
+  <!-- Name and email in one cell: on this screen they identify the same person, and
+       two columns of the same thing push the rest off a laptop screen. -->
+  <ng-template duiTemplate="name" let-value let-item="item">
+    @let row = asUser(item);
+    <span class="font-medium">{{ value || row.email }}</span>
+    @if (isSelf(row)) {
+    <span class="text-muted-foreground ms-1 text-xs">({{ 'members.you' | transloco }})</span>
+    } @if (row.banned) {
+    <span class="text-destructive ms-1 text-xs font-semibold">· {{ 'admin.banned' | transloco }}</span>
+    }
+  </ng-template>
 
-        <button hlmBtn variant="outline" size="sm" (click)="revokeSessions(account)">
-          {{ 'admin.revokeSessions' | transloco }}
-        </button>
+  <ng-template duiTemplate="email" let-value let-item="item">
+    @let row = asUser(item); {{ value }} @if (!row.emailVerified) {
+    <span class="text-muted-foreground text-xs">· {{ 'admin.unverified' | transloco }}</span>
+    }
+  </ng-template>
 
-        @if (!isSelf(account)) { @if (account.banned) {
-        <button hlmBtn variant="outline" size="sm" (click)="unban(account)">{{ 'admin.unban' | transloco }}</button>
-        } @else {
-        <button hlmBtn variant="destructive" size="sm" (click)="ban(account)">{{ 'admin.ban' | transloco }}</button>
-        } }
-      </ng-container>
-      }
-    </div>
-  </li>
-  }
-</ul>
-} }
+  <ng-template duiTemplate="role" let-item="item"> {{ roleLabel(asUser(item)) }} </ng-template>
+</dui-table>

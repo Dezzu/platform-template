@@ -2,7 +2,15 @@
   "admin": {
     "ban": "Suspend",
     "banned": "suspended",
+    "columns": {
+      "createdAt": "Registered on",
+      "email": "Email",
+      "name": "Name",
+      "organizations": "Organizations",
+      "role": "Platform role"
+    },
     "hideMembers": "Hide",
+    "makeRole": "Make {{role}}",
     "memberCount": "{{count}} members",
     "noPlan": "no plan",
     "organizationCount": "{{count}} organizations",
@@ -209,6 +217,20 @@
     "menuFor": "{{name}} menu",
     "saved": "Changes saved.",
     "title": "Profile"
+  },
+  "table": {
+    "actions": "Actions",
+    "add": "Add",
+    "collapseRow": "Collapse the row",
+    "empty": "No data",
+    "expand": "Expand",
+    "expandRow": "Expand the row",
+    "reload": "Reload",
+    "rowActions": "Actions on this row",
+    "search": "Search…",
+    "selectColumns": "Select the columns",
+    "sortBy": "Sort by {{column}}",
+    "visibleColumns": "Visible columns"
   },
   "theme": {
     "dark": "Dark",

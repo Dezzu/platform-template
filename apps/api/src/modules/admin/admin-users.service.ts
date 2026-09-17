@@ -1,5 +1,5 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { and, count, desc, eq, gt, ilike, or, sql, type SQL } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, ilike, or, sql, type SQL } from 'drizzle-orm';
 import {
   ERROR_CODES,
   platformOutranksOrEquals,
@@ -60,6 +60,23 @@ export class AdminUsersService {
       .from(member)
       .where(eq(member.userId, user.id));
 
+    /**
+     * Only these three columns are sortable, and the list is closed on purpose: the
+     * sort field arrives from the client, and passing it to the query builder unchecked
+     * is how an ORDER BY becomes an injection point. Anything else falls back to the
+     * default, which is what an unsorted admin list should be — newest first.
+     */
+    const sortable = { name: user.name, email: user.email, createdAt: user.createdAt };
+    const column =
+      query.sort && query.sort in sortable
+        ? sortable[query.sort as keyof typeof sortable]
+        : undefined;
+    const orderBy = column
+      ? query.dir === 'asc'
+        ? asc(column)
+        : desc(column)
+      : desc(user.createdAt);
+
     const [rows, totals] = await Promise.all([
       this.db
         .select({
@@ -68,7 +85,7 @@ export class AdminUsersService {
         })
         .from(user)
         .where(where)
-        .orderBy(desc(user.createdAt))
+        .orderBy(orderBy)
         .limit(query.size)
         .offset(query.page * query.size),
       this.db.select({ value: count() }).from(user).where(where),

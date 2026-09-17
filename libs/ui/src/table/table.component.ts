@@ -39,6 +39,7 @@ import { HlmSelectImports } from '@spartan-ng/helm/select';
 import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
 import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
 import { HlmTableImports } from '@spartan-ng/helm/table';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { TextInputComponent } from '../input/text-input/text-input.component';
 import {
   type DuiTablelazyLoadEvent,
@@ -78,6 +79,7 @@ import { compareValues, getFieldValue, matchesFilter, type SortState } from './t
     HlmNumberedPagination,
     TextInputComponent,
     DynamicPipe,
+    TranslocoPipe,
   ],
   providers: [
     provideIcons({
@@ -132,7 +134,8 @@ export class TableComponent<T> {
   readonly actionsAsMenu = input(false);
   readonly showSearch = input(true);
   readonly showColumnSelector = input(true);
-  readonly emptyMessage = input('Nessun dato presente');
+  /** i18n key, not a sentence — it is piped through transloco in the template. */
+  readonly emptyMessage = input('table.empty');
 
   /** Attesa prima di propagare il filtro globale, in millisecondi. */
   readonly filterDelay = input(300);
@@ -285,7 +288,7 @@ export class TableComponent<T> {
     this.onLazyLoad.emit({ ...event, pageRequest });
   }
 
-  /** Ricarica mantenendo lo stato corrente. */
+  /** Reloads while keeping the current state. */
   reload(): void {
     if (this.lastEvent) {
       this.emitLazyLoad(this.lastEvent);
