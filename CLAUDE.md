@@ -50,6 +50,16 @@ Mai `any`. Mai `@ts-ignore` senza una riga che spieghi perché.
   un membro non aggiunto perché SES ha avuto un brutto secondo.
 - Ogni payload di job è validato con Zod nel worker. Un payload avvelenato solleva
   `UnrecoverableError` (niente retry): fra cinque tentativi non diventerà valido.
+- **Permessi e rango sono due domande diverse.** I permessi dicono cosa puoi fare alle
+  _cose_, il rango cosa puoi fare alle _persone_. Confonderli è il modo in cui un admin
+  che ha legittimamente `members.remove` rimuove l'owner e si prende il tenant. Chi
+  tocca membri o account usa `outranksOrEquals` / `platformOutranksOrEquals`: si agisce
+  solo su chi non ti supera, si assegna solo un ruolo che già possiedi.
+- I permessi di **piattaforma** (`platform.*`) vengono da `user.role`, non
+  dall'appartenenza, e hanno decorator, guard e direttiva separati
+  (`@RequirePlatformPermission`, `requireAnyPlatformPermission`, `*appCanPlatform`).
+  Tenerli separati è ciò che impedisce a un admin di organizzazione di raggiungere
+  l'area di amministrazione con un errore di battitura.
 
 **Layering** (imposto da `eslint-plugin-boundaries`):
 `apps → libs/*` · `libs/ui → libs/primitives, libs/i18n, packages/contracts` ·
@@ -189,6 +199,27 @@ confronta le due risposte fra loro invece di fissare uno status, che è anche
 l'invariante vero. **Se lo vedi fallire, non liquidarlo come rumore**: non è stata
 trovata una causa, quindi potrebbe essere reale.
 
+**Il plugin admin di Better Auth accetta solo i ruoli che conosce**, e ne conosce due
+(`admin`, `user`). `superadmin` è dichiarato nel suo access control in `auth.config.ts`
+insieme a `adminRoles`: senza, ogni sua chiamata fatta da un superadmin verrebbe
+rifiutata come proveniente da un non-admin.
+
+**Gli invii verso Better Auth passano da `better-auth.bridge.ts`.** Traduce i suoi
+codici nei nostri `ErrorCode`, perché il frontend renderizza `errors.<CODE>` dal nostro
+catalogo: lasciar passare i suoi vorrebbe dire o una stringa non tradotta a schermo, o
+un secondo catalogo da tenere allineato alle release di qualcun altro. Le chiamate
+portano gli header del chiamante, così i controlli di Better Auth girano _come lui_ e
+non come nessuno.
+
+**I componenti field di spartan renderizzano un `role="alert"` nascosto per ogni input.**
+Quindi in un test `querySelector('[role="alert"]')` trova sempre qualcosa, e
+l'asserzione "esiste un alert" è vera anche quando il messaggio cercato non è mai
+comparso. Usa `apps/app/src/testing/alerts.ts`.
+
+**Il link di reset password atterra su `/reset-password`, non su `/sign-in`.** Better
+Auth valida il token e reindirizza al `callbackURL` con `?token=` appeso: puntarlo al
+form di login butta via il token su una pagina che non sa cosa farne.
+
 **L'AWS SDK aggiunge un checksum che rompe le presigned PUT.** Dalle release recenti
 PutObject firma anche `x-amz-sdk-checksum-algorithm` e un trailer CRC32. Su una URL
 presigned quell'header entra nella firma, il browser non lo manda e MinIO risponde 403.
@@ -249,31 +280,36 @@ root del progetto: da qui il progetto `libs` separato in `angular.json`.
 ## 6. Stato attuale
 
 **Fatte:** 0 tooling · 1 database · 2 auth · 3 config/envelope · 4 contratti+OpenAPI ·
-5 tenancy/permessi/audit · 6 frontend · 7 billing Stripe · 8 code+email+storage.
+5 tenancy/permessi/audit · 6 frontend · 7 billing Stripe · 8 code+email+storage ·
+9a membri+inviti+pagine auth · 9b area di amministrazione.
 
-**Da fare:** 9 feature trasversali (notifiche, feature flag, GDPR, maintenance) ·
-10 osservabilità · 11 Docker+CI · 12 Terraform.
+**Da fare (fase 9, nell'ordine deciso):** audit UI + impersonation · feature flag +
+maintenance · notifiche + preferenze · GDPR + cookie banner. Poi 10 osservabilità ·
+11 Docker+CI · 12 Terraform.
 
 Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-snail.md`.
 
-**103 test.** `pnpm verify` verde.
+**152 test.** `pnpm verify` verde.
 
 **Lasciato in sospeso dalla fase 8**, di proposito:
 
-- L'email di invito è completa e verificabile, ma punta a `/accept-invitation`, che
-  **non esiste ancora**: la schermata arriva con la feature membri (fase 9).
-- Stesso discorso per il reset password: l'email parte e il link è valido, ma il
-  callback atterra su `/sign-in`. La pagina in cui digitare la nuova password è da fare.
 - `AUTH_REQUIRE_EMAIL_VERIFICATION` è `false` in locale e **obbligatorio a true in
   produzione** (`crossFieldIssues`). Prima di accenderlo in dev, considera che il link
   arriva su Mailpit e funziona.
 - I worker girano in-process. Il container worker separato è fase 11: basterà
   `QUEUE_RUN_WORKERS=false` sui container API.
+- L'area organizzazioni dell'amministrazione è in sola lettura, per scelta: vedi il
+  commento in `admin-organizations.service.ts`.
+- Non esiste un modo dall'interfaccia per creare il primo superadmin — è voluto. Si fa
+  una volta con una `UPDATE`, e da lì la schermata amministra se stessa.
 
 ### Ambiente locale già configurato
 
-- **Utenti demo** (password `password-demo-2026`): `fabio@demo.it` (owner),
-  `sara@demo.it` (member), stessa organizzazione "Acme Srl", 4 progetti.
+- **Utenti demo** (password `password-demo-2026`): `fabio@demo.it` (owner
+  dell'organizzazione **e `superadmin` di piattaforma**, quindi vede l'area
+  Amministrazione), `sara@demo.it` (member), stessa organizzazione "Acme Srl",
+  4 progetti. Per promuovere qualcun altro la prima volta:
+  `update "user" set role = 'superadmin' where email = '…';`
 - **Stripe**: sandbox `acct_1UGTFAKHrPM9kztL`, già rivendicata dall'account dell'utente.
   Prodotti Pro e Business creati, price id nella tabella `plan`.
   ⚠️ La chiave `rkcs_test_...` è **ristretta**: checkout e abbonamenti funzionano, i
