@@ -5,3 +5,14 @@ import { pgEnum } from 'drizzle-orm/pg-core';
  * review — adding a value is a migration, removing one is a breaking change.
  */
 export const projectStatus = pgEnum('project_status', ['active', 'archived']);
+
+/**
+ * Upload is a two-step protocol and the status is what makes it safe: a row is
+ * `pending` from the moment the presigned PUT is handed out until the commit call
+ * verifies the object exists. Nothing but the janitor ever looks at a `pending` row,
+ * so a client that walks away mid-upload leaves no visible file.
+ */
+export const fileStatus = pgEnum('file_status', ['pending', 'ready']);
+
+/** Lifecycle of an outgoing email, from queued to delivered to the provider. */
+export const emailMessageStatus = pgEnum('email_message_status', ['pending', 'sent', 'failed']);

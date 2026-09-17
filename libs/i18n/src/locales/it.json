@@ -56,30 +56,43 @@
     "toggleMenu": "Apri o chiudi il menu"
   },
   "errors": {
-    "INTERNAL_ERROR": "Si è verificato un errore imprevisto. Riprova.",
-    "VALIDATION_FAILED": "Alcuni campi non sono validi.",
-    "NOT_FOUND": "Elemento non trovato.",
     "CONFLICT": "L'operazione è in conflitto con lo stato attuale.",
-    "RATE_LIMITED": "Troppe richieste. Attendi qualche istante.",
-    "UNAUTHENTICATED": "Sessione scaduta. Accedi di nuovo.",
+    "FEATURE_DISABLED": "Funzionalità non disponibile.",
+    "FILE_NOT_READY": "Il file non è ancora disponibile.",
+    "FILE_NOT_UPLOADED": "Il caricamento non è stato completato. Riprova.",
+    "FILE_TOO_LARGE": "Il file supera la dimensione massima consentita.",
+    "FILE_TYPE_NOT_ALLOWED": "Questo tipo di file non è consentito.",
+    "FILE_UPLOAD_MISMATCH": "Il file caricato non corrisponde a quello dichiarato.",
     "FORBIDDEN": "Non hai i permessi per questa operazione.",
     "FORBIDDEN_MISSING_PERMISSION": "Non hai i permessi per questa operazione.",
+    "INTERNAL_ERROR": "Si è verificato un errore imprevisto. Riprova.",
+    "MAINTENANCE_MODE": "Manutenzione in corso. Torna tra poco.",
+    "NETWORK_ERROR": "Server non raggiungibile. Controlla la connessione.",
+    "NOT_FOUND": "Elemento non trovato.",
     "ORGANIZATION_NOT_FOUND": "Organizzazione non trovata.",
     "ORGANIZATION_REQUIRED": "Seleziona un'organizzazione per continuare.",
-    "SUBSCRIPTION_REQUIRED": "Questa funzionalità richiede un abbonamento attivo.",
     "PLAN_LIMIT_REACHED": "Hai raggiunto il limite del tuo piano.",
-    "MAINTENANCE_MODE": "Manutenzione in corso. Torna tra poco.",
-    "FEATURE_DISABLED": "Funzionalità non disponibile.",
-    "NETWORK_ERROR": "Server non raggiungibile. Controlla la connessione."
+    "RATE_LIMITED": "Troppe richieste. Attendi qualche istante.",
+    "STORAGE_UNAVAILABLE": "Lo storage non è raggiungibile. Riprova tra poco.",
+    "SUBSCRIPTION_REQUIRED": "Questa funzionalità richiede un abbonamento attivo.",
+    "UNAUTHENTICATED": "Sessione scaduta. Accedi di nuovo.",
+    "VALIDATION_FAILED": "Alcuni campi non sono validi."
+  },
+  "files": {
+    "description": "I file sono caricati direttamente sullo storage: i byte non passano dall’API.",
+    "download": "Scarica",
+    "empty": "Nessun file caricato.",
+    "upload": "Carica un file",
+    "uploading": "Caricamento in corso…"
   },
   "form": {
-    "required": "Campo obbligatorio",
-    "minlength": "Minimo {requiredLength} caratteri",
+    "email": "Indirizzo email non valido",
+    "max": "Il valore massimo è {max}",
     "maxlength": "Massimo {requiredLength} caratteri",
     "min": "Il valore minimo è {min}",
-    "max": "Il valore massimo è {max}",
-    "email": "Indirizzo email non valido",
-    "passwordMismatch": "Le password non coincidono"
+    "minlength": "Minimo {requiredLength} caratteri",
+    "passwordMismatch": "Le password non coincidono",
+    "required": "Campo obbligatorio"
   },
   "insights": {
     "active": "Attivi",
@@ -95,20 +108,13 @@
     "audit": "Registro attività",
     "billing": "Abbonamento",
     "dashboard": "Dashboard",
+    "files": "File",
     "insights": "Analisi",
     "members": "Membri",
     "projects": "Progetti",
     "settings": "Impostazioni"
   },
   "plans": {
-    "free": {
-      "name": "Gratuito",
-      "description": "Per iniziare e valutare il prodotto."
-    },
-    "pro": {
-      "name": "Pro",
-      "description": "Per chi lavora sul prodotto ogni giorno."
-    },
     "business": {
       "name": "Business",
       "description": "Per team strutturati, senza limiti sui progetti."
@@ -120,6 +126,14 @@
       "email_support": "Supporto via email",
       "everything_pro": "Tutto il piano Pro",
       "priority_support": "Supporto prioritario"
+    },
+    "free": {
+      "name": "Gratuito",
+      "description": "Per iniziare e valutare il prodotto."
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "Per chi lavora sul prodotto ogni giorno."
     }
   },
   "profile": {

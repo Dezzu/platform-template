@@ -56,30 +56,43 @@
     "toggleMenu": "Open or close the menu"
   },
   "errors": {
-    "INTERNAL_ERROR": "Something went wrong. Please try again.",
-    "VALIDATION_FAILED": "Some fields are not valid.",
-    "NOT_FOUND": "Item not found.",
     "CONFLICT": "The operation conflicts with the current state.",
-    "RATE_LIMITED": "Too many requests. Please wait a moment.",
-    "UNAUTHENTICATED": "Your session expired. Please sign in again.",
+    "FEATURE_DISABLED": "This feature is not available.",
+    "FILE_NOT_READY": "The file is not available yet.",
+    "FILE_NOT_UPLOADED": "The upload did not complete. Please try again.",
+    "FILE_TOO_LARGE": "The file is larger than the maximum allowed size.",
+    "FILE_TYPE_NOT_ALLOWED": "This file type is not allowed.",
+    "FILE_UPLOAD_MISMATCH": "The uploaded file does not match what was declared.",
     "FORBIDDEN": "You do not have permission to do this.",
     "FORBIDDEN_MISSING_PERMISSION": "You do not have permission to do this.",
+    "INTERNAL_ERROR": "Something went wrong. Please try again.",
+    "MAINTENANCE_MODE": "Under maintenance. Please check back shortly.",
+    "NETWORK_ERROR": "The server is unreachable. Check your connection.",
+    "NOT_FOUND": "Item not found.",
     "ORGANIZATION_NOT_FOUND": "Organization not found.",
     "ORGANIZATION_REQUIRED": "Select an organization to continue.",
-    "SUBSCRIPTION_REQUIRED": "This feature requires an active subscription.",
     "PLAN_LIMIT_REACHED": "You have reached your plan limit.",
-    "MAINTENANCE_MODE": "Under maintenance. Please check back shortly.",
-    "FEATURE_DISABLED": "This feature is not available.",
-    "NETWORK_ERROR": "The server is unreachable. Check your connection."
+    "RATE_LIMITED": "Too many requests. Please wait a moment.",
+    "STORAGE_UNAVAILABLE": "Storage is unreachable. Please try again shortly.",
+    "SUBSCRIPTION_REQUIRED": "This feature requires an active subscription.",
+    "UNAUTHENTICATED": "Your session expired. Please sign in again.",
+    "VALIDATION_FAILED": "Some fields are not valid."
+  },
+  "files": {
+    "description": "Files are uploaded straight to storage — the bytes never pass through the API.",
+    "download": "Download",
+    "empty": "No files uploaded yet.",
+    "upload": "Upload a file",
+    "uploading": "Uploading…"
   },
   "form": {
-    "required": "This field is required",
-    "minlength": "At least {requiredLength} characters",
+    "email": "Invalid email address",
+    "max": "Maximum value is {max}",
     "maxlength": "At most {requiredLength} characters",
     "min": "Minimum value is {min}",
-    "max": "Maximum value is {max}",
-    "email": "Invalid email address",
-    "passwordMismatch": "Passwords do not match"
+    "minlength": "At least {requiredLength} characters",
+    "passwordMismatch": "Passwords do not match",
+    "required": "This field is required"
   },
   "insights": {
     "active": "Active",
@@ -95,20 +108,13 @@
     "audit": "Audit log",
     "billing": "Billing",
     "dashboard": "Dashboard",
+    "files": "Files",
     "insights": "Insights",
     "members": "Members",
     "projects": "Projects",
     "settings": "Settings"
   },
   "plans": {
-    "free": {
-      "name": "Free",
-      "description": "To get started and try the product."
-    },
-    "pro": {
-      "name": "Pro",
-      "description": "For people working on the product every day."
-    },
     "business": {
       "name": "Business",
       "description": "For larger teams, with no project limit."
@@ -120,6 +126,14 @@
       "email_support": "Email support",
       "everything_pro": "Everything in Pro",
       "priority_support": "Priority support"
+    },
+    "free": {
+      "name": "Free",
+      "description": "To get started and try the product."
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "For people working on the product every day."
     }
   },
   "profile": {

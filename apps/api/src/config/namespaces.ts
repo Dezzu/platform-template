@@ -32,6 +32,18 @@ export const dbConfig = registerAs('db', () => {
 
 export const redisConfig = registerAs('redis', () => ({ url: env().REDIS_URL }));
 
+export const queueConfig = registerAs('queue', () => {
+  const e = env();
+  return {
+    // A shared Valkey is the normal case in this infrastructure, so the prefix falls
+    // back to the application name rather than to BullMQ's global 'bull'.
+    prefix: e.QUEUE_PREFIX || e.APP_NAME,
+    runWorkers: e.QUEUE_RUN_WORKERS,
+    concurrency: e.QUEUE_CONCURRENCY,
+    attempts: e.QUEUE_ATTEMPTS,
+  };
+});
+
 export const authConfig = registerAs('auth', () => {
   const e = env();
   return {
@@ -41,6 +53,7 @@ export const authConfig = registerAs('auth', () => {
     sessionExpiresIn: e.SESSION_EXPIRES_IN,
     sessionUpdateAge: e.SESSION_UPDATE_AGE,
     cookieDomain: e.COOKIE_DOMAIN,
+    requireEmailVerification: e.AUTH_REQUIRE_EMAIL_VERIFICATION,
     roles: {
       platformDefault: e.AUTH_DEFAULT_ROLE,
       organizationCreator: e.ORG_CREATOR_ROLE,
@@ -67,11 +80,18 @@ export const mailConfig = registerAs('mail', () => {
   return {
     driver: e.MAIL_DRIVER,
     from: e.MAIL_FROM,
-    smtp: { host: e.SMTP_HOST, port: e.SMTP_PORT },
+    smtp: {
+      host: e.SMTP_HOST,
+      port: e.SMTP_PORT,
+      secure: e.SMTP_SECURE,
+      user: e.SMTP_USER,
+      password: e.SMTP_PASSWORD,
+    },
     aws: {
       region: e.AWS_REGION,
       accessKeyId: e.AWS_ACCESS_KEY_ID,
       secretAccessKey: e.AWS_SECRET_ACCESS_KEY,
+      configurationSet: e.MAIL_SES_CONFIGURATION_SET,
     },
   };
 });
@@ -84,8 +104,14 @@ export const storageConfig = registerAs('storage', () => {
     bucket: e.S3_BUCKET,
     accessKeyId: e.S3_ACCESS_KEY_ID,
     secretAccessKey: e.S3_SECRET_ACCESS_KEY,
+    // What the browser must reach. Falls back to the internal endpoint, which is the
+    // same host in development.
+    publicEndpoint: e.S3_PUBLIC_ENDPOINT || e.S3_ENDPOINT,
     forcePathStyle: e.S3_FORCE_PATH_STYLE,
     presignExpiresSeconds: e.S3_PRESIGN_EXPIRES,
+    maxUploadBytes: e.STORAGE_MAX_UPLOAD_BYTES,
+    allowedMimeTypes: e.STORAGE_ALLOWED_MIME,
+    pendingTtlHours: e.STORAGE_PENDING_TTL_HOURS,
   };
 });
 
@@ -107,6 +133,7 @@ export const configNamespaces = [
   appConfig,
   dbConfig,
   redisConfig,
+  queueConfig,
   authConfig,
   stripeConfig,
   mailConfig,

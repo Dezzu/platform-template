@@ -32,6 +32,17 @@ export const ERROR_CODES = {
   SUBSCRIPTION_REQUIRED: 'SUBSCRIPTION_REQUIRED',
   PLAN_LIMIT_REACHED: 'PLAN_LIMIT_REACHED',
 
+  // Files and storage
+  FILE_TOO_LARGE: 'FILE_TOO_LARGE',
+  FILE_TYPE_NOT_ALLOWED: 'FILE_TYPE_NOT_ALLOWED',
+  /** Commit was called but no object exists at the key — the PUT never happened. */
+  FILE_NOT_UPLOADED: 'FILE_NOT_UPLOADED',
+  /** The object exists but does not match what the ticket declared. */
+  FILE_UPLOAD_MISMATCH: 'FILE_UPLOAD_MISMATCH',
+  /** The file is still `pending`: there is nothing to download yet. */
+  FILE_NOT_READY: 'FILE_NOT_READY',
+  STORAGE_UNAVAILABLE: 'STORAGE_UNAVAILABLE',
+
   // Platform state
   MAINTENANCE_MODE: 'MAINTENANCE_MODE',
   FEATURE_DISABLED: 'FEATURE_DISABLED',

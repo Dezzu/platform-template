@@ -48,6 +48,23 @@ const baseEnvSchema = z.object({
   // ── Redis / Valkey ────────────────────────────────────────────────────────
   REDIS_URL: z.string().min(1).startsWith('redis').default('redis://localhost:6379'),
 
+  // ── Queue (BullMQ) ────────────────────────────────────────────────────────
+  /**
+   * Key prefix for every BullMQ structure. It matters because the production Valkey
+   * is shared: two applications defaulting to the same prefix would consume each
+   * other's jobs. Empty falls back to APP_NAME, which is already unique per app.
+   */
+  QUEUE_PREFIX: z.string().default(''),
+  /**
+   * Whether this process also consumes jobs. False on the API containers once a
+   * dedicated worker container exists (phase 11); true in development, where running
+   * two processes to send one email is not worth it.
+   */
+  QUEUE_RUN_WORKERS: bool(true),
+  QUEUE_CONCURRENCY: z.coerce.number().int().positive().max(100).default(5),
+  /** Retries per job before it lands in the failed set. */
+  QUEUE_ATTEMPTS: z.coerce.number().int().positive().max(20).default(5),
+
   // ── Better Auth ───────────────────────────────────────────────────────────
   BETTER_AUTH_SECRET: z.string().min(1),
   BETTER_AUTH_URL: z.url(),
@@ -69,6 +86,14 @@ const baseEnvSchema = z.object({
    * no platform rights at all, so promoting someone has to be an explicit act.
    */
   AUTH_DEFAULT_ROLE: z.string().min(1).default('user'),
+  /**
+   * Whether a new account must click the emailed link before it can sign in.
+   *
+   * Off by default so a fresh clone is usable the second it boots, and required in
+   * production by `crossFieldIssues` — an unverified address is an address you cannot
+   * bill, cannot reset, and did not prove the signer-up controls.
+   */
+  AUTH_REQUIRE_EMAIL_VERIFICATION: bool(false),
   /** Role of whoever creates an organization. */
   ORG_CREATOR_ROLE: z.enum(ORG_ROLES).default('owner'),
   /** Role assigned to anyone who joins an existing organization. */
@@ -103,9 +128,20 @@ const baseEnvSchema = z.object({
   MAIL_FROM: z.string().default('SaaS Template <no-reply@example.com>'),
   SMTP_HOST: z.string().default('localhost'),
   SMTP_PORT: z.coerce.number().int().positive().default(1025),
+  /** TLS on connect (port 465). STARTTLS on 587 is negotiated regardless. */
+  SMTP_SECURE: bool(false),
+  /** Empty for Mailpit, which accepts anything. */
+  SMTP_USER: z.string().default(''),
+  SMTP_PASSWORD: z.string().default(''),
   AWS_REGION: z.string().default('eu-west-1'),
   AWS_ACCESS_KEY_ID: z.string().default(''),
   AWS_SECRET_ACCESS_KEY: z.string().default(''),
+  /**
+   * SES configuration set. Bounces and complaints are only reportable through one, and
+   * adding it after the first send means the early history is lost — so it is wired
+   * now even though the SNS side arrives later.
+   */
+  MAIL_SES_CONFIGURATION_SET: z.string().default(''),
 
   // ── Storage ───────────────────────────────────────────────────────────────
   S3_ENDPOINT: z.url().default('http://localhost:9000'),
@@ -115,8 +151,25 @@ const baseEnvSchema = z.object({
   S3_BUCKET: z.string().min(1).default('app-dev'),
   S3_ACCESS_KEY_ID: z.string().default('minioadmin'),
   S3_SECRET_ACCESS_KEY: z.string().default('minioadmin'),
+  /**
+   * The endpoint the BROWSER must reach. Presigned signatures cover the Host header,
+   * so a URL signed for an internal address (`http://minio:9000`) fails with a
+   * signature mismatch the moment a browser resolves it differently. Empty means the
+   * two are the same, which is the case in development.
+   */
+  S3_PUBLIC_ENDPOINT: z.string().default(''),
   S3_FORCE_PATH_STYLE: bool(true),
   S3_PRESIGN_EXPIRES: z.coerce.number().int().positive().default(900),
+  /** Refused before a URL is issued, and re-checked against the real object on commit. */
+  STORAGE_MAX_UPLOAD_BYTES: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(25 * 1024 * 1024),
+  /** Allowlist of content types. Empty means "anything", which is rarely what you want. */
+  STORAGE_ALLOWED_MIME: csv,
+  /** How long a `pending` row survives before the janitor removes it. */
+  STORAGE_PENDING_TTL_HOURS: z.coerce.number().int().positive().default(24),
 
   // ── Observability (phase 10) ──────────────────────────────────────────────
   OTEL_ENABLED: bool(false),
@@ -164,6 +217,17 @@ export function crossFieldIssues(env: Partial<Env>): { path: string; message: st
       'AUTH_TRUSTED_ORIGINS',
       'required in production, otherwise the browser clients cannot sign in',
     );
+  }
+
+  if (env.AUTH_REQUIRE_EMAIL_VERIFICATION === false) {
+    add(
+      'AUTH_REQUIRE_EMAIL_VERIFICATION',
+      'must be true in production — an unverified address cannot be billed or reset',
+    );
+  }
+
+  if (env.MAIL_FROM?.includes('example.com')) {
+    add('MAIL_FROM', 'still the placeholder address; set a domain you actually control');
   }
 
   if (env.MAIL_DRIVER !== undefined && env.MAIL_DRIVER !== 'ses') {

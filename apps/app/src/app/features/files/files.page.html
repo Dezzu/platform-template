@@ -1,0 +1,43 @@
+<div class="mb-4 flex items-center justify-between gap-4">
+  <h1 class="text-2xl font-semibold">{{ 'nav.files' | transloco }}</h1>
+
+  <label
+    *appCan="[permissions.FILES_WRITE]"
+    class="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-9 cursor-pointer items-center rounded-md px-4 text-sm font-medium"
+    [class.pointer-events-none]="uploading()"
+    [class.opacity-60]="uploading()"
+  >
+    {{ (uploading() ? 'files.uploading' : 'files.upload') | transloco }}
+    <input type="file" class="sr-only" [disabled]="uploading()" (change)="onFileSelected($event)" />
+  </label>
+</div>
+
+<p class="text-muted-foreground mb-4 text-sm">{{ 'files.description' | transloco }}</p>
+
+@if (errorKey(); as key) {
+<p class="text-destructive mb-4 text-sm" role="alert">{{ key | transloco }}</p>
+} @if (files.isLoading()) {
+<p class="text-muted-foreground text-sm">{{ 'common.loading' | transloco }}</p>
+} @else if (files.error()) {
+<p class="text-destructive text-sm" role="alert">{{ 'errors.INTERNAL_ERROR' | transloco }}</p>
+} @else { @let page = files.value(); @if (!page || page.items.length === 0) {
+<p class="text-muted-foreground text-sm">{{ 'files.empty' | transloco }}</p>
+} @else {
+<ul class="divide-y rounded-md border">
+  @for (file of page.items; track file.id) {
+  <li class="flex items-center justify-between gap-4 p-3">
+    <div class="min-w-0">
+      <p class="truncate font-medium">{{ file.fileName }}</p>
+      <p class="text-muted-foreground truncate text-sm">{{ humanSize(file.size) }} · {{ file.contentType }}</p>
+    </div>
+
+    <div class="flex shrink-0 gap-2">
+      <button hlmBtn variant="outline" size="sm" (click)="download(file)">{{ 'files.download' | transloco }}</button>
+      <button hlmBtn variant="destructive" size="sm" *appCan="[permissions.FILES_DELETE]" (click)="remove(file)">
+        {{ 'common.delete' | transloco }}
+      </button>
+    </div>
+  </li>
+  }
+</ul>
+} }

@@ -2,6 +2,7 @@ import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { admin, organization, twoFactor } from 'better-auth/plugins';
 import { createStripePlugin } from '../modules/billing/stripe-plugin';
+import { authMailer } from '../modules/mail/mail.bridge';
 import * as schema from '@app/db';
 import { db } from '../database/db';
 
@@ -23,6 +24,26 @@ const csv = (name: string): string[] =>
 
 const googleClientId = env('GOOGLE_CLIENT_ID');
 const googleClientSecret = env('GOOGLE_CLIENT_SECRET');
+
+/** Where the user lands after Better Auth has finished with the token in the link. */
+const dashboardUrl = (): string => env('DASHBOARD_URL') ?? 'http://localhost:4300';
+
+/**
+ * Points a Better Auth link at a page of ours once its token has been consumed.
+ *
+ * The URL Better Auth builds calls back to the API, whose default landing page is the
+ * API itself — a user who clicks "verify" would end up looking at JSON. Only the
+ * callback is rewritten; the token and the path stay exactly as issued.
+ */
+const withCallback = (rawUrl: string, target: string): string => {
+  try {
+    const url = new URL(rawUrl);
+    url.searchParams.set('callbackURL', target);
+    return url.toString();
+  } catch {
+    return rawUrl;
+  }
+};
 
 /**
  * The Better Auth instance.
@@ -52,10 +73,37 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
-    // Flipped on in Phase 8, once the mail transport exists. Leaving it on now would
-    // make every signup unusable in local development.
-    requireEmailVerification: false,
+    /**
+     * Off by default so a fresh clone is usable immediately; the configuration
+     * validation refuses to start in production with it off. See
+     * AUTH_REQUIRE_EMAIL_VERIFICATION in env.schema.ts.
+     */
+    requireEmailVerification: env('AUTH_REQUIRE_EMAIL_VERIFICATION') === 'true',
     minPasswordLength: 12,
+
+    sendResetPassword: async ({ user, url }) => {
+      await authMailer().send({
+        to: user.email,
+        template: 'password-reset',
+        params: { name: user.name ?? '', url: withCallback(url, `${dashboardUrl()}/sign-in`) },
+        userId: user.id,
+      });
+    },
+  },
+
+  emailVerification: {
+    sendOnSignUp: true,
+    // Clicking the link signs you in, rather than dropping you on a login form seconds
+    // after you proved you own the address.
+    autoSignInAfterVerification: true,
+    sendVerificationEmail: async ({ user, url }) => {
+      await authMailer().send({
+        to: user.email,
+        template: 'email-verification',
+        params: { name: user.name ?? '', url: withCallback(url, `${dashboardUrl()}/dashboard`) },
+        userId: user.id,
+      });
+    },
   },
 
   socialProviders:
@@ -89,6 +137,22 @@ export const auth = betterAuth({
     organization({
       // Whoever creates the organization owns it.
       creatorRole: env('ORG_CREATOR_ROLE') ?? 'owner',
+
+      sendInvitationEmail: async (data) => {
+        await authMailer().send({
+          to: data.email,
+          template: 'organization-invitation',
+          params: {
+            organizationName: data.organization.name,
+            inviterName: data.inviter.user.name ?? '',
+            role: String(data.role),
+            // The accept screen itself arrives with the members feature; the link is
+            // built now so the invitation is a complete, testable round trip.
+            url: `${dashboardUrl()}/accept-invitation?id=${encodeURIComponent(data.id)}`,
+          },
+          organizationId: data.organization.id,
+        });
+      },
     }),
     // Platform-level roles, user banning and support impersonation.
     admin({

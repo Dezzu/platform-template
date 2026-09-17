@@ -7,6 +7,8 @@ import { auth } from './auth/auth.config';
 import { configNamespaces } from './config/namespaces';
 import { validateEnv } from './config/validate-env';
 import { DatabaseModule } from './database/database.module';
+import { QueueModule } from './queue/queue.module';
+import { StorageModule } from './storage/storage.module';
 import { HealthModule } from './modules/health/health.module';
 import { MeModule } from './modules/me/me.module';
 import { PlansModule } from './modules/plans/plans.module';
@@ -15,6 +17,9 @@ import { AuditModule } from './modules/audit/audit.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { SubscriptionGuard } from './modules/billing/subscription.guard';
 import { InsightsModule } from './modules/insights/insights.module';
+import { FilesModule } from './modules/files/files.module';
+import { MailModule } from './modules/mail/mail.module';
+import { MaintenanceModule } from './modules/maintenance/maintenance.module';
 import { PermissionsGuard } from './auth/permissions.guard';
 
 @Module({
@@ -30,6 +35,15 @@ import { PermissionsGuard } from './auth/permissions.guard';
     }),
 
     DatabaseModule,
+    QueueModule,
+    StorageModule,
+
+    /**
+     * Before AuthModule on purpose. Better Auth's hooks send verification, reset and
+     * invitation emails through MailService, reached via mail.bridge.ts — and that
+     * bridge is populated by MailModule's constructor, which must therefore have run.
+     */
+    MailModule,
 
     /**
      * Registers the Better Auth handler at /api/auth/* and a GLOBAL AuthGuard:
@@ -59,6 +73,8 @@ import { PermissionsGuard } from './auth/permissions.guard';
     BillingModule,
     ProjectsModule,
     InsightsModule,
+    FilesModule,
+    MaintenanceModule,
   ],
   providers: [
     /**

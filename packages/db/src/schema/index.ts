@@ -22,3 +22,5 @@ export * from './app/app-setting';
 export * from './app/feature-flag-override';
 export * from './app/audit-log';
 export * from './app/project';
+export * from './app/file';
+export * from './app/email-message';
