@@ -9,7 +9,7 @@
     "pnpm": ">=12.4.0"
   },
   "scripts": {
-    "verify": "pnpm lint && pnpm env:check && pnpm i18n:check && pnpm typecheck && pnpm test && pnpm build",
+    "verify": "pnpm node:check && pnpm lint && pnpm env:check && pnpm i18n:check && pnpm typecheck && pnpm test && pnpm build",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -36,7 +36,8 @@
     "stripe:test-clock": "pnpm --filter @app/api stripe:test-clock",
     "docker:dev": "docker compose -f docker/compose.dev.yml up -d",
     "docker:dev:down": "docker compose -f docker/compose.dev.yml down",
-    "docker:dev:reset": "docker compose -f docker/compose.dev.yml down -v"
+    "docker:dev:reset": "docker compose -f docker/compose.dev.yml down -v",
+    "node:check": "node scripts/check-node.mjs"
   },
   "devDependencies": {
     "@angular/build": "^22.1.8",

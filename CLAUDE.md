@@ -81,11 +81,14 @@ Mai `any`. Mai `@ts-ignore` senza una riga che spieghi perché.
 | `pnpm stripe:setup`                    | crea i prodotti Stripe dalla tabella `plan`                                               |
 | `pnpm stripe:listen`                   | inoltra i webhook su localhost                                                            |
 | `pnpm ng test libs` / `test app`       | test frontend                                                                             |
+| `pnpm node:check`                      | verifica la versione di Node — è il primo passo di `verify`                               |
 | <http://localhost:8025>                | Mailpit: le email inviate in locale                                                       |
 | <http://localhost:9001>                | console MinIO (`minioadmin` / `minioadmin`)                                               |
 
-**Node 24 è obbligatorio** (pnpm 12 non parte su Node 22). In una shell non
-interattiva:
+**Node 24 è obbligatorio** (pnpm 12 non parte su Node 22). `.nvmrc` lo dichiara e
+`scripts/check-node.mjs` lo fa rispettare come primo passo di `pnpm verify`: né
+`.nvmrc` né `engines` bloccano `pnpm run` da soli, e `engine-strict` vale solo in fase
+di install. In una shell non interattiva:
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v24.18.0/bin:$PATH"
