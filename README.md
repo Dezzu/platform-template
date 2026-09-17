@@ -23,8 +23,14 @@ pnpm install
 cp .env.example .env        # poi compila i segreti
 pnpm docker:dev             # postgres, valkey, mailpit, minio
 pnpm db:migrate && pnpm db:seed
-pnpm dev
+
+pnpm start:api              # api su :3000
+pnpm dev:app                # dashboard su :4300
+pnpm dev:web                # sito marketing su :4200
 ```
+
+`start:api` compila e avvia. Per lavorare sul backend con ricompilazione automatica
+usa `pnpm dev:api`.
 
 ## Comandi
 
