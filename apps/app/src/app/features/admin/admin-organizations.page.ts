@@ -86,7 +86,16 @@ export class AdminOrganizationsPage {
   protected readonly total = computed(() =>
     this.page.hasValue() ? this.page.value().meta.total : 0,
   );
-  protected readonly loading = computed(() => this.page.isLoading());
+  /**
+   * Skeletons only when there is nothing to show yet.
+   *
+   * `isLoading()` is also true while reloading after a mutation, and binding it
+   * directly replaced the rows with skeletons every time somebody changed a role —
+   * which reads as the whole page reloading for a change to one cell. Reloading keeps
+   * the previous value, so the table can simply keep showing it until the new one
+   * lands. Changing page or search does clear it, and there the skeleton is correct.
+   */
+  protected readonly loading = computed(() => this.page.isLoading() && !this.page.hasValue());
   protected readonly failed = computed(() => this.page.error() !== undefined);
 
   protected readonly columns = computed<TableColumn[]>(() => {

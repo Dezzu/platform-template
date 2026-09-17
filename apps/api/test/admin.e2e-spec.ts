@@ -256,10 +256,18 @@ describe('platform administration (e2e)', () => {
         .where(and(eq(member.organizationId, orgA), eq(member.userId, newcomer.id)));
       expect(updated?.role).toBe('admin');
 
+      // Scoped to the row this case created. Querying by action alone reads whatever
+      // else is in the shared development database — including a change somebody made
+      // by hand in the browser, which is exactly how this failed once.
       const [entry] = await db
         .select()
         .from(auditLog)
-        .where(eq(auditLog.action, 'platform.member.role_changed'));
+        .where(
+          and(
+            eq(auditLog.action, 'platform.member.role_changed'),
+            eq(auditLog.resourceId, updated?.id ?? ''),
+          ),
+        );
       // Set, unlike the other platform actions: this one does belong to a tenant, even
       // though the person doing it is not a member of it.
       expect(entry?.organizationId).toBe(orgA);

@@ -124,6 +124,9 @@ function offeredUnder(
     .filter((label): label is string => label !== undefined);
 }
 
+const headers = (fixture: { nativeElement: unknown }): string[] =>
+  [...page(fixture).querySelectorAll('thead th')].map((cell) => cell.textContent?.trim() ?? '');
+
 const rowFor = (fixture: { nativeElement: unknown }, email: string) =>
   [...page(fixture).querySelectorAll('tbody tr')].find((row) => row.textContent?.includes(email));
 
@@ -290,6 +293,38 @@ describe('AdminUsersPage', () => {
     expect(page(fixture).textContent).toContain('Acme Srl');
   });
 
+  it('shows the same columns however you arrived at the screen', async () => {
+    const organization = () =>
+      of({
+        id: 'acme',
+        name: 'Acme Srl',
+        slug: 'acme',
+        logo: null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        memberCount: 1,
+        subscription: null,
+        members: [],
+      });
+
+    const unfiltered = setup({ listUsers: () => pageOf([PLAIN]) });
+    await unfiltered.whenStable();
+    const plain = headers(unfiltered);
+
+    TestBed.resetTestingModule();
+
+    const filtered = setup(
+      { listUsers: () => pageOf([PLAIN]), getOrganization: organization },
+      { id: 'super', role: 'superadmin' },
+      ['platform.users.read'],
+      { organizationId: 'acme' },
+    );
+    await filtered.whenStable();
+
+    // One screen, not two: the same route must not look different depending on how
+    // you reached it.
+    expect(headers(filtered)).toEqual(plain);
+  });
+
   it('shows the role inside that organization only while the filter is on', async () => {
     const member = account({ id: 'plain', organizationRole: 'admin' });
     const filtered = setup(
@@ -313,21 +348,17 @@ describe('AdminUsersPage', () => {
     );
     await filtered.whenStable();
 
-    expect(page(filtered).querySelector('thead')?.textContent).toContain(
-      "Ruolo nell'organizzazione",
-    );
     expect(rowFor(filtered, 'plain@test.local')?.textContent).toContain('Amministratore');
 
     TestBed.resetTestingModule();
 
-    // Unfiltered the column is absent rather than empty: across tenants there is no
-    // single role to report.
-    const unfiltered = setup({ listUsers: () => pageOf([member]) });
+    // Unfiltered the column stays, and reads as empty: across tenants there is no
+    // single role to report, and saying so beats reshaping the table.
+    const unfiltered = setup({ listUsers: () => pageOf([account({ id: 'plain' })]) });
     await unfiltered.whenStable();
 
-    expect(page(unfiltered).querySelector('thead')?.textContent).not.toContain(
-      "Ruolo nell'organizzazione",
-    );
+    expect(headers(unfiltered)).toContain("Ruolo nell'organizzazione");
+    expect(rowFor(unfiltered, 'plain@test.local')?.textContent).toContain('—');
   });
 
   it('offers to re-send the verification only while the address is unverified', async () => {

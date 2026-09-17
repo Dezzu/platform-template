@@ -166,7 +166,16 @@ export class AdminUsersPage {
   protected readonly total = computed(() =>
     this.page.hasValue() ? this.page.value().meta.total : 0,
   );
-  protected readonly loading = computed(() => this.page.isLoading());
+  /**
+   * Skeletons only when there is nothing to show yet.
+   *
+   * `isLoading()` is also true while reloading after a mutation, and binding it
+   * directly replaced the rows with skeletons every time somebody changed a role —
+   * which reads as the whole page reloading for a change to one cell. Reloading keeps
+   * the previous value, so the table can simply keep showing it until the new one
+   * lands. Changing page or search does clear it, and there the skeleton is correct.
+   */
+  protected readonly loading = computed(() => this.page.isLoading() && !this.page.hasValue());
   protected readonly failed = computed(() => this.page.error() !== undefined);
 
   private readonly myRole = computed(() => this.auth.user()?.role ?? 'user');
@@ -177,17 +186,29 @@ export class AdminUsersPage {
     this.permissions.anyOfPlatform('platform.organizations.manage'),
   );
 
+  /**
+   * One column set, always the same.
+   *
+   * An earlier version swapped a column in and out depending on whether the list was
+   * scoped to an organization. It made the screen two screens: the same route looked
+   * different depending on how you had reached it, and every future change had to be
+   * thought through twice. The role column now simply reads "—" when there is no
+   * organization to have a role in, and anyone who does not want it can drop it from
+   * the column selector.
+   */
   protected readonly columns = computed<TableColumn[]>(() => {
     const t = (key: string) => this.translate(`admin.columns.${key}`);
     return [
       { field: 'name', header: t('name'), sortable: true },
       { field: 'email', header: t('email'), sortable: true },
       { field: 'role', header: t('role'), sortable: false },
-      // Only when scoped: "member of what?" has no answer across tenants, and a column
-      // that is sometimes meaningless is worse than one that is explicitly absent.
-      ...(this.organizationId()
-        ? [{ field: 'organizationRole', header: t('organizationRole'), sortable: false }]
-        : [{ field: 'organizationCount', header: t('organizations'), sortable: false }]),
+      { field: 'organizationCount', header: t('organizations'), sortable: false, removable: true },
+      {
+        field: 'organizationRole',
+        header: t('organizationRole'),
+        sortable: false,
+        removable: true,
+      },
       {
         field: 'createdAt',
         header: t('createdAt'),
