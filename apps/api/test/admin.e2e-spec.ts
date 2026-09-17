@@ -232,6 +232,75 @@ describe('platform administration (e2e)', () => {
     });
   });
 
+  describe('roles inside an organization', () => {
+    it('changes a role from outside the organization, and records the tenant', async () => {
+      const newcomer = await signUp(app, 'adm-newcomer');
+      users.push(newcomer);
+      await db.insert(member).values({
+        id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        organizationId: orgA,
+        userId: newcomer.id,
+        role: 'member',
+        createdAt: new Date(),
+      });
+
+      await request(app.getHttpServer())
+        .patch(`/api/admin/organizations/${orgA}/members/${newcomer.id}/role`)
+        .set(as(admin))
+        .send({ role: 'admin' })
+        .expect(204);
+
+      const [updated] = await db
+        .select()
+        .from(member)
+        .where(and(eq(member.organizationId, orgA), eq(member.userId, newcomer.id)));
+      expect(updated?.role).toBe('admin');
+
+      const [entry] = await db
+        .select()
+        .from(auditLog)
+        .where(eq(auditLog.action, 'platform.member.role_changed'));
+      // Set, unlike the other platform actions: this one does belong to a tenant, even
+      // though the person doing it is not a member of it.
+      expect(entry?.organizationId).toBe(orgA);
+      expect(entry?.actorUserId).toBe(admin.id);
+    });
+
+    it('refuses to demote the last owner', async () => {
+      // Better Auth guards this on the members screen, but a platform admin has no
+      // membership here and none of that code is on this path.
+      const res = await request(app.getHttpServer())
+        .patch(`/api/admin/organizations/${orgA}/members/${victim.id}/role`)
+        .set(as(admin))
+        .send({ role: 'member' })
+        .expect(409);
+
+      expect(res.body.messageCode).toBe('ORGANIZATION_LAST_OWNER');
+
+      const [unchanged] = await db
+        .select()
+        .from(member)
+        .where(and(eq(member.organizationId, orgA), eq(member.userId, victim.id)));
+      expect(unchanged?.role).toBe('owner');
+    });
+
+    it('answers 404 for someone who is not a member of that organization', async () => {
+      await request(app.getHttpServer())
+        .patch(`/api/admin/organizations/${orgA}/members/${plain.id}/role`)
+        .set(as(admin))
+        .send({ role: 'admin' })
+        .expect(404);
+    });
+
+    it('refuses an ordinary user outright', async () => {
+      await request(app.getHttpServer())
+        .patch(`/api/admin/organizations/${orgA}/members/${victim.id}/role`)
+        .set(as(plain))
+        .send({ role: 'member' })
+        .expect(403);
+    });
+  });
+
   describe('support actions', () => {
     it('emails a reset link rather than setting a password', async () => {
       await request(app.getHttpServer())
@@ -251,6 +320,35 @@ describe('platform administration (e2e)', () => {
       expect(queued).toBeDefined();
       // The link is a bearer credential; the stored row must not carry it.
       expect(queued?.params).toMatchObject({ url: '[redacted]' });
+    });
+
+    it('re-sends the verification email, and refuses once the address is verified', async () => {
+      await request(app.getHttpServer())
+        .post(`/api/admin/users/${victim.id}/verification-email`)
+        .set(as(admin))
+        .expect(202);
+
+      const queued = await db
+        .select()
+        .from(emailMessage)
+        .where(
+          and(
+            eq(emailMessage.toEmail, victim.email),
+            eq(emailMessage.template, 'email-verification'),
+          ),
+        );
+      // One from signing up, one from this call.
+      expect(queued.length).toBeGreaterThanOrEqual(2);
+
+      await db.update(user).set({ emailVerified: true }).where(eq(user.id, victim.id));
+
+      const res = await request(app.getHttpServer())
+        .post(`/api/admin/users/${victim.id}/verification-email`)
+        .set(as(admin))
+        .expect(409);
+      expect(res.body.messageCode).toBe('CONFLICT');
+
+      await db.update(user).set({ emailVerified: false }).where(eq(user.id, victim.id));
     });
 
     it('bans, ends the sessions, and lifts the ban again', async () => {

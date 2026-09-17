@@ -1,15 +1,18 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { and, asc, count, desc, eq, ilike, inArray, sql, type SQL } from 'drizzle-orm';
-import type {
-  AdminOrganization,
-  AdminOrganizationDetail,
-  AdminOrganizationListQuery,
-  OrgRole,
-  Paginated,
+import {
+  ERROR_CODES,
+  type AdminOrganization,
+  type AdminOrganizationDetail,
+  type AdminOrganizationListQuery,
+  type OrgRole,
+  type Paginated,
 } from '@app/contracts';
 import { member, organization, subscription, user, type Database } from '@app/db';
 import { AppException } from '../../common';
 import { DRIZZLE } from '../../database/database.module';
+import { AuditService } from '../audit/audit.service';
+import type { PlatformActor } from './admin-users.service';
 
 type OrganizationRow = typeof organization.$inferSelect;
 
@@ -21,17 +24,19 @@ interface PlanSnapshot {
 }
 
 /**
- * Every organization on the platform.
+ * Every organization on the platform, and the one thing support actually needs to
+ * change inside one: who holds which role.
  *
- * Read-only on purpose. Deleting a tenant from a support screen is one mis-click away
- * from deleting a customer's data, and the operations that actually come up in support
- * — change someone's role, get them back in — are already on the members screen, which
- * an impersonating admin can reach. Adding destructive actions here is a decision to
- * take deliberately, with a confirmation flow, not a side effect of building the list.
+ * The organization itself stays read-only. Deleting a tenant from a support screen is
+ * one mis-click away from deleting a customer's data, and nothing about "list the
+ * organizations" implies being able to remove one.
  */
 @Injectable()
 export class AdminOrganizationsService {
-  constructor(@Inject(DRIZZLE) private readonly db: Database) {}
+  constructor(
+    private readonly audit: AuditService,
+    @Inject(DRIZZLE) private readonly db: Database,
+  ) {}
 
   async list(query: AdminOrganizationListQuery): Promise<Paginated<AdminOrganization>> {
     const filters: (SQL | undefined)[] = [
@@ -117,6 +122,62 @@ export class AdminOrganizationsService {
         user: { id: m.userId, name: m.userName, email: m.userEmail },
       })),
     };
+  }
+
+  /**
+   * Changes a member's role from outside the organization.
+   *
+   * Written straight to the table rather than through Better Auth, and that is not a
+   * shortcut: its endpoints resolve the caller's membership from the session, and a
+   * platform administrator has none here. Which is exactly why the last-owner rule has
+   * to be enforced in this method — the protection that covers the members screen comes
+   * from Better Auth, and none of it is on this path.
+   */
+  async setMemberRole(
+    actor: PlatformActor,
+    organizationId: string,
+    userId: string,
+    role: OrgRole,
+  ): Promise<void> {
+    const [current] = await this.db
+      .select({ id: member.id, role: member.role })
+      .from(member)
+      .where(and(eq(member.organizationId, organizationId), eq(member.userId, userId)))
+      .limit(1);
+
+    if (!current) throw AppException.notFound('Member');
+    if (current.role === role) return;
+
+    if (current.role === 'owner') {
+      const [owners] = await this.db
+        .select({ value: count() })
+        .from(member)
+        .where(and(eq(member.organizationId, organizationId), eq(member.role, 'owner')));
+
+      // Demoting the last owner leaves a tenant nobody can administer — including
+      // nobody who can pay for it.
+      if (Number(owners?.value ?? 0) <= 1) {
+        throw new AppException(
+          ERROR_CODES.ORGANIZATION_LAST_OWNER,
+          HttpStatus.CONFLICT,
+          'The organization would be left without an owner',
+        );
+      }
+    }
+
+    await this.db.update(member).set({ role }).where(eq(member.id, current.id));
+
+    await this.audit.record({
+      // Set, unlike the other platform actions: this one does belong to a tenant, even
+      // though the person doing it is not a member of it.
+      organizationId,
+      actorUserId: actor.userId,
+      action: 'platform.member.role_changed',
+      resourceType: 'member',
+      resourceId: current.id,
+      before: { role: current.role, userId },
+      after: { role },
+    });
   }
 
   /**

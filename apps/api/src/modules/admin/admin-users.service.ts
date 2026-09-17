@@ -230,6 +230,57 @@ export class AdminUsersService {
     });
   }
 
+  /**
+   * Re-sends the address confirmation.
+   *
+   * The common support case by far: someone signed up, the email went to spam, and
+   * they cannot get in. Nothing is changed here — the account stays unverified until
+   * the person clicks, which is the whole point of verifying.
+   */
+  async sendVerificationEmail(
+    actor: PlatformActor,
+    userId: string,
+    callbackURL: string,
+  ): Promise<void> {
+    const target = await this.load(userId);
+    this.assertMayActOn(actor, target);
+
+    if (target.emailVerified) {
+      throw new AppException(
+        ERROR_CODES.CONFLICT,
+        HttpStatus.CONFLICT,
+        'This address is already verified',
+      );
+    }
+
+    /**
+     * The one call here made WITHOUT the caller's headers, against the rule the rest of
+     * this file follows.
+     *
+     * With a session Better Auth requires the address to be the session's own — it is
+     * built for "resend mine", and an administrator asking on someone else's behalf is
+     * rejected as an email mismatch. Without one it simply sends, which is fine: the
+     * endpoint is public, anyone may ask for a verification link to any address, and
+     * the link only ever reaches the mailbox that owns it. The authorisation that
+     * matters is ours, above.
+     */
+    await callAuthApi(() =>
+      auth.api.sendVerificationEmail({
+        body: { email: target.email, callbackURL },
+        headers: new Headers(),
+      }),
+    );
+
+    await this.audit.record({
+      organizationId: null,
+      actorUserId: actor.userId,
+      action: 'platform.user.verification_email_sent',
+      resourceType: 'user',
+      resourceId: userId,
+      after: { email: target.email },
+    });
+  }
+
   async ban(actor: PlatformActor, userId: string, input: AdminBan): Promise<void> {
     const target = await this.load(userId);
 

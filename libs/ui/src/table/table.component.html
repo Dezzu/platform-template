@@ -147,7 +147,9 @@
 
               <ng-template #menuAzioni>
                 <hlm-dropdown-menu class="w-56">
-                  @for (action of azioni; track $index) {
+                  @for (action of azioni; track $index) { @if (needsSeparator(azioni, $index)) {
+                  <hlm-dropdown-menu-separator />
+                  }
                   <button
                     hlmDropdownMenuItem
                     type="button"

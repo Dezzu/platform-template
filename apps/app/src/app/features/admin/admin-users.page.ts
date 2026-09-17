@@ -10,11 +10,15 @@ import {
   lucideCircleCheck,
   lucideKeyRound,
   lucideLogOut,
+  lucideMailCheck,
   lucideShield,
+  lucideUsers,
 } from '@ng-icons/lucide';
 import {
+  ORG_ROLES,
   PLATFORM_ROLES,
   platformOutranksOrEquals,
+  type OrgRole,
   type PlatformRole,
 } from '@app/contracts/permissions';
 import type { AdminUser } from '@app/contracts';
@@ -55,7 +59,15 @@ const NO_ORGANIZATION = '';
   selector: 'app-admin-users-page',
   imports: [TranslocoPipe, RouterLink, TableComponent, TemplateDirective],
   providers: [
-    provideIcons({ lucideShield, lucideKeyRound, lucideLogOut, lucideBan, lucideCircleCheck }),
+    provideIcons({
+      lucideShield,
+      lucideUsers,
+      lucideKeyRound,
+      lucideMailCheck,
+      lucideLogOut,
+      lucideBan,
+      lucideCircleCheck,
+    }),
   ],
   templateUrl: './admin-users.page.html',
 })
@@ -161,6 +173,9 @@ export class AdminUsersPage {
   private readonly mayManage = computed(() =>
     this.permissions.anyOfPlatform('platform.users.manage'),
   );
+  private readonly mayManageOrganizations = computed(() =>
+    this.permissions.anyOfPlatform('platform.organizations.manage'),
+  );
 
   protected readonly columns = computed<TableColumn[]>(() => {
     const t = (key: string) => this.translate(`admin.columns.${key}`);
@@ -203,8 +218,36 @@ export class AdminUsersPage {
       command: (row) => this.setRole(row, role),
     }));
 
+    /**
+     * Only while the list is scoped to one organization: outside that scope there is no
+     * single membership to change, and offering the entry anyway would raise the
+     * question "in which organization?" that the screen cannot answer.
+     */
+    const organizationId = this.organizationId();
+    const organizationActions: TableAction<AdminUser>[] = organizationId
+      ? ORG_ROLES.map((role) => ({
+          icon: 'lucideUsers',
+          label: this.translate('admin.makeOrganizationRole', {
+            role: this.translate(`members.roles.${role}`),
+          }),
+          visible: (row: AdminUser) =>
+            this.mayManageOrganizations() &&
+            row.organizationRole !== null &&
+            row.organizationRole !== role,
+          command: (row: AdminUser) => this.setOrganizationRole(organizationId, row, role),
+        }))
+      : [];
+
     return [
       ...roleActions,
+      ...organizationActions,
+      {
+        icon: 'lucideMailCheck',
+        label: this.translate('admin.sendVerification'),
+        // The common support case: they signed up, it went to spam, they cannot get in.
+        visible: (row) => this.canActOn(row) && !row.emailVerified,
+        command: (row) => this.sendVerificationEmail(row),
+      },
       {
         icon: 'lucideKeyRound',
         label: this.translate('admin.sendReset'),
@@ -213,6 +256,9 @@ export class AdminUsersPage {
       },
       {
         icon: 'lucideLogOut',
+        // Destructive: it throws the person out of every device they are signed in on,
+        // and nothing undoes it. The table draws a line above the first of these.
+        severity: 'destructive',
         label: this.translate('admin.revokeSessions'),
         visible: (row) => this.canActOn(row),
         command: (row) => this.revokeSessions(row),
@@ -226,6 +272,7 @@ export class AdminUsersPage {
       },
       {
         icon: 'lucideCircleCheck',
+        severity: 'destructive',
         label: this.translate('admin.unban'),
         visible: (row) => this.canActOn(row) && row.banned,
         command: (row) => this.unban(row),
@@ -302,6 +349,20 @@ export class AdminUsersPage {
   private unban(account: AdminUser): void {
     void this.run(async () => {
       await firstValueFrom(this.api.unban(account.id));
+      this.page.reload();
+    });
+  }
+
+  private sendVerificationEmail(account: AdminUser): void {
+    void this.run(async () => {
+      await firstValueFrom(this.api.sendVerificationEmail(account.id));
+      this.notice.set('admin.verificationQueued');
+    });
+  }
+
+  private setOrganizationRole(organizationId: string, account: AdminUser, role: OrgRole): void {
+    void this.run(async () => {
+      await firstValueFrom(this.api.setOrganizationRole(organizationId, account.id, role));
       this.page.reload();
     });
   }

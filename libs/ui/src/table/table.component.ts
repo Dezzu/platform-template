@@ -408,4 +408,24 @@ export class TableComponent<T> {
     const variante = this.actionVariant(action);
     return variante === 'destructive' ? 'text-destructive' : '';
   }
+
+  /**
+   * Whether a divider goes above this entry.
+   *
+   * By severity rather than by a flag on each action: "destructive actions sit at the
+   * bottom, behind a line" is a convention the component can keep on its own, and one
+   * every table then gets without its author having to remember. The line appears
+   * exactly once, where the list turns destructive — never at the top, where it would
+   * separate the menu from nothing.
+   */
+  protected needsSeparator(actions: TableAction<T>[], index: number): boolean {
+    if (index === 0) return false;
+    const current = actions[index];
+    const previous = actions[index - 1];
+    if (!current || !previous) return false;
+    return (
+      this.actionVariant(current) === 'destructive' &&
+      this.actionVariant(previous) !== 'destructive'
+    );
+  }
 }

@@ -71,6 +71,12 @@ export const AdminRoleUpdateSchema = z.object({
 });
 export type AdminRoleUpdate = z.infer<typeof AdminRoleUpdateSchema>;
 
+/** Changing a member's role inside an organization, from outside that organization. */
+export const AdminOrgRoleUpdateSchema = z.object({
+  role: z.enum(ORG_ROLES),
+});
+export type AdminOrgRoleUpdate = z.infer<typeof AdminOrgRoleUpdateSchema>;
+
 export const AdminBanSchema = z.object({
   reason: z.string().trim().min(1).max(500),
   /** Absent means indefinite. */

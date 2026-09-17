@@ -16,6 +16,7 @@
     },
     "filteredByOrganization": "Filtrato sugli utenti di {{organization}}.",
     "hideMembers": "Nascondi",
+    "makeOrganizationRole": "Nell'organizzazione: rendi {{role}}",
     "makeRole": "Rendi {{role}}",
     "manageMembers": "Gestisci gli utenti",
     "memberCount": "{{count}} membri",
@@ -32,13 +33,15 @@
       "user": "Utente"
     },
     "sendReset": "Invia reset password",
+    "sendVerification": "Invia email di verifica",
     "sessionsRevoked": "Tutte le sessioni sono state chiuse.",
     "showMembers": "Mostra i membri",
     "title": "Amministrazione",
     "unban": "Riattiva",
     "unverified": "email non verificata",
     "users": "Utenti",
-    "usersDescription": "Tutti gli account della piattaforma, oltre il confine delle organizzazioni."
+    "usersDescription": "Tutti gli account della piattaforma, oltre il confine delle organizzazioni.",
+    "verificationQueued": "Email di verifica accodata."
   },
   "auth": {
     "backToSignIn": "Torna all’accesso",

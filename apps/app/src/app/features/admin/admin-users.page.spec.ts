@@ -315,6 +315,109 @@ describe('AdminUsersPage', () => {
     );
   });
 
+  it('offers to re-send the verification only while the address is unverified', async () => {
+    const unverified = account({ id: 'plain', emailVerified: false });
+    const fixture = setup({ listUsers: () => pageOf([unverified]) });
+    await fixture.whenStable();
+
+    expect(offered(fixture, unverified)).toContain('Invia email di verifica');
+    // Already verified: re-sending confirms nothing and the API answers 409.
+    expect(offered(fixture, PLAIN)).not.toContain('Invia email di verifica');
+  });
+
+  it('marks as destructive the actions that cannot be undone', async () => {
+    const fixture = setup({ listUsers: () => pageOf([PLAIN]) });
+    await fixture.whenStable();
+
+    const destructive = internalsOf(fixture)
+      .actions()
+      .filter((action) => action.severity === 'destructive')
+      .map((action) => action.label);
+
+    // Signing someone out of every device is not reversible, so it reads like the ban.
+    expect(destructive).toContain('Disconnetti ovunque');
+    expect(destructive).toContain('Sospendi');
+    expect(destructive).not.toContain('Invia reset password');
+  });
+
+  it('keeps the destructive actions last, so the divider has something to divide', async () => {
+    const fixture = setup({ listUsers: () => pageOf([PLAIN]) });
+    await fixture.whenStable();
+
+    const severities = internalsOf(fixture)
+      .actions()
+      .filter((action) => action.visible?.(PLAIN, []) ?? true)
+      .map((action) => action.severity === 'destructive');
+
+    // The table draws one line where the list turns destructive; interleaving them
+    // would scatter dividers through the menu.
+    expect(severities).toEqual([...severities].sort((a, b) => Number(a) - Number(b)));
+  });
+
+  it('offers the organization roles only while the list is scoped to one', async () => {
+    const organization = () =>
+      of({
+        id: 'acme',
+        name: 'Acme Srl',
+        slug: 'acme',
+        logo: null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        memberCount: 1,
+        subscription: null,
+        members: [],
+      });
+    const member = account({ id: 'plain', organizationRole: 'member' });
+
+    const scoped = setup(
+      { listUsers: () => pageOf([member]), getOrganization: organization },
+      { id: 'super', role: 'superadmin' },
+      ['platform.users.read', 'platform.users.manage', 'platform.organizations.manage'],
+      { organizationId: 'acme' },
+    );
+    await scoped.whenStable();
+
+    const labels = offered(scoped, member);
+    expect(labels).toContain("Nell'organizzazione: rendi Owner");
+    expect(labels).toContain("Nell'organizzazione: rendi Amministratore");
+    // The role they already hold is not offered.
+    expect(labels).not.toContain("Nell'organizzazione: rendi Membro");
+
+    TestBed.resetTestingModule();
+
+    // Unscoped there is no single membership to change, so the entry is absent rather
+    // than raising "in which organization?".
+    const unscoped = setup({ listUsers: () => pageOf([member]) });
+    await unscoped.whenStable();
+
+    expect(offered(unscoped, member).some((l) => l.startsWith("Nell'organizzazione"))).toBe(false);
+  });
+
+  it('hides the organization roles from someone who may not manage organizations', async () => {
+    const member = account({ id: 'plain', organizationRole: 'member' });
+    const fixture = setup(
+      {
+        listUsers: () => pageOf([member]),
+        getOrganization: () =>
+          of({
+            id: 'acme',
+            name: 'Acme Srl',
+            slug: 'acme',
+            logo: null,
+            createdAt: '2026-01-01T00:00:00.000Z',
+            memberCount: 1,
+            subscription: null,
+            members: [],
+          }),
+      },
+      { id: 'super', role: 'superadmin' },
+      ['platform.users.read', 'platform.users.manage'],
+      { organizationId: 'acme' },
+    );
+    await fixture.whenStable();
+
+    expect(offered(fixture, member).some((l) => l.startsWith("Nell'organizzazione"))).toBe(false);
+  });
+
   it('offers nothing to someone who may only read', async () => {
     const fixture = setup({ listUsers: () => pageOf([PLAIN]) }, { id: 'admin', role: 'admin' }, [
       'platform.users.read',

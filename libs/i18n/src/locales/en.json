@@ -16,6 +16,7 @@
     },
     "filteredByOrganization": "Filtered to the users of {{organization}}.",
     "hideMembers": "Hide",
+    "makeOrganizationRole": "In the organization: make {{role}}",
     "makeRole": "Make {{role}}",
     "manageMembers": "Manage the users",
     "memberCount": "{{count}} members",
@@ -32,13 +33,15 @@
       "user": "User"
     },
     "sendReset": "Send password reset",
+    "sendVerification": "Send verification email",
     "sessionsRevoked": "Every session has been closed.",
     "showMembers": "Show members",
     "title": "Administration",
     "unban": "Reinstate",
     "unverified": "email not verified",
     "users": "Users",
-    "usersDescription": "Every account on the platform, across the organization boundary."
+    "usersDescription": "Every account on the platform, across the organization boundary.",
+    "verificationQueued": "Verification email queued."
   },
   "auth": {
     "backToSignIn": "Back to sign in",

@@ -16,6 +16,7 @@ import { Inject } from '@nestjs/common';
 import {
   AdminBanSchema,
   AdminOrganizationDetailSchema,
+  AdminOrgRoleUpdateSchema,
   AdminOrganizationListQuerySchema,
   AdminOrganizationSchema,
   AdminRoleUpdateSchema,
@@ -26,6 +27,7 @@ import {
   zPaginated,
   type AdminBan,
   type AdminOrganization,
+  type AdminOrgRoleUpdate,
   type AdminOrganizationDetail,
   type AdminOrganizationListQuery,
   type AdminRoleUpdate,
@@ -116,6 +118,21 @@ export class AdminController {
     );
   }
 
+  @Post('users/:id/verification-email')
+  @RequirePlatformPermission(PLATFORM_PERMISSIONS.USERS_MANAGE)
+  @HttpCode(HttpStatus.ACCEPTED)
+  @ApiOperation({ summary: 'Re-send the address confirmation email' })
+  sendVerificationEmail(
+    @Req() request: RequestWithSession,
+    @Param('id') id: string,
+  ): Promise<void> {
+    return this.users.sendVerificationEmail(
+      this.actor(request),
+      id,
+      `${this.app.dashboardUrl}/dashboard`,
+    );
+  }
+
   @Post('users/:id/ban')
   @RequirePlatformPermission(PLATFORM_PERMISSIONS.USERS_MANAGE)
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -152,6 +169,19 @@ export class AdminController {
     @Query({ schema: AdminOrganizationListQuerySchema }) query: AdminOrganizationListQuery,
   ): Promise<Paginated<AdminOrganization>> {
     return this.organizations.list(query);
+  }
+
+  @Patch('organizations/:organizationId/members/:userId/role')
+  @RequirePlatformPermission(PLATFORM_PERMISSIONS.ORGANIZATIONS_MANAGE)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Change a member's role inside an organization" })
+  setMemberRole(
+    @Req() request: RequestWithSession,
+    @Param('organizationId') organizationId: string,
+    @Param('userId') userId: string,
+    @Body({ schema: AdminOrgRoleUpdateSchema }) body: AdminOrgRoleUpdate,
+  ): Promise<void> {
+    return this.organizations.setMemberRole(this.actor(request), organizationId, userId, body.role);
   }
 
   @Get('organizations/:id')

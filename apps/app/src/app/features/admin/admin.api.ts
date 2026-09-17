@@ -3,6 +3,7 @@ import { inject, Service } from '@angular/core';
 import { CORE_CONFIG } from '@app/core';
 import type {
   AdminBan,
+  OrgRole,
   AdminOrganization,
   AdminOrganizationDetail,
   AdminOrganizationListQuery,
@@ -50,6 +51,18 @@ export class AdminApi {
 
   revokeSessions(userId: string): Observable<void> {
     return this.http.post<void>(`${this.base}/users/${userId}/revoke-sessions`, {});
+  }
+
+  sendVerificationEmail(userId: string): Observable<void> {
+    return this.http.post<void>(`${this.base}/users/${userId}/verification-email`, {});
+  }
+
+  /** The role inside one organization, changed from outside it. */
+  setOrganizationRole(organizationId: string, userId: string, role: OrgRole): Observable<void> {
+    return this.http.patch<void>(
+      `${this.base}/organizations/${organizationId}/members/${userId}/role`,
+      { role },
+    );
   }
 
   listOrganizations(
