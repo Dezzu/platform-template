@@ -34,6 +34,12 @@ export const routes: Routes = [
           import('./features/projects/projects.page').then((m) => m.ProjectsPage),
       },
       {
+        path: 'insights',
+        canMatch: [navGuard('insights')],
+        loadComponent: () =>
+          import('./features/insights/insights.page').then((m) => m.InsightsPage),
+      },
+      {
         path: 'billing',
         canMatch: [navGuard('billing')],
         loadComponent: () => import('./features/billing/billing.page').then((m) => m.BillingPage),

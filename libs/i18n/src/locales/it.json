@@ -80,12 +80,23 @@
     "email": "Indirizzo email non valido",
     "passwordMismatch": "Le password non coincidono"
   },
+  "insights": {
+    "active": "Attivi",
+    "archived": "Archiviati",
+    "includedIn": "Incluso nel piano {{plan}}.",
+    "last30": "Ultimi 30 giorni",
+    "lockedBody": "Le analisi sull'andamento dei progetti sono incluse nei piani a pagamento.",
+    "lockedTitle": "Disponibile con un abbonamento",
+    "seePlans": "Vedi i piani",
+    "total": "Progetti totali"
+  },
   "nav": {
-    "dashboard": "Dashboard",
-    "projects": "Progetti",
-    "members": "Membri",
-    "billing": "Abbonamento",
     "audit": "Registro attività",
+    "billing": "Abbonamento",
+    "dashboard": "Dashboard",
+    "insights": "Analisi",
+    "members": "Membri",
+    "projects": "Progetti",
     "settings": "Impostazioni"
   },
   "profile": {

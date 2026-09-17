@@ -22,5 +22,13 @@ export interface NavItem {
   mode?: 'any' | 'all';
   /** Hidden and unreachable while the flag is off. */
   featureFlag?: string;
+  /**
+   * The screen behind this entry needs a paid subscription.
+   *
+   * The entry stays visible without one — hiding it means nobody discovers the
+   * feature and nobody upgrades — and the page shows what it offers plus a way to
+   * subscribe. The API answers 402 either way.
+   */
+  requiresSubscription?: boolean;
   children?: readonly NavItem[];
 }

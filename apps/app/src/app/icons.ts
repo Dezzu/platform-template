@@ -1,4 +1,5 @@
 import {
+  lucideChartNoAxesColumn,
   lucideChevronRight,
   lucideCreditCard,
   lucideFolderKanban,
@@ -27,6 +28,7 @@ import {
  * `provideIcons` sits next to the markup using them.
  */
 export const APP_ICONS = {
+  lucideChartNoAxesColumn,
   lucideChevronRight,
   lucideCreditCard,
   lucideFolderKanban,

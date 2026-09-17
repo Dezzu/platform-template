@@ -20,12 +20,14 @@ export class PermissionsService {
     role: string | null;
     organizationId: string | null;
     billingScope: 'organization' | 'user';
+    subscribed: boolean;
   }>({
     permissions: new Set(),
     platform: new Set(),
     role: null,
     organizationId: null,
     billingScope: 'organization',
+    subscribed: false,
   });
 
   readonly role = computed(() => this.state().role);
@@ -33,6 +35,13 @@ export class PermissionsService {
   readonly permissions = computed(() => this.state().permissions);
   /** Server-reported: whether a subscription belongs to the organization or the user. */
   readonly billingScope = computed(() => this.state().billingScope);
+  /**
+   * Whether the reference has a subscription that entitles it to paid features.
+   *
+   * Decides what the interface shows. The API refuses regardless, with 402 — this is
+   * a courtesy to the reader, never the control.
+   */
+  readonly subscribed = computed(() => this.state().subscribed);
 
   /** Loads (or reloads) the permission set. Call after sign-in and after switching org. */
   async refresh(): Promise<Me | null> {
@@ -44,6 +53,7 @@ export class PermissionsService {
         role: me.role,
         organizationId: me.activeOrganizationId,
         billingScope: me.billingScope,
+        subscribed: me.subscription !== null,
       });
       return me;
     } catch {
@@ -59,6 +69,7 @@ export class PermissionsService {
       role: null,
       organizationId: null,
       billingScope: 'organization',
+      subscribed: false,
     });
   }
 

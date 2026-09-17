@@ -45,5 +45,20 @@ export const MeSchema = z.object({
    * nothing keeps in step.
    */
   billingScope: z.enum(['organization', 'user']),
+  /**
+   * The subscription that entitles the caller to paid features, or null.
+   *
+   * Sent so the interface can show a paywall instead of a broken screen. It decides
+   * what to *show*; the API still refuses the request with 402, because anything the
+   * browser holds can be edited by whoever is holding it.
+   */
+  subscription: z
+    .object({
+      plan: z.string(),
+      status: z.string(),
+      periodEnd: z.iso.datetime().nullable(),
+      cancelAtPeriodEnd: z.boolean(),
+    })
+    .nullable(),
 });
 export type Me = z.infer<typeof MeSchema>;

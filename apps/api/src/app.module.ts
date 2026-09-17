@@ -12,6 +12,9 @@ import { MeModule } from './modules/me/me.module';
 import { PlansModule } from './modules/plans/plans.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { AuditModule } from './modules/audit/audit.module';
+import { BillingModule } from './modules/billing/billing.module';
+import { SubscriptionGuard } from './modules/billing/subscription.guard';
+import { InsightsModule } from './modules/insights/insights.module';
 import { PermissionsGuard } from './auth/permissions.guard';
 
 @Module({
@@ -53,7 +56,9 @@ import { PermissionsGuard } from './auth/permissions.guard';
     MeModule,
     PlansModule,
     AuditModule,
+    BillingModule,
     ProjectsModule,
+    InsightsModule,
   ],
   providers: [
     /**
@@ -69,6 +74,12 @@ import { PermissionsGuard } from './auth/permissions.guard';
      */
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
+    /**
+     * 3. SubscriptionGuard — the paywall (402). Last, because it relies on the tenant
+     *    PermissionsGuard resolved: a paywall that had to work out which organization
+     *    it was talking about would be a second place to get tenancy wrong.
+     */
+    { provide: APP_GUARD, useClass: SubscriptionGuard },
   ],
 })
 export class AppModule {}

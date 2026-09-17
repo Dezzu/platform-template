@@ -30,6 +30,14 @@ export const NAV_MANIFEST: readonly NavItem[] = [
     permissions: [PERMISSIONS.PROJECTS_READ],
   },
   {
+    id: 'insights',
+    labelKey: 'nav.insights',
+    icon: 'lucideChartNoAxesColumn',
+    route: '/insights',
+    permissions: [PERMISSIONS.PROJECTS_READ],
+    requiresSubscription: true,
+  },
+  {
     id: 'billing',
     labelKey: 'nav.billing',
     icon: 'lucideCreditCard',

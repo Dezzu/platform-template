@@ -14,6 +14,7 @@ import { ApiEnvelope, ApiStandardErrors } from '../../common';
 import { CurrentOrgOptional, type OrgContext } from '../../auth/org-context';
 import { OrgOptional } from '../../auth/permissions.decorator';
 import { MeService } from './me.service';
+import { SubscriptionService } from '../billing/subscription.service';
 
 /**
  * Deliberately carries no @AllowAnonymous(): it demonstrates the default. The global
@@ -24,7 +25,10 @@ import { MeService } from './me.service';
 @ApiStandardErrors()
 @Controller('me')
 export class MeController {
-  constructor(private readonly me: MeService) {}
+  constructor(
+    private readonly me: MeService,
+    private readonly subscriptions: SubscriptionService,
+  ) {}
 
   /**
    * Everything the shell needs in one call: who you are, which organization is active,
@@ -38,7 +42,13 @@ export class MeController {
   @OrgOptional()
   @ApiOperation({ summary: 'Current session user, active organization and permissions' })
   @ApiEnvelope(MeSchema)
-  get(@Session() session: UserSession, @CurrentOrgOptional() org: OrgContext | null): Me {
+  async get(
+    @Session() session: UserSession,
+    @CurrentOrgOptional() org: OrgContext | null,
+  ): Promise<Me> {
+    const reference = org ? this.subscriptions.referenceFor(org.organizationId, org.userId) : null;
+    const entitling = reference ? await this.subscriptions.findEntitling(reference) : null;
+
     return {
       user: {
         id: session.user.id,
@@ -61,6 +71,14 @@ export class MeController {
         ...platformPermissionsForRole((session.user as { role?: string | null }).role),
       ],
       billingScope: (process.env['BILLING_SCOPE'] ?? 'organization') as 'organization' | 'user',
+      subscription: entitling
+        ? {
+            plan: entitling.plan,
+            status: entitling.status,
+            periodEnd: entitling.periodEnd?.toISOString() ?? null,
+            cancelAtPeriodEnd: entitling.cancelAtPeriodEnd,
+          }
+        : null,
     };
   }
 

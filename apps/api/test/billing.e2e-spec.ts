@@ -1,6 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
+import request from 'supertest';
 import { eq, inArray } from 'drizzle-orm';
-import { member, organization, stripeEvent, user } from '@app/db';
+import { member, organization, stripeEvent, subscription, user } from '@app/db';
 import { db } from '../src/database/db';
 import { canActOnSubscription, recordStripeEvent } from '../src/modules/billing/stripe-plugin';
 import { createTestApp } from './app.factory';
@@ -36,6 +37,7 @@ describe('billing (e2e)', () => {
   });
 
   afterAll(async () => {
+    await db.delete(subscription).where(eq(subscription.referenceId, orgId));
     if (eventIds.length) await db.delete(stripeEvent).where(inArray(stripeEvent.id, eventIds));
     await db.delete(organization).where(eq(organization.id, orgId));
     await db.delete(user).where(inArray(user.id, [owner.id, plain.id, outsider.id]));
@@ -78,6 +80,79 @@ describe('billing (e2e)', () => {
       const [row] = await db.select().from(stripeEvent).where(eq(stripeEvent.id, id));
       expect(row?.type).toBe('invoice.payment_failed');
       expect(row?.payload).toMatchObject({ id });
+    });
+  });
+
+  /**
+   * The paywall, over HTTP.
+   *
+   * Hiding a menu entry is a courtesy to the reader; this is the part that actually
+   * refuses. The subscription row is inserted directly rather than driven through
+   * Stripe: what is under test is the gate, not the checkout.
+   */
+  describe('paid features', () => {
+    it('refuses with 402 when the reference has no subscription', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/api/insights')
+        .set('Cookie', owner.cookie)
+        .expect(402);
+
+      // 402 and not 403: the caller is allowed to do this, they simply have not paid,
+      // and a client that cannot tell the two apart shows the wrong message.
+      expect(res.body.messageCode).toBe('SUBSCRIPTION_REQUIRED');
+    });
+
+    it('serves the feature once an entitling subscription exists', async () => {
+      await db.insert(subscription).values({
+        id: `sub-test-${Date.now()}`,
+        plan: 'pro',
+        referenceId: orgId,
+        status: 'active',
+      });
+
+      const res = await request(app.getHttpServer())
+        .get('/api/insights')
+        .set('Cookie', owner.cookie)
+        .expect(200);
+
+      expect(res.body.data.plan).toBe('pro');
+      expect(res.body.data).toHaveProperty('totalProjects');
+    });
+
+    it('treats past_due as not entitling: the card has stopped working', async () => {
+      await db
+        .update(subscription)
+        .set({ status: 'past_due' })
+        .where(eq(subscription.referenceId, orgId));
+
+      await request(app.getHttpServer())
+        .get('/api/insights')
+        .set('Cookie', owner.cookie)
+        .expect(402);
+
+      await db
+        .update(subscription)
+        .set({ status: 'active' })
+        .where(eq(subscription.referenceId, orgId));
+    });
+
+    it('lets a member of a subscribed organization in: the tenant pays, not the person', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/api/insights')
+        .set('Cookie', plain.cookie)
+        .expect(200);
+
+      expect(res.body.data).toHaveProperty('totalProjects');
+    });
+
+    it('does not leak it to another organization', async () => {
+      // The outsider has no organization at all, so there is nothing to entitle them.
+      await request(app.getHttpServer())
+        .get('/api/insights')
+        .set('Cookie', outsider.cookie)
+        .expect((res) => {
+          expect([400, 402, 404]).toContain(res.status);
+        });
     });
   });
 

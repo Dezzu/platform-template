@@ -1,0 +1,36 @@
+<h1 class="mb-4 text-2xl font-semibold">{{ 'nav.insights' | transloco }}</h1>
+
+@if (!subscribed() || paymentRequired()) {
+<!--
+    The paywall: what they would get, and the way to get it. Not an error page — they
+    have done nothing wrong.
+  -->
+<section hlmCard class="max-w-md">
+  <div hlmCardHeader>
+    <h2 hlmCardTitle>{{ 'insights.lockedTitle' | transloco }}</h2>
+    <p hlmCardDescription>{{ 'insights.lockedBody' | transloco }}</p>
+  </div>
+  <div hlmCardFooter>
+    <a hlmBtn routerLink="/billing">{{ 'insights.seePlans' | transloco }}</a>
+  </div>
+</section>
+} @else if (insights.isLoading()) {
+<p class="text-muted-foreground text-sm">{{ 'common.loading' | transloco }}</p>
+} @else if (insights.error()) {
+<p class="text-destructive text-sm" role="alert">{{ 'errors.INTERNAL_ERROR' | transloco }}</p>
+} @else { @let data = insights.value(); @if (data) {
+<div class="grid gap-4 sm:grid-cols-4">
+  @for (tile of [ { labelKey: 'insights.total', value: data.totalProjects }, { labelKey: 'insights.active', value:
+  data.activeProjects }, { labelKey: 'insights.archived', value: data.archivedProjects }, { labelKey: 'insights.last30',
+  value: data.createdLast30Days } ]; track tile.labelKey) {
+  <article hlmCard>
+    <div hlmCardHeader>
+      <p hlmCardDescription>{{ tile.labelKey | transloco }}</p>
+      <p class="text-3xl font-semibold tabular-nums">{{ tile.value }}</p>
+    </div>
+  </article>
+  }
+</div>
+
+<p class="text-muted-foreground mt-4 text-sm">{{ 'insights.includedIn' | transloco: { plan: data.plan } }}</p>
+} }

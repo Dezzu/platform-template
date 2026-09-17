@@ -80,13 +80,24 @@
     "email": "Invalid email address",
     "passwordMismatch": "Passwords do not match"
   },
+  "insights": {
+    "active": "Active",
+    "archived": "Archived",
+    "includedIn": "Included in the {{plan}} plan.",
+    "last30": "Last 30 days",
+    "lockedBody": "Project analytics are included in the paid plans.",
+    "lockedTitle": "Available with a subscription",
+    "seePlans": "See plans",
+    "total": "Total projects"
+  },
   "nav": {
-    "dashboard": "Dashboard",
-    "projects": "Projects",
-    "members": "Members",
     "audit": "Audit log",
-    "settings": "Settings",
-    "billing": "Billing"
+    "billing": "Billing",
+    "dashboard": "Dashboard",
+    "insights": "Insights",
+    "members": "Members",
+    "projects": "Projects",
+    "settings": "Settings"
   },
   "profile": {
     "account": "Your account",
