@@ -13,6 +13,19 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/sign-in.page').then((m) => m.SignInPage),
   },
   {
+    path: 'forgot-password',
+    canMatch: [guestGuard],
+    loadComponent: () =>
+      import('./features/auth/forgot-password.page').then((m) => m.ForgotPasswordPage),
+  },
+  {
+    // Where Better Auth redirects after validating the emailed token, with `?token=`.
+    path: 'reset-password',
+    canMatch: [guestGuard],
+    loadComponent: () =>
+      import('./features/auth/reset-password.page').then((m) => m.ResetPasswordPage),
+  },
+  {
     path: 'sign-up',
     canMatch: [guestGuard],
     loadComponent: () => import('./features/auth/sign-up.page').then((m) => m.SignUpPage),
@@ -32,6 +45,19 @@ export const routes: Routes = [
         canMatch: [navGuard('projects')],
         loadComponent: () =>
           import('./features/projects/projects.page').then((m) => m.ProjectsPage),
+      },
+      {
+        path: 'members',
+        canMatch: [navGuard('members')],
+        loadComponent: () => import('./features/members/members.page').then((m) => m.MembersPage),
+      },
+      {
+        // Reached from an invitation email, so it is deliberately absent from
+        // NAV_MANIFEST — and guarded by authGuard alone, since the visitor is not a
+        // member of anything yet.
+        path: 'accept-invitation',
+        loadComponent: () =>
+          import('./features/members/accept-invitation.page').then((m) => m.AcceptInvitationPage),
       },
       {
         path: 'files',

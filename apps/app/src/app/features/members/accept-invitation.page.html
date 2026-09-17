@@ -1,0 +1,37 @@
+<section hlmCard class="w-full max-w-md">
+  @if (!invitationId) {
+  <div hlmCardContent class="pt-6">
+    <p class="text-destructive text-sm" role="alert">{{ 'members.invitationLinkMissing' | transloco }}</p>
+  </div>
+  } @else if (invitation.isLoading()) {
+  <div hlmCardContent class="pt-6">
+    <p class="text-muted-foreground text-sm">{{ 'common.loading' | transloco }}</p>
+  </div>
+  } @else if (invitation.error()) {
+  <div hlmCardContent class="pt-6">
+    <p class="text-destructive text-sm" role="alert">{{ 'members.invitationUnavailable' | transloco }}</p>
+  </div>
+  } @else { @let details = invitation.value(); @if (details) {
+  <div hlmCardHeader>
+    <h1 hlmCardTitle>{{ details.organizationName }}</h1>
+    <p hlmCardDescription>
+      {{ 'members.invitedAs' | transloco: { role: ('members.roles.' + details.role | transloco) } }}
+    </p>
+  </div>
+
+  <div hlmCardContent class="space-y-3">
+    <p class="text-muted-foreground text-sm">{{ 'members.invitationSentTo' | transloco: { email: details.email } }}</p>
+
+    @if (errorKey(); as key) {
+    <p class="text-destructive text-sm" role="alert">{{ key | transloco }}</p>
+    }
+  </div>
+
+  <div hlmCardFooter class="gap-3">
+    <button hlmBtn [disabled]="accepting()" (click)="accept()">
+      {{ (accepting() ? 'members.joining' : 'members.acceptInvitation') | transloco }}
+    </button>
+    <button hlmBtn variant="outline" type="button" (click)="decline()">{{ 'common.cancel' | transloco }}</button>
+  </div>
+  } }
+</section>

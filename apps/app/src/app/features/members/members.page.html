@@ -1,0 +1,119 @@
+<h1 class="mb-1 text-2xl font-semibold">{{ 'nav.members' | transloco }}</h1>
+<p class="text-muted-foreground mb-6 text-sm">{{ 'members.description' | transloco }}</p>
+
+@if (errorKey(); as key) {
+<p class="text-destructive mb-4 text-sm" role="alert">{{ key | transloco }}</p>
+}
+
+<form
+  *appCan="[permissionCatalogue.MEMBERS_INVITE]"
+  class="mb-8 flex flex-wrap items-end gap-3 rounded-md border p-4"
+  (submit)="invite($event)"
+>
+  <div class="min-w-56 flex-1">
+    <dui-text-input
+      type="email"
+      autocomplete="off"
+      [label]="'members.inviteEmail' | transloco"
+      [formField]="invitation.email"
+    />
+  </div>
+
+  <label class="flex flex-col gap-1 text-sm">
+    <span class="font-medium">{{ 'members.role' | transloco }}</span>
+    <select
+      class="border-input bg-background h-9 rounded-md border px-3 text-sm"
+      [value]="invitation.role().value()"
+      (change)="invitation.role().value.set($any($event.target).value)"
+    >
+      @for (role of grantableRoles(); track role) {
+      <option [value]="role">{{ 'members.roles.' + role | transloco }}</option>
+      }
+    </select>
+  </label>
+
+  <button hlmBtn type="submit" [disabled]="inviting()">
+    {{ (inviting() ? 'members.inviting' : 'members.invite') | transloco }}
+  </button>
+</form>
+
+<h2 class="mb-3 text-lg font-medium">{{ 'members.title' | transloco }}</h2>
+
+@if (members.isLoading()) {
+<p class="text-muted-foreground text-sm">{{ 'common.loading' | transloco }}</p>
+} @else if (members.error()) {
+<p class="text-destructive text-sm" role="alert">{{ 'errors.INTERNAL_ERROR' | transloco }}</p>
+} @else { @let page = members.value(); @if (!page || page.items.length === 0) {
+<p class="text-muted-foreground text-sm">{{ 'common.empty' | transloco }}</p>
+} @else {
+<ul class="divide-y rounded-md border">
+  @for (member of page.items; track member.id) {
+  <li class="flex flex-wrap items-center justify-between gap-3 p-3">
+    <div class="min-w-0">
+      <p class="truncate font-medium">
+        {{ member.user.name || member.user.email }} @if (isSelf(member)) {
+        <span class="text-muted-foreground text-xs">({{ 'members.you' | transloco }})</span>
+        }
+      </p>
+      <p class="text-muted-foreground truncate text-sm">{{ member.user.email }}</p>
+    </div>
+
+    <div class="flex shrink-0 items-center gap-2">
+      @if (canActOn(member)) {
+      <select
+        *appCan="[permissionCatalogue.MEMBERS_MANAGE]"
+        class="border-input bg-background h-9 rounded-md border px-2 text-sm"
+        [value]="member.role"
+        (change)="setRole(member.id, $any($event.target).value)"
+      >
+        @for (role of grantableRoles(); track role) {
+        <option [value]="role">{{ 'members.roles.' + role | transloco }}</option>
+        }
+      </select>
+      } @else {
+      <span class="text-muted-foreground text-sm">{{ 'members.roles.' + member.role | transloco }}</span>
+      } @if (canActOn(member) && !isSelf(member)) {
+      <button
+        hlmBtn
+        variant="destructive"
+        size="sm"
+        *appCan="[permissionCatalogue.MEMBERS_REMOVE]"
+        (click)="remove(member)"
+      >
+        {{ 'common.delete' | transloco }}
+      </button>
+      }
+    </div>
+  </li>
+  }
+</ul>
+} }
+
+<h2 class="mt-8 mb-3 text-lg font-medium">{{ 'members.pendingInvitations' | transloco }}</h2>
+
+@if (invitations.isLoading()) {
+<p class="text-muted-foreground text-sm">{{ 'common.loading' | transloco }}</p>
+} @else { @let pending = invitations.value(); @if (!pending || pending.length === 0) {
+<p class="text-muted-foreground text-sm">{{ 'members.noPendingInvitations' | transloco }}</p>
+} @else {
+<ul class="divide-y rounded-md border">
+  @for (item of pending; track item.id) {
+  <li class="flex items-center justify-between gap-3 p-3">
+    <div class="min-w-0">
+      <p class="truncate font-medium">{{ item.email }}</p>
+      <p class="text-muted-foreground text-sm">{{ 'members.roles.' + item.role | transloco }}</p>
+    </div>
+
+    <button
+      hlmBtn
+      variant="outline"
+      size="sm"
+      *appCan="[permissionCatalogue.MEMBERS_INVITE]"
+      (click)="cancelInvitation(item.id)"
+    >
+      {{ 'common.cancel' | transloco }}
+    </button>
+  </li>
+  }
+</ul>
+} }

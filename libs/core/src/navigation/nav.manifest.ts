@@ -30,6 +30,13 @@ export const NAV_MANIFEST: readonly NavItem[] = [
     permissions: [PERMISSIONS.PROJECTS_READ],
   },
   {
+    id: 'members',
+    labelKey: 'nav.members',
+    icon: 'lucideUsers',
+    route: '/members',
+    permissions: [PERMISSIONS.MEMBERS_READ],
+  },
+  {
     id: 'files',
     labelKey: 'nav.files',
     icon: 'lucideFolderOpen',

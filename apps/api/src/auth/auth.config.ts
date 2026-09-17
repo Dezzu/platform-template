@@ -85,7 +85,16 @@ export const auth = betterAuth({
       await authMailer().send({
         to: user.email,
         template: 'password-reset',
-        params: { name: user.name ?? '', url: withCallback(url, `${dashboardUrl()}/sign-in`) },
+        /**
+         * The callback is the page where the new password is typed, not the login
+         * form: Better Auth's link hits the API, which validates the token and then
+         * redirects to this URL with `?token=` appended. Pointing it at /sign-in would
+         * drop the token on a page that has no use for it.
+         */
+        params: {
+          name: user.name ?? '',
+          url: withCallback(url, `${dashboardUrl()}/reset-password`),
+        },
         userId: user.id,
       });
     },

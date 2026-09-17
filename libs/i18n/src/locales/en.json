@@ -1,15 +1,28 @@
 {
   "auth": {
+    "backToSignIn": "Back to sign in",
     "confirmPassword": "Confirm password",
     "email": "Email",
     "emailTaken": "An account with this email already exists.",
+    "forgotPassword": "Forgot your password?",
+    "forgotPasswordHint": "Enter your address: if an account exists, you will get a link.",
+    "forgotPasswordTitle": "Reset your password",
     "haveAccount": "Already have an account?",
     "invalidCredentials": "Incorrect email or password.",
     "name": "Name",
+    "newPassword": "New password",
     "noAccount": "Don't have an account?",
     "password": "Password",
     "passwordHint": "At least 12 characters.",
     "passwordTooShort": "That password is too short.",
+    "resetLinkInvalid": "This link is no longer valid: it may have expired or been used already.",
+    "resetLinkMissing": "Incomplete link. Open the link from the email exactly as it is.",
+    "resetLinkSent": "If an account exists for that address, the link is on its way. Check your inbox.",
+    "resetPasswordTitle": "Choose a new password",
+    "saving": "Saving…",
+    "sendResetLink": "Send the link",
+    "sending": "Sending…",
+    "setNewPassword": "Set the password",
     "signIn": "Sign in",
     "signOut": "Sign out",
     "signUp": "Sign up",
@@ -30,10 +43,10 @@
     "portalFailed": "Could not open the billing portal.",
     "status": {
       "active": "active",
-      "trialing": "trialing",
-      "past_due": "past due",
       "canceled": "canceled",
       "incomplete": "incomplete",
+      "past_due": "past due",
+      "trialing": "trialing",
       "unpaid": "unpaid"
     },
     "subscribe": "Subscribe"
@@ -111,6 +124,28 @@
     "seePlans": "See plans",
     "total": "Total projects"
   },
+  "members": {
+    "acceptInvitation": "Accept the invitation",
+    "description": "Who belongs to this organization, and who has been invited.",
+    "invitationLinkMissing": "Incomplete link. Open the link from the email exactly as it is.",
+    "invitationSentTo": "Invitation sent to {{email}}.",
+    "invitationUnavailable": "This invitation is unavailable: it may have expired, been cancelled, or been meant for a different address.",
+    "invite": "Invite",
+    "inviteEmail": "Email address",
+    "invitedAs": "You have been invited as {{role}}.",
+    "inviting": "Sending…",
+    "joining": "Joining…",
+    "noPendingInvitations": "No pending invitations.",
+    "pendingInvitations": "Pending invitations",
+    "role": "Role",
+    "roles": {
+      "admin": "Administrator",
+      "member": "Member",
+      "owner": "Owner"
+    },
+    "title": "Members",
+    "you": "you"
+  },
   "nav": {
     "audit": "Audit log",
     "billing": "Billing",
@@ -123,24 +158,24 @@
   },
   "plans": {
     "business": {
-      "name": "Business",
-      "description": "For larger teams, with no project limit."
+      "description": "For larger teams, with no project limit.",
+      "name": "Business"
     },
     "features": {
       "basic": "Core features",
       "community_support": "Community support",
-      "everything_free": "Everything in Free",
       "email_support": "Email support",
+      "everything_free": "Everything in Free",
       "everything_pro": "Everything in Pro",
       "priority_support": "Priority support"
     },
     "free": {
-      "name": "Free",
-      "description": "To get started and try the product."
+      "description": "To get started and try the product.",
+      "name": "Free"
     },
     "pro": {
-      "name": "Pro",
-      "description": "For people working on the product every day."
+      "description": "For people working on the product every day.",
+      "name": "Pro"
     }
   },
   "profile": {

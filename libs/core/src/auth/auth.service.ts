@@ -84,6 +84,23 @@ export class AuthService {
     return {};
   }
 
+  /**
+   * Asks for a reset link.
+   *
+   * Always resolves the same way, whether or not the address exists — Better Auth
+   * answers identically on purpose, and surfacing anything else here would rebuild the
+   * account-existence oracle that the login form carefully avoids being.
+   */
+  async requestPasswordReset(address: string, redirectTo: string): Promise<void> {
+    await this.client.requestPasswordReset({ email: address, redirectTo });
+  }
+
+  /** Completes the reset with the token the emailed link carried. */
+  async resetPassword(token: string, newPassword: string): Promise<{ error?: string }> {
+    const { error } = await this.client.resetPassword({ token, newPassword });
+    return error ? { error: error.code ?? 'UNKNOWN' } : {};
+  }
+
   async signOut(): Promise<void> {
     await this.client.signOut();
     this.state.set({ user: null, activeOrganizationId: null });
