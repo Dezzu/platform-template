@@ -52,6 +52,17 @@ const separatorAt = (
     }
   ).needsSeparator(actions, index);
 
+const labelAt = (
+  fixture: { componentInstance: unknown },
+  actions: TableAction<Row>[],
+  index: number,
+): string | null =>
+  (
+    fixture.componentInstance as unknown as {
+      groupLabel: (a: TableAction<Row>[], i: number) => string | null;
+    }
+  ).groupLabel(actions, index);
+
 describe('TableComponent', () => {
   beforeEach(() => TestBed.resetTestingModule());
 
@@ -102,8 +113,35 @@ describe('TableComponent', () => {
 
       // Nothing above it to separate from.
       expect(separatorAt(fixture, actions, 0)).toBe(false);
-      // And it does not appear when the list goes back to non-destructive either.
+      // The boundary itself is still a boundary, in either direction — though a menu
+      // that goes back to non-destructive is a menu in the wrong order.
+      expect(separatorAt(fixture, actions, 1)).toBe(true);
+    });
+
+    it('divides named groups, and titles each one once', () => {
+      const actions = [
+        { ...action('Utente'), group: 'Ruolo di piattaforma' },
+        { ...action('Amministratore'), group: 'Ruolo di piattaforma' },
+        { ...action('Invia reset'), group: 'Account' },
+      ];
+      const fixture = setup(actions);
+
       expect(separatorAt(fixture, actions, 1)).toBe(false);
+      expect(separatorAt(fixture, actions, 2)).toBe(true);
+
+      // The heading belongs to the first entry of its group, not to every entry.
+      expect(labelAt(fixture, actions, 0)).toBe('Ruolo di piattaforma');
+      expect(labelAt(fixture, actions, 1)).toBeNull();
+      expect(labelAt(fixture, actions, 2)).toBe('Account');
+    });
+
+    it('leaves an ungrouped action without a heading', () => {
+      const actions = [action('Modifica'), action('Elimina', 'destructive')];
+      const fixture = setup(actions);
+
+      expect(labelAt(fixture, actions, 0)).toBeNull();
+      // Red and behind a line already says what it is; a title would add nothing.
+      expect(labelAt(fixture, actions, 1)).toBeNull();
     });
   });
 });

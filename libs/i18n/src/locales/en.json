@@ -15,9 +15,12 @@
       "role": "Platform role"
     },
     "filteredByOrganization": "Filtered to the users of {{organization}}.",
+    "groups": {
+      "account": "Account",
+      "organization": "Role in the organization",
+      "platform": "Platform role"
+    },
     "hideMembers": "Hide",
-    "makeOrganizationRole": "In the organization: make {{role}}",
-    "makeRole": "Make {{role}}",
     "manageMembers": "Manage the users",
     "memberCount": "{{count}} members",
     "noMembers": "No members.",
@@ -199,6 +202,11 @@
     "insights": "Insights",
     "members": "Members",
     "projects": "Projects",
+    "sections": {
+      "organization": "Organization",
+      "platform": "Platform",
+      "workspace": "Workspace"
+    },
     "settings": "Settings"
   },
   "plans": {

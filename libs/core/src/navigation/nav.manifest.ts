@@ -5,6 +5,20 @@ import { PERMISSIONS, PLATFORM_PERMISSIONS } from '@app/contracts/permissions';
 import type { NavItem } from './nav.model';
 
 /**
+ * The blocks of the menu, in the order they appear.
+ *
+ * Grouping is not decoration: a flat list of seven entries makes the reader compare
+ * "Progetti" with "Amministrazione" as if they were the same kind of thing. The
+ * headings say what kind of thing each one is — what you work on, what the tenant is,
+ * what the platform is — and the reader stops looking in the wrong block.
+ */
+export const NAV_SECTIONS: readonly { id: string; labelKey: string }[] = [
+  { id: 'workspace', labelKey: 'nav.sections.workspace' },
+  { id: 'organization', labelKey: 'nav.sections.organization' },
+  { id: 'platform', labelKey: 'nav.sections.platform' },
+];
+
+/**
  * The application menu.
  *
  * Adding a feature means adding an entry here — it is a mandatory step of the
@@ -13,31 +27,31 @@ import type { NavItem } from './nav.model';
  *
  * The converse is enforced by a test: an entry without a matching route is a dead
  * link, so entries arrive together with the screen they open, never before it.
- * Members, billing, audit and settings will appear here with their features.
+ *
+ * Order here is order on screen, within each section. The sections themselves are
+ * ordered by NAV_SECTIONS.
  */
 export const NAV_MANIFEST: readonly NavItem[] = [
   {
+    // Above every heading: it is the product, not a part of it.
     id: 'dashboard',
     labelKey: 'nav.dashboard',
     icon: 'lucideLayoutDashboard',
     route: '/dashboard',
   },
+
+  // ── What you work on ────────────────────────────────────────────────────────
   {
     id: 'projects',
+    section: 'workspace',
     labelKey: 'nav.projects',
     icon: 'lucideFolderKanban',
     route: '/projects',
     permissions: [PERMISSIONS.PROJECTS_READ],
   },
   {
-    id: 'members',
-    labelKey: 'nav.members',
-    icon: 'lucideUsers',
-    route: '/members',
-    permissions: [PERMISSIONS.MEMBERS_READ],
-  },
-  {
     id: 'files',
+    section: 'workspace',
     labelKey: 'nav.files',
     icon: 'lucideFolderOpen',
     route: '/files',
@@ -45,25 +59,36 @@ export const NAV_MANIFEST: readonly NavItem[] = [
   },
   {
     id: 'insights',
+    section: 'workspace',
     labelKey: 'nav.insights',
     icon: 'lucideChartNoAxesColumn',
     route: '/insights',
     permissions: [PERMISSIONS.PROJECTS_READ],
     requiresSubscription: true,
   },
+
+  // ── The tenant itself: who is in it, and what it costs ──────────────────────
+  {
+    id: 'members',
+    section: 'organization',
+    labelKey: 'nav.members',
+    icon: 'lucideUsers',
+    route: '/members',
+    permissions: [PERMISSIONS.MEMBERS_READ],
+  },
   {
     id: 'billing',
+    section: 'organization',
     labelKey: 'nav.billing',
     icon: 'lucideCreditCard',
     route: '/billing',
     permissions: [PERMISSIONS.BILLING_READ],
   },
+
+  // ── The platform's own back office, not part of the tenant's product ────────
   {
-    /**
-     * Last, and gated on a PLATFORM permission rather than an organization one: it is
-     * not part of the tenant's product, it is the platform's own back office.
-     */
     id: 'admin',
+    section: 'platform',
     labelKey: 'nav.admin',
     icon: 'lucideShieldCheck',
     route: '/admin/users',

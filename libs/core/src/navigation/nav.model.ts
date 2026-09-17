@@ -10,6 +10,13 @@ import type { Permission, PlatformPermission } from '@app/contracts';
 export interface NavItem {
   /** Stable id; routes reference it through `navGuard(id)`. */
   id: string;
+  /**
+   * Which block of the menu this belongs to, by id — see NAV_SECTIONS.
+   *
+   * Absent means the top of the list, above every heading: for the one or two entries
+   * that are the product itself rather than a part of it.
+   */
+  section?: string;
   /** i18n key, never a display string. */
   labelKey: string;
   /** ng-icon name, e.g. 'lucideFolder'. */

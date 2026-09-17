@@ -5,24 +5,34 @@ import { provideIcons } from '@ng-icons/core';
 import { lucideFolder, lucideHouse } from '@ng-icons/lucide';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { provideI18n } from '@app/i18n';
-import { AppShellComponent, type ShellNavItem } from './app-shell.component';
+import { AppShellComponent, type ShellNavSection } from './app-shell.component';
 
-const ITEMS: ShellNavItem[] = [
-  { id: 'dashboard', labelKey: 'nav.dashboard', icon: 'lucideHouse', route: '/dashboard' },
-  { id: 'projects', labelKey: 'nav.projects', icon: 'lucideFolder', route: '/projects' },
+const SECTIONS: ShellNavSection[] = [
+  {
+    // No heading: whatever sits above the first divider is the product itself.
+    id: 'main',
+    items: [
+      { id: 'dashboard', labelKey: 'nav.dashboard', icon: 'lucideHouse', route: '/dashboard' },
+    ],
+  },
+  {
+    id: 'workspace',
+    labelKey: 'nav.sections.workspace',
+    items: [{ id: 'projects', labelKey: 'nav.projects', icon: 'lucideFolder', route: '/projects' }],
+  },
 ];
 
 @Component({
   imports: [AppShellComponent],
   template: `
-    <dui-app-shell appName="Test" [items]="items">
+    <dui-app-shell appName="Test" [sections]="sections">
       <span shellHeaderEnd data-testid="header-end">account</span>
       <p data-testid="content">contenuto</p>
     </dui-app-shell>
   `,
 })
 class Host {
-  readonly items = ITEMS;
+  readonly sections = SECTIONS;
 }
 
 describe('AppShellComponent', () => {

@@ -211,9 +211,15 @@ export class AdminUsersPage {
       platformOutranksOrEquals(this.myRole(), role),
     );
 
+    /**
+     * Under a heading the entry can just be the role: "Amministratore" below "Ruolo di
+     * piattaforma" says what "Rendi amministratore di piattaforma" said, and the menu
+     * reads as a list of choices instead of a list of sentences.
+     */
     const roleActions: TableAction<AdminUser>[] = grantable.map((role) => ({
       icon: 'lucideShield',
-      label: this.translate('admin.makeRole', { role: this.translate(`admin.roles.${role}`) }),
+      group: this.translate('admin.groups.platform'),
+      label: this.translate(`admin.roles.${role}`),
       visible: (row) => this.canChangeRoleOf(row) && (row.role ?? 'user') !== role,
       command: (row) => this.setRole(row, role),
     }));
@@ -227,9 +233,8 @@ export class AdminUsersPage {
     const organizationActions: TableAction<AdminUser>[] = organizationId
       ? ORG_ROLES.map((role) => ({
           icon: 'lucideUsers',
-          label: this.translate('admin.makeOrganizationRole', {
-            role: this.translate(`members.roles.${role}`),
-          }),
+          group: this.translate('admin.groups.organization'),
+          label: this.translate(`members.roles.${role}`),
           visible: (row: AdminUser) =>
             this.mayManageOrganizations() &&
             row.organizationRole !== null &&
@@ -243,6 +248,7 @@ export class AdminUsersPage {
       ...organizationActions,
       {
         icon: 'lucideMailCheck',
+        group: this.translate('admin.groups.account'),
         label: this.translate('admin.sendVerification'),
         // The common support case: they signed up, it went to spam, they cannot get in.
         visible: (row) => this.canActOn(row) && !row.emailVerified,
@@ -250,6 +256,7 @@ export class AdminUsersPage {
       },
       {
         icon: 'lucideKeyRound',
+        group: this.translate('admin.groups.account'),
         label: this.translate('admin.sendReset'),
         visible: (row) => this.canActOn(row),
         command: (row) => this.sendPasswordReset(row),

@@ -1,11 +1,12 @@
 import { Component, computed, inject } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
-import { AuthService, NAV_MANIFEST, PermissionsService } from '@app/core';
+import { AuthService, NAV_MANIFEST, NAV_SECTIONS, PermissionsService } from '@app/core';
 import {
   AppShellComponent,
   ProfileMenuComponent,
   type ProfileMenuEntry,
   type ShellNavItem,
+  type ShellNavSection,
 } from '@app/ui/layout';
 import { environment } from '../../environments/environment';
 
@@ -21,7 +22,7 @@ import { environment } from '../../environments/environment';
   selector: 'app-shell-page',
   imports: [RouterOutlet, AppShellComponent, ProfileMenuComponent],
   template: `
-    <dui-app-shell [appName]="appName" [items]="visibleItems()">
+    <dui-app-shell [appName]="appName" [sections]="visibleSections()">
       <dui-profile-menu
         shellHeaderEnd
         [name]="displayName()"
@@ -58,7 +59,7 @@ export class ShellPage {
     },
   ];
 
-  protected readonly visibleItems = computed<ShellNavItem[]>(() =>
+  private readonly visibleItems = computed<(ShellNavItem & { section?: string })[]>(() =>
     NAV_MANIFEST.filter((item) => {
       const platform = item.platformPermissions ?? [];
       if (platform.length > 0 && !this.permissions.anyOfPlatform(...platform)) return false;
@@ -68,8 +69,31 @@ export class ShellPage {
       return item.mode === 'all'
         ? this.permissions.allOf(...required)
         : this.permissions.anyOf(...required);
-    }).map(({ id, labelKey, icon, route }) => ({ id, labelKey, icon, route })),
+    }).map(({ id, labelKey, icon, route, section }) => ({ id, labelKey, icon, route, section })),
   );
+
+  /**
+   * The visible entries, grouped.
+   *
+   * A section with nothing left in it disappears entirely — heading included. A plain
+   * member sees no "Piattaforma" title above an empty gap, which is what filtering the
+   * items without filtering the headings would produce.
+   */
+  protected readonly visibleSections = computed<ShellNavSection[]>(() => {
+    const items = this.visibleItems();
+
+    const ungrouped = items.filter((item) => !item.section);
+    const sections: ShellNavSection[] = ungrouped.length ? [{ id: 'main', items: ungrouped }] : [];
+
+    for (const section of NAV_SECTIONS) {
+      const own = items.filter((item) => item.section === section.id);
+      if (own.length > 0) {
+        sections.push({ id: section.id, labelKey: section.labelKey, items: own });
+      }
+    }
+
+    return sections;
+  });
 
   protected signOut(): void {
     void this.auth.signOut();

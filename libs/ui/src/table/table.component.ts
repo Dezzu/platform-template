@@ -410,22 +410,34 @@ export class TableComponent<T> {
   }
 
   /**
-   * Whether a divider goes above this entry.
+   * Which block of the menu an action belongs to.
    *
-   * By severity rather than by a flag on each action: "destructive actions sit at the
-   * bottom, behind a line" is a convention the component can keep on its own, and one
-   * every table then gets without its author having to remember. The line appears
-   * exactly once, where the list turns destructive — never at the top, where it would
-   * separate the menu from nothing.
+   * A declared `group` wins; otherwise severity decides, so "destructive actions sit at
+   * the bottom, behind a line" stays a convention the component keeps on its own — a
+   * table that declares no groups at all still gets the divider.
+   */
+  private sectionOf(action: TableAction<T>): string {
+    if (action.group) return `group:${action.group}`;
+    return this.actionVariant(action) === 'destructive' ? 'destructive' : 'default';
+  }
+
+  /**
+   * Whether a divider goes above this entry: exactly where one block ends and the next
+   * begins, and never at the top, where it would separate the menu from nothing.
    */
   protected needsSeparator(actions: TableAction<T>[], index: number): boolean {
     if (index === 0) return false;
     const current = actions[index];
     const previous = actions[index - 1];
     if (!current || !previous) return false;
-    return (
-      this.actionVariant(current) === 'destructive' &&
-      this.actionVariant(previous) !== 'destructive'
-    );
+    return this.sectionOf(current) !== this.sectionOf(previous);
+  }
+
+  /** The heading above this entry, or null when it is not the first of its group. */
+  protected groupLabel(actions: TableAction<T>[], index: number): string | null {
+    const current = actions[index];
+    if (!current?.group) return null;
+    const previous = index > 0 ? actions[index - 1] : undefined;
+    return previous?.group === current.group ? null : current.group;
   }
 }

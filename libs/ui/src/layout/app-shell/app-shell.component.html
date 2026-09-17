@@ -22,10 +22,18 @@
     </hlm-sidebar-header>
 
     <hlm-sidebar-content>
+      @for (section of sections(); track section.id) {
       <hlm-sidebar-group>
+        @if (section.labelKey) {
+        <!--
+          Hidden when the sidebar collapses to icons: a heading with no room to be read
+          is just a gap between two glyphs.
+        -->
+        <div hlmSidebarGroupLabel class="group-data-[collapsible=icon]:hidden">{{ section.labelKey | transloco }}</div>
+        }
         <div hlmSidebarGroupContent>
           <ul hlmSidebarMenu>
-            @for (item of items(); track item.id) {
+            @for (item of section.items; track item.id) {
             <li hlmSidebarMenuItem>
               @if (item.children?.length) { @let open = expansion.isOpen(item.id);
 
@@ -80,6 +88,7 @@
           </ul>
         </div>
       </hlm-sidebar-group>
+      }
     </hlm-sidebar-content>
 
     <!-- Drag handle on the edge: collapsing the menu without hunting for a button. -->

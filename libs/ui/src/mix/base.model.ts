@@ -46,6 +46,16 @@ export interface TableAction<T> {
   tooltip?: string;
 
   /**
+   * Heading this entry sits under, when the actions live in a menu.
+   *
+   * Already translated, like `label`. Consecutive actions sharing a group are rendered
+   * under one heading with a divider above it — which is what lets the entries
+   * themselves be short: "Owner" under "In the organization" says more, in fewer words,
+   * than "In the organization: make owner" repeated three times.
+   */
+  group?: string;
+
+  /**
    * Text of the entry when the actions live in a menu (`actionsAsMenu`).
    *
    * Without it `tooltip` is used: it already describes the action, and for a menu row

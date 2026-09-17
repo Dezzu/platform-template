@@ -111,6 +111,19 @@ function offered(fixture: { componentInstance: unknown }, row: AdminUser): strin
     .filter((label): label is string => label !== undefined);
 }
 
+/** The labels offered under one heading — the entries are short because of it. */
+function offeredUnder(
+  fixture: { componentInstance: unknown },
+  row: AdminUser,
+  group: string,
+): string[] {
+  return internalsOf(fixture)
+    .actions()
+    .filter((action) => action.group === group && (action.visible?.(row, []) ?? true))
+    .map((action) => (typeof action.label === 'function' ? action.label(row, []) : action.label))
+    .filter((label): label is string => label !== undefined);
+}
+
 const rowFor = (fixture: { nativeElement: unknown }, email: string) =>
   [...page(fixture).querySelectorAll('tbody tr')].find((row) => row.textContent?.includes(email));
 
@@ -182,20 +195,22 @@ describe('AdminUsersPage', () => {
     const fixture = setup({ listUsers: () => pageOf([PLAIN]) }, { id: 'admin', role: 'admin' });
     await fixture.whenStable();
 
-    const labels = offered(fixture, PLAIN);
-    expect(labels).toContain('Rendi Amministratore di piattaforma');
-    expect(labels).not.toContain('Rendi Super amministratore');
+    // Under "Ruolo di piattaforma" the entry is just the role, which is why the
+    // heading exists at all.
+    const labels = offeredUnder(fixture, PLAIN, 'Ruolo di piattaforma');
+    expect(labels).toEqual(['Amministratore di piattaforma']);
+    expect(labels).not.toContain('Super amministratore');
     // The role it already holds is not offered: an entry that would do nothing.
-    expect(labels).not.toContain('Rendi Utente');
+    expect(labels).not.toContain('Utente');
   });
 
   it('does not offer to change your own role, nor to ban yourself', async () => {
     const fixture = setup({ listUsers: () => pageOf([SUPER, PLAIN]) });
     await fixture.whenStable();
 
-    const own = offered(fixture, SUPER);
     // Server-side both are refused: the last superadmin demoting themselves is a lockout.
-    expect(own.some((label) => label.startsWith('Rendi'))).toBe(false);
+    expect(offeredUnder(fixture, SUPER, 'Ruolo di piattaforma')).toEqual([]);
+    const own = offered(fixture, SUPER);
     expect(own).not.toContain('Sospendi');
     // The harmless ones are still there.
     expect(own).toContain('Invia reset password');
@@ -240,7 +255,7 @@ describe('AdminUsersPage', () => {
 
     const promote = internalsOf(fixture)
       .actions()
-      .find((a) => a.label === 'Rendi Amministratore di piattaforma');
+      .find((a) => a.label === 'Amministratore di piattaforma');
     promote?.command(PLAIN, []);
     await settle(fixture);
 
@@ -376,11 +391,11 @@ describe('AdminUsersPage', () => {
     );
     await scoped.whenStable();
 
-    const labels = offered(scoped, member);
-    expect(labels).toContain("Nell'organizzazione: rendi Owner");
-    expect(labels).toContain("Nell'organizzazione: rendi Amministratore");
+    const labels = offeredUnder(scoped, member, "Ruolo nell'organizzazione");
+    expect(labels).toContain('Owner');
+    expect(labels).toContain('Amministratore');
     // The role they already hold is not offered.
-    expect(labels).not.toContain("Nell'organizzazione: rendi Membro");
+    expect(labels).not.toContain('Membro');
 
     TestBed.resetTestingModule();
 
@@ -389,7 +404,7 @@ describe('AdminUsersPage', () => {
     const unscoped = setup({ listUsers: () => pageOf([member]) });
     await unscoped.whenStable();
 
-    expect(offered(unscoped, member).some((l) => l.startsWith("Nell'organizzazione"))).toBe(false);
+    expect(offeredUnder(unscoped, member, "Ruolo nell'organizzazione")).toEqual([]);
   });
 
   it('hides the organization roles from someone who may not manage organizations', async () => {
@@ -415,7 +430,7 @@ describe('AdminUsersPage', () => {
     );
     await fixture.whenStable();
 
-    expect(offered(fixture, member).some((l) => l.startsWith("Nell'organizzazione"))).toBe(false);
+    expect(offeredUnder(fixture, member, "Ruolo nell'organizzazione")).toEqual([]);
   });
 
   it('offers nothing to someone who may only read', async () => {

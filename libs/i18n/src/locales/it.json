@@ -15,9 +15,12 @@
       "role": "Ruolo di piattaforma"
     },
     "filteredByOrganization": "Filtrato sugli utenti di {{organization}}.",
+    "groups": {
+      "account": "Account",
+      "organization": "Ruolo nell'organizzazione",
+      "platform": "Ruolo di piattaforma"
+    },
     "hideMembers": "Nascondi",
-    "makeOrganizationRole": "Nell'organizzazione: rendi {{role}}",
-    "makeRole": "Rendi {{role}}",
     "manageMembers": "Gestisci gli utenti",
     "memberCount": "{{count}} membri",
     "noMembers": "Nessun membro.",
@@ -199,6 +202,11 @@
     "insights": "Analisi",
     "members": "Membri",
     "projects": "Progetti",
+    "sections": {
+      "organization": "Organizzazione",
+      "platform": "Piattaforma",
+      "workspace": "Area di lavoro"
+    },
     "settings": "Impostazioni"
   },
   "plans": {

@@ -149,6 +149,8 @@
                 <hlm-dropdown-menu class="w-56">
                   @for (action of azioni; track $index) { @if (needsSeparator(azioni, $index)) {
                   <hlm-dropdown-menu-separator />
+                  } @if (groupLabel(azioni, $index); as intestazione) {
+                  <div hlmDropdownMenuLabel class="text-muted-foreground text-xs font-medium">{{ intestazione }}</div>
                   }
                   <button
                     hlmDropdownMenuItem

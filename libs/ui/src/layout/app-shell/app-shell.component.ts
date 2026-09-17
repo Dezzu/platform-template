@@ -25,6 +25,18 @@ export interface ShellNavItem {
 }
 
 /**
+ * One block of the menu.
+ *
+ * `labelKey` is optional because the first block usually has no heading: whatever sits
+ * above the first divider is the product itself, and naming it says nothing.
+ */
+export interface ShellNavSection {
+  id: string;
+  labelKey?: string;
+  items: readonly ShellNavItem[];
+}
+
+/**
  * Application frame: collapsible sidebar, sticky header, scrolling content.
  *
  * Built on the spartan sidebar primitive rather than a hand-rolled `<nav>`: it brings
@@ -48,7 +60,7 @@ export class AppShellComponent {
   protected readonly expansion = inject(MenuExpansionService);
 
   readonly appName = input.required<string>();
-  readonly items = input.required<readonly ShellNavItem[]>();
+  readonly sections = input.required<readonly ShellNavSection[]>();
 
   /** Single letter badge kept visible when the sidebar collapses to icons. */
   protected readonly initial = computed(() => this.appName().trim().charAt(0).toUpperCase() || '·');
@@ -62,10 +74,11 @@ export class AppShellComponent {
     { initialValue: this.router.url },
   );
 
-  /** Groups containing the active route. */
+  /** Expandable entries containing the active route, across every section. */
   private readonly groupsToOpen = computed(() => {
     const url = this.currentUrl();
-    return this.items()
+    return this.sections()
+      .flatMap((section) => section.items)
       .filter((item) => item.children?.some((child) => url.startsWith(child.route)))
       .map((item) => item.id);
   });
