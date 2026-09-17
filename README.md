@@ -3,7 +3,8 @@
 Template per avviare rapidamente nuove piattaforme SaaS.
 Angular 22 + NestJS 12 + PostgreSQL 17 + Drizzle + Better Auth + Stripe.
 
-Le convenzioni e la procedura per aggiungere una feature sono in **[CLAUDE.md](./CLAUDE.md)**.
+**Prima di lavorarci: [CLAUDE.md](./CLAUDE.md)** — convenzioni, procedura per
+aggiungere una feature, stato del progetto e le trappole già pagate.
 
 ## Prerequisiti
 
