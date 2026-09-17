@@ -13,18 +13,18 @@ export interface OrgSubscription {
 /**
  * Subscriptions, always scoped to an organization.
  *
- * `referenceId` is the organization id, never the user id: the plan belongs to the
- * tenant, so someone leaving must not take it with them. The server re-checks that the
- * caller may act on that reference through `authorizeReference` — this class decides
- * nothing about permissions.
+ * `referenceId` is whatever BILLING_SCOPE says pays: the organization, so the plan
+ * survives whoever set it up leaving, or the user, for a B2C portal. The server
+ * re-checks both the scope and the caller's right to that reference through
+ * `authorizeReference` — this class decides nothing.
  */
 @Service()
 export class BillingService {
   private readonly client = inject(AUTH_CLIENT);
 
-  async list(organizationId: string): Promise<OrgSubscription[]> {
+  async list(reference: string): Promise<OrgSubscription[]> {
     const { data } = await this.client.subscription.list({
-      query: { referenceId: organizationId },
+      query: { referenceId: reference },
     });
     return (data ?? []).map(toSubscription);
   }
@@ -36,7 +36,7 @@ export class BillingService {
    * touches this application and PCI scope stays where it belongs.
    */
   async subscribe(options: {
-    organizationId: string;
+    reference: string;
     plan: string;
     annual?: boolean;
     successUrl: string;
@@ -44,7 +44,7 @@ export class BillingService {
   }): Promise<{ error?: string }> {
     const { error } = await this.client.subscription.upgrade({
       plan: options.plan,
-      referenceId: options.organizationId,
+      referenceId: options.reference,
       successUrl: options.successUrl,
       cancelUrl: options.cancelUrl,
       annual: options.annual ?? false,
@@ -59,9 +59,9 @@ export class BillingService {
    * rebuilt here: Stripe keeps it correct across payment methods, dunning and tax, and
    * every screen not written is a screen that cannot drift from what Stripe does.
    */
-  async openPortal(organizationId: string, returnUrl: string): Promise<{ error?: string }> {
+  async openPortal(reference: string, returnUrl: string): Promise<{ error?: string }> {
     const { error } = await this.client.subscription.billingPortal({
-      referenceId: organizationId,
+      referenceId: reference,
       returnUrl,
     });
     return error ? { error: error.code ?? 'UNKNOWN' } : {};

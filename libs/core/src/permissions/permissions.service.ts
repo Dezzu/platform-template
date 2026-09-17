@@ -19,11 +19,20 @@ export class PermissionsService {
     platform: ReadonlySet<string>;
     role: string | null;
     organizationId: string | null;
-  }>({ permissions: new Set(), platform: new Set(), role: null, organizationId: null });
+    billingScope: 'organization' | 'user';
+  }>({
+    permissions: new Set(),
+    platform: new Set(),
+    role: null,
+    organizationId: null,
+    billingScope: 'organization',
+  });
 
   readonly role = computed(() => this.state().role);
   readonly organizationId = computed(() => this.state().organizationId);
   readonly permissions = computed(() => this.state().permissions);
+  /** Server-reported: whether a subscription belongs to the organization or the user. */
+  readonly billingScope = computed(() => this.state().billingScope);
 
   /** Loads (or reloads) the permission set. Call after sign-in and after switching org. */
   async refresh(): Promise<Me | null> {
@@ -34,6 +43,7 @@ export class PermissionsService {
         platform: new Set(me.platformPermissions),
         role: me.role,
         organizationId: me.activeOrganizationId,
+        billingScope: me.billingScope,
       });
       return me;
     } catch {
@@ -48,6 +58,7 @@ export class PermissionsService {
       platform: new Set(),
       role: null,
       organizationId: null,
+      billingScope: 'organization',
     });
   }
 

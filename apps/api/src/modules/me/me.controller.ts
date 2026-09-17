@@ -60,6 +60,7 @@ export class MeController {
       platformPermissions: [
         ...platformPermissionsForRole((session.user as { role?: string | null }).role),
       ],
+      billingScope: (process.env['BILLING_SCOPE'] ?? 'organization') as 'organization' | 'user',
     };
   }
 

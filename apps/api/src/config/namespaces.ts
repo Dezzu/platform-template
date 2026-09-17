@@ -53,6 +53,7 @@ export const authConfig = registerAs('auth', () => {
 export const stripeConfig = registerAs('stripe', () => {
   const e = env();
   return {
+    scope: e.BILLING_SCOPE,
     secretKey: e.STRIPE_SECRET_KEY,
     webhookSecret: e.STRIPE_WEBHOOK_SECRET,
     publishableKey: e.STRIPE_PUBLISHABLE_KEY,

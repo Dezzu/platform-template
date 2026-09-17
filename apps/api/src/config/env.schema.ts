@@ -78,6 +78,20 @@ const baseEnvSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().default(''),
 
   // ── Stripe (phase 7) ──────────────────────────────────────────────────────
+  /**
+   * What a subscription hangs off.
+   *
+   * 'organization' — the tenant pays. Someone leaving does not take the plan with
+   *   them, and a colleague can take over billing. The B2B default.
+   * 'user' — the person pays, and Stripe invoices them directly. For a B2C portal
+   *   where organizations exist only to keep data isolated and are never shown.
+   *
+   * It is enforced server-side in `canActOnSubscription`, not merely used by the UI:
+   * in 'user' mode an organization reference is refused outright, so a stale client
+   * cannot create subscriptions the application will never look at.
+   */
+  BILLING_SCOPE: z.enum(['organization', 'user']).default('organization'),
+
   STRIPE_SECRET_KEY: z.string().default(''),
   STRIPE_WEBHOOK_SECRET: z.string().default(''),
   STRIPE_PUBLISHABLE_KEY: z.string().default(''),

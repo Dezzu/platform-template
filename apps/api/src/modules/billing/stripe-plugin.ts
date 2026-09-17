@@ -60,7 +60,10 @@ export async function recordStripeEvent(event: {
 }
 
 /**
- * Decides whether a user may act on an organization's subscription.
+ * Decides whether a user may act on a subscription reference.
+ *
+ * What the reference means depends on BILLING_SCOPE: the organization that pays, or
+ * the person who pays.
  *
  * Reading is separated from managing on purpose: a plain member may see which plan the
  * organization is on without being able to change what it pays.
@@ -71,13 +74,20 @@ export async function recordStripeEvent(event: {
  */
 export async function canActOnSubscription(
   userId: string,
-  organizationId: string,
+  referenceId: string,
   action: string,
 ): Promise<boolean> {
+  // In user-scoped billing the only legitimate reference is the caller themselves.
+  // Refusing organization references outright means a stale client cannot create
+  // subscriptions this application would never read.
+  if ((process.env['BILLING_SCOPE'] ?? 'organization') === 'user') {
+    return referenceId === userId;
+  }
+
   const [membership] = await db
     .select({ role: member.role })
     .from(member)
-    .where(and(eq(member.organizationId, organizationId), eq(member.userId, userId)))
+    .where(and(eq(member.organizationId, referenceId), eq(member.userId, userId)))
     .limit(1);
 
   if (!membership) return false;

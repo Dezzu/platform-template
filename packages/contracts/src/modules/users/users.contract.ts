@@ -37,5 +37,13 @@ export const MeSchema = z.object({
    */
   permissions: z.array(z.string()),
   platformPermissions: z.array(z.string()),
+  /**
+   * Whether a subscription belongs to the organization or to the person.
+   *
+   * Reported by the server rather than compiled into the bundle: it is a server
+   * setting, and a copy in environment.ts would be a second place to change that
+   * nothing keeps in step.
+   */
+  billingScope: z.enum(['organization', 'user']),
 });
 export type Me = z.infer<typeof MeSchema>;

@@ -93,6 +93,27 @@ describe('billing (e2e)', () => {
       expect(await canActOnSubscription(plain.id, orgId, 'cancel-subscription')).toBe(false);
     });
 
+    it('honours BILLING_SCOPE=user: the reference is the person, not the tenant', async () => {
+      const previous = process.env['BILLING_SCOPE'];
+      process.env['BILLING_SCOPE'] = 'user';
+
+      try {
+        // In a B2C portal the subscription hangs off the person who pays.
+        expect(await canActOnSubscription(owner.id, owner.id, 'upgrade-subscription')).toBe(true);
+        expect(await canActOnSubscription(plain.id, plain.id, 'upgrade-subscription')).toBe(true);
+
+        // And an organization reference is refused outright rather than silently
+        // accepted, so a stale client cannot create subscriptions nothing will read.
+        expect(await canActOnSubscription(owner.id, orgId, 'upgrade-subscription')).toBe(false);
+
+        // Nobody manages anybody else's.
+        expect(await canActOnSubscription(plain.id, owner.id, 'list-subscription')).toBe(false);
+      } finally {
+        if (previous === undefined) delete process.env['BILLING_SCOPE'];
+        else process.env['BILLING_SCOPE'] = previous;
+      }
+    });
+
     it('refuses someone outside the organization entirely', async () => {
       // Without authorizeReference, Better Auth would only allow operations where the
       // referenceId equals the caller's own id — so this is the check that stops one

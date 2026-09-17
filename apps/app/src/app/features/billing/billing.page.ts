@@ -7,6 +7,7 @@ import { HlmCardImports } from '@spartan-ng/helm/card';
 import { PERMISSIONS } from '@app/contracts/permissions';
 import type { Plan as PlanDto } from '@app/contracts';
 import {
+  AuthService,
   BillingService,
   CanDirective,
   PermissionsService,
@@ -23,8 +24,20 @@ export class BillingPage {
   private readonly plansApi = inject(PlansApi);
   private readonly billing = inject(BillingService);
   private readonly permissions = inject(PermissionsService);
+  private readonly auth = inject(AuthService);
 
   protected readonly permissionKeys = PERMISSIONS;
+
+  /**
+   * What the subscription hangs off, decided by the server through BILLING_SCOPE:
+   * the organization that pays, or the person who pays. The server refuses the other
+   * kind of reference outright, so this is not merely a display choice.
+   */
+  protected readonly reference = computed(() =>
+    this.permissions.billingScope() === 'user'
+      ? (this.auth.user()?.id ?? null)
+      : this.permissions.organizationId(),
+  );
   protected readonly errorKey = signal<string | null>(null);
   protected readonly busy = signal(false);
 
@@ -33,9 +46,9 @@ export class BillingPage {
   });
 
   protected readonly subscriptions = resource({
-    params: () => ({ organizationId: this.permissions.organizationId() }),
+    params: () => ({ reference: this.reference() }),
     loader: ({ params }): Promise<OrgSubscription[]> =>
-      params.organizationId ? this.billing.list(params.organizationId) : Promise.resolve([]),
+      params.reference ? this.billing.list(params.reference) : Promise.resolve([]),
   });
 
   /** The plan actually being paid for, if any. */
@@ -49,15 +62,15 @@ export class BillingPage {
   }
 
   protected async subscribe(plan: PlanDto): Promise<void> {
-    const organizationId = this.permissions.organizationId();
-    if (!organizationId || this.busy()) return;
+    const reference = this.reference();
+    if (!reference || this.busy()) return;
 
     this.busy.set(true);
     this.errorKey.set(null);
 
     const origin = window.location.origin;
     const { error } = await this.billing.subscribe({
-      organizationId,
+      reference,
       plan: plan.key,
       successUrl: `${origin}/billing?checkout=success`,
       cancelUrl: `${origin}/billing?checkout=cancelled`,
@@ -72,16 +85,13 @@ export class BillingPage {
   }
 
   protected async openPortal(): Promise<void> {
-    const organizationId = this.permissions.organizationId();
-    if (!organizationId || this.busy()) return;
+    const reference = this.reference();
+    if (!reference || this.busy()) return;
 
     this.busy.set(true);
     this.errorKey.set(null);
 
-    const { error } = await this.billing.openPortal(
-      organizationId,
-      `${window.location.origin}/billing`,
-    );
+    const { error } = await this.billing.openPortal(reference, `${window.location.origin}/billing`);
     if (error) {
       this.busy.set(false);
       this.errorKey.set('billing.portalFailed');

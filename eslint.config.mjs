@@ -188,12 +188,12 @@ export default tseslint.config(
   },
 
   {
-    files: ['scripts/**/*.mjs', '*.mjs'],
+    files: ['scripts/**/*.mjs', '**/scripts/**/*.mjs', '*.mjs'],
     languageOptions: { globals: globals.node },
   },
 
   {
-    files: ['**/*.spec.ts', '**/*.e2e-spec.ts', 'scripts/**/*.mjs'],
+    files: ['**/*.spec.ts', '**/*.e2e-spec.ts', '**/scripts/**/*.mjs'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       'no-console': 'off',
