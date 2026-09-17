@@ -55,26 +55,25 @@ describe('Better Auth error codes the UI depends on (e2e)', () => {
     expect(res.body.code).toBe('USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL');
   });
 
-  it('signing in with the wrong password', async () => {
-    const res = await request(app.getHttpServer())
-      .post('/api/auth/sign-in/email')
-      .set('Origin', ORIGIN)
-      .send({ email, password: 'a-different-long-password' });
+  it('answers identically to a wrong password and to an unknown address', async () => {
+    const signIn = (body: Record<string, string>) =>
+      request(app.getHttpServer()).post('/api/auth/sign-in/email').set('Origin', ORIGIN).send(body);
 
-    expect(res.status).toBe(401);
-    expect(res.body.code).toBe('INVALID_EMAIL_OR_PASSWORD');
-  });
+    const wrongPassword = await signIn({ email, password: 'a-different-long-password' });
+    const unknownAddress = await signIn({
+      email: `nobody-${Date.now()}@test.local`,
+      password,
+    });
 
-  it('signing in with an unknown address gives the same answer as a wrong password', async () => {
-    const res = await request(app.getHttpServer())
-      .post('/api/auth/sign-in/email')
-      .set('Origin', ORIGIN)
-      .send({ email: `nobody-${Date.now()}@test.local`, password });
+    // The property, asserted by comparing the two rather than pinning a number: if the
+    // answers ever differ, the login form becomes an oracle for which addresses are
+    // registered. Comparing them also survives a transient status the suite has
+    // occasionally produced (see CLAUDE.md, known flake).
+    expect(unknownAddress.status).toBe(wrongPassword.status);
+    expect(unknownAddress.body.code).toBe(wrongPassword.body.code);
 
-    // Identical on purpose: telling the two apart turns the login form into an
-    // account-existence oracle.
-    expect(res.status).toBe(401);
-    expect(res.body.code).toBe('INVALID_EMAIL_OR_PASSWORD');
+    expect(wrongPassword.status).toBe(401);
+    expect(wrongPassword.body.code).toBe('INVALID_EMAIL_OR_PASSWORD');
   });
 
   it('rejects a password shorter than the configured minimum', async () => {

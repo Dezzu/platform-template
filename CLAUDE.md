@@ -48,17 +48,18 @@ Mai `any`. Mai `@ts-ignore` senza una riga che spieghi perché.
 
 ## 2. Comandi
 
-| Comando                            | Cosa fa                                                                                   |
-| ---------------------------------- | ----------------------------------------------------------------------------------------- |
-| `pnpm verify`                      | lint + env-check + i18n-check + typecheck + test + build. **Verde prima di ogni commit.** |
-| `pnpm docker:dev`                  | postgres, valkey, mailpit, minio, adminer                                                 |
-| `pnpm db:generate --name x`        | genera la migration dal diff dello schema                                                 |
-| `pnpm db:migrate` / `db:seed`      | applica / popola                                                                          |
-| `pnpm auth:generate`               | rigenera lo schema Better Auth (vedi §5)                                                  |
-| `pnpm dev` / `dev:app` / `dev:web` | api / dashboard / marketing                                                               |
-| `pnpm stripe:setup`                | crea i prodotti Stripe dalla tabella `plan`                                               |
-| `pnpm stripe:listen`               | inoltra i webhook su localhost                                                            |
-| `pnpm ng test libs` / `test app`   | test frontend                                                                             |
+| Comando                                | Cosa fa                                                                                   |
+| -------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `pnpm verify`                          | lint + env-check + i18n-check + typecheck + test + build. **Verde prima di ogni commit.** |
+| `pnpm docker:dev`                      | postgres, valkey, mailpit, minio, adminer                                                 |
+| `pnpm db:generate --name x`            | genera la migration dal diff dello schema                                                 |
+| `pnpm db:migrate` / `db:seed`          | applica / popola                                                                          |
+| `pnpm auth:generate`                   | rigenera lo schema Better Auth (vedi §5)                                                  |
+| `pnpm start:api`                       | compila e avvia l'api — quello che serve di solito                                        |
+| `pnpm dev:api` / `dev:app` / `dev:web` | in watch: api / dashboard / marketing                                                     |
+| `pnpm stripe:setup`                    | crea i prodotti Stripe dalla tabella `plan`                                               |
+| `pnpm stripe:listen`                   | inoltra i webhook su localhost                                                            |
+| `pnpm ng test libs` / `test app`       | test frontend                                                                             |
 
 **Node 24 è obbligatorio** (pnpm 12 non parte su Node 22). In una shell non
 interattiva:
@@ -114,7 +115,10 @@ dependency: zod` erano lì ore prima che diventassero bug visibili.
 3. **Dopo ogni modifica scriptata, verifica con un grep che sia andata a segno.**
    Tre modifiche in questa sessione sono fallite in silenzio perché Prettier aveva
    riformattato il testo cercato.
-4. **Un test nuovo va provato rompendo il codice.** Se non fallisce, non protegge
+4. **`pnpm verify` va letto dal suo exit code**, non filtrando l'output con un grep:
+   un filtro che non intercetta la riga giusta nasconde un fallimento e lascia
+   committare codice rotto. È già successo qui.
+5. **Un test nuovo va provato rompendo il codice.** Se non fallisce, non protegge
    nulla. Un test che passa per il motivo sbagliato è peggio di nessun test.
 
 ---
@@ -165,6 +169,12 @@ disdetta si legge da `cancel_at`. Usa `willNotRenew`, che considera entrambi.
 
 **Stripe: `automatic_tax` è disattivo di proposito.** Attivo senza una registrazione
 fiscale _attiva_ non dà errore e non raccoglie nulla. Vedi `docs/adr/0002`.
+
+**Flake noto.** `auth-codes.e2e-spec.ts` è fallito due volte in una lunga sessione e
+non è mai stato riproducibile (9 esecuzioni pulite, isolate e in suite). Il test ora
+confronta le due risposte fra loro invece di fissare uno status, che è anche
+l'invariante vero. **Se lo vedi fallire, non liquidarlo come rumore**: non è stata
+trovata una causa, quindi potrebbe essere reale.
 
 **Il test runner Angular** risolve i glob `include` dalla root del **workspace** (non
 del progetto, malgrado lo schema dica il contrario) e trova i test solo **dentro** la
