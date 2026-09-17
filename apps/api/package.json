@@ -11,7 +11,8 @@
     "auth:generate": "STRIPE_SECRET_KEY=sk_test_schema_generation STRIPE_WEBHOOK_SECRET=whsec_schema_generation npx --yes auth@latest generate --config src/auth/auth.config.ts --output ../../packages/db/src/schema/auth.schema.ts --yes && node ../../scripts/postprocess-auth-schema.mjs ../../packages/db/src/schema/auth.schema.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "stripe:setup": "node scripts/stripe-setup.mjs"
+    "stripe:setup": "node scripts/stripe-setup.mjs",
+    "stripe:test-clock": "node scripts/stripe-test-clock.mjs"
   },
   "dependencies": {
     "@app/contracts": "workspace:*",

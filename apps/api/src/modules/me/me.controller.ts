@@ -76,7 +76,8 @@ export class MeController {
             plan: entitling.plan,
             status: entitling.status,
             periodEnd: entitling.periodEnd?.toISOString() ?? null,
-            cancelAtPeriodEnd: entitling.cancelAtPeriodEnd,
+            cancelAt: entitling.cancelAt?.toISOString() ?? null,
+            willNotRenew: entitling.willNotRenew,
           }
         : null,
     };

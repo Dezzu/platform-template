@@ -19,14 +19,14 @@
     "withGoogle": "Continua con Google"
   },
   "billing": {
-    "current": "Abbonamento attuale",
-    "noSubscription": "Nessun abbonamento attivo.",
-    "managePortal": "Gestisci su Stripe",
-    "plans": "Piani",
-    "subscribe": "Attiva",
-    "currentPlan": "Piano attuale",
-    "perMonth": "/mese",
     "checkoutFailed": "Non è stato possibile aprire il pagamento. Riprova.",
+    "current": "Abbonamento attuale",
+    "currentPlan": "Piano attuale",
+    "endsOn": "Attivo fino al {{date}}, poi non si rinnova.",
+    "managePortal": "Gestisci su Stripe",
+    "noSubscription": "Nessun abbonamento attivo.",
+    "perMonth": "/mese",
+    "plans": "Piani",
     "portalFailed": "Non è stato possibile aprire il portale di fatturazione.",
     "status": {
       "active": "attivo",
@@ -35,7 +35,8 @@
       "canceled": "annullato",
       "incomplete": "incompleto",
       "unpaid": "non pagato"
-    }
+    },
+    "subscribe": "Attiva"
   },
   "common": {
     "cancel": "Annulla",

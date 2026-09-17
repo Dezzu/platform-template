@@ -98,6 +98,10 @@ export class BillingPage {
     }
   }
 
+  protected formatDate(iso: string): string {
+    return new Intl.DateTimeFormat('it-IT', { dateStyle: 'long' }).format(new Date(iso));
+  }
+
   protected formatPrice(plan: PlanDto): string {
     if (plan.amountMonthly === 0) return '—';
     return new Intl.NumberFormat('it-IT', {

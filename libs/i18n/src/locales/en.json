@@ -19,14 +19,14 @@
     "withGoogle": "Continue with Google"
   },
   "billing": {
-    "current": "Current subscription",
-    "noSubscription": "No active subscription.",
-    "managePortal": "Manage on Stripe",
-    "plans": "Plans",
-    "subscribe": "Subscribe",
-    "currentPlan": "Current plan",
-    "perMonth": "/month",
     "checkoutFailed": "Could not open checkout. Please try again.",
+    "current": "Current subscription",
+    "currentPlan": "Current plan",
+    "endsOn": "Active until {{date}}, then it will not renew.",
+    "managePortal": "Manage on Stripe",
+    "noSubscription": "No active subscription.",
+    "perMonth": "/month",
+    "plans": "Plans",
     "portalFailed": "Could not open the billing portal.",
     "status": {
       "active": "active",
@@ -35,7 +35,8 @@
       "canceled": "canceled",
       "incomplete": "incomplete",
       "unpaid": "unpaid"
-    }
+    },
+    "subscribe": "Subscribe"
   },
   "common": {
     "cancel": "Cancel",

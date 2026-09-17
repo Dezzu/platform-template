@@ -57,7 +57,16 @@ export const MeSchema = z.object({
       plan: z.string(),
       status: z.string(),
       periodEnd: z.iso.datetime().nullable(),
-      cancelAtPeriodEnd: z.boolean(),
+      /** When it stops renewing, if cancelled. */
+      cancelAt: z.iso.datetime().nullable(),
+      /**
+       * Set to end rather than renew.
+       *
+       * Derived server-side from both `cancel_at` and `cancel_at_period_end`: recent
+       * Stripe API versions only set the former, so a client reading the boolean alone
+       * would never show that a plan is ending.
+       */
+      willNotRenew: z.boolean(),
     })
     .nullable(),
 });

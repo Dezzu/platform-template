@@ -10,7 +10,18 @@ export interface ActiveSubscription {
   plan: string;
   status: string;
   periodEnd: Date | null;
+  /**
+   * When the subscription stops renewing, if it has been cancelled.
+   *
+   * Recent Stripe API versions express "cancel at period end" by setting `cancel_at`
+   * and leaving `cancel_at_period_end` false — so reading only the boolean means never
+   * noticing a cancellation. Both are carried, and `willNotRenew` is what callers
+   * should ask.
+   */
+  cancelAt: Date | null;
   cancelAtPeriodEnd: boolean;
+  /** True when the subscription is set to end rather than renew. */
+  willNotRenew: boolean;
 }
 
 @Injectable()
@@ -51,7 +62,9 @@ export class SubscriptionService {
       plan: row.plan,
       status: row.status,
       periodEnd: row.periodEnd ?? null,
+      cancelAt: row.cancelAt ?? null,
       cancelAtPeriodEnd: row.cancelAtPeriodEnd ?? false,
+      willNotRenew: row.cancelAt !== null || (row.cancelAtPeriodEnd ?? false),
     };
   }
 }

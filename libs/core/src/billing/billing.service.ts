@@ -6,7 +6,14 @@ export interface OrgSubscription {
   status: string;
   seats: number | null;
   periodEnd: string | null;
-  cancelAtPeriodEnd: boolean;
+  cancelAt: string | null;
+  /**
+   * Set to end rather than renew.
+   *
+   * Recent Stripe API versions express cancellation with `cancel_at` and leave
+   * `cancel_at_period_end` false, so both are considered.
+   */
+  willNotRenew: boolean;
   trialEnd: string | null;
 }
 
@@ -74,7 +81,8 @@ function toSubscription(row: Record<string, unknown>): OrgSubscription {
     status: String(row['status'] ?? 'incomplete'),
     seats: typeof row['seats'] === 'number' ? row['seats'] : null,
     periodEnd: asIso(row['periodEnd']),
-    cancelAtPeriodEnd: Boolean(row['cancelAtPeriodEnd']),
+    cancelAt: asIso(row['cancelAt']),
+    willNotRenew: asIso(row['cancelAt']) !== null || Boolean(row['cancelAtPeriodEnd']),
     trialEnd: asIso(row['trialEnd']),
   };
 }
