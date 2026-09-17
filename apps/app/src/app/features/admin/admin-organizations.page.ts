@@ -1,12 +1,15 @@
 import { Component, computed, inject, resource, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { firstValueFrom, merge } from 'rxjs';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import type { AdminOrganization, AdminOrganizationDetail } from '@app/contracts';
+import { provideIcons } from '@ng-icons/core';
+import { lucideUsers } from '@ng-icons/lucide';
+import type { AdminOrganization } from '@app/contracts';
 import { TableComponent } from '@app/ui/table';
 import { TemplateDirective } from '@app/ui/mix';
-import type { DuiTablelazyLoadEvent, TableColumn } from '@app/ui/mix';
+import type { DuiTablelazyLoadEvent, TableAction, TableColumn } from '@app/ui/mix';
+import { PermissionsService } from '@app/core';
 import { AdminApi } from './admin.api';
 
 /** What the table last asked the server for. */
@@ -21,24 +24,25 @@ interface Query {
 /**
  * Every organization on the platform.
  *
- * Read-only, deliberately — hence no actions column and no three dots. Deleting a
- * tenant from a support list is one mis-click away from deleting a customer, and the
- * operations that actually come up in support (change a role, get someone back in)
- * belong to the members screen.
+ * The row action leads to the accounts of that organization rather than showing them
+ * here. Two reasons: the useful thing to do with a member is to act on them, and every
+ * one of those actions already exists on the users screen — a second, lesser copy of it
+ * inside an expanded row would be a place for the two to disagree.
  *
- * Expanding a row fetches that organization's members, so "who is in there?" is one
- * click rather than a page. It is fetched on expand and not up front: loading the
- * members of every organization on the page so that opening one feels instant is the
- * alternative, and it is the wrong one on a list of any size.
+ * The organization itself stays read-only. Deleting a tenant from a support list is one
+ * mis-click away from deleting a customer.
  */
 @Component({
   selector: 'app-admin-organizations-page',
   imports: [TranslocoPipe, RouterLink, TableComponent, TemplateDirective],
+  providers: [provideIcons({ lucideUsers })],
   templateUrl: './admin-organizations.page.html',
 })
 export class AdminOrganizationsPage {
   private readonly api = inject(AdminApi);
+  private readonly router = inject(Router);
   private readonly transloco = inject(TranslocoService);
+  private readonly permissions = inject(PermissionsService);
 
   /** See the note in admin-users.page.ts: `langChanges$` alone misses the first load. */
   private readonly translations = toSignal(
@@ -85,15 +89,6 @@ export class AdminOrganizationsPage {
   protected readonly loading = computed(() => this.page.isLoading());
   protected readonly failed = computed(() => this.page.error() !== undefined);
 
-  /** The row whose members are on screen. Only ever one. */
-  private readonly expandedId = signal<string | null>(null);
-
-  private readonly detail = resource({
-    params: () => this.expandedId(),
-    loader: ({ params }) =>
-      params ? firstValueFrom(this.api.getOrganization(params)) : Promise.resolve(null),
-  });
-
   protected readonly columns = computed<TableColumn[]>(() => {
     this.translations();
     const t = (key: string) => this.transloco.translate(`admin.columns.${key}`);
@@ -111,21 +106,28 @@ export class AdminOrganizationsPage {
     ];
   });
 
+  protected readonly actions = computed<TableAction<AdminOrganization>[]>(() => {
+    this.translations();
+    return [
+      {
+        icon: 'lucideUsers',
+        label: this.transloco.translate('admin.manageMembers'),
+        // Pointless for whoever cannot open the users screen anyway.
+        visible: () => this.permissions.anyOfPlatform('platform.users.read'),
+        command: (row) => this.openMembers(row),
+      },
+    ];
+  });
+
   protected asOrganization(value: unknown): AdminOrganization {
     return value as AdminOrganization;
   }
 
-  /** The members currently loaded, but only for the row that is actually open. */
-  protected membersOf(organization: AdminOrganization): AdminOrganizationDetail | null {
-    if (!this.detail.hasValue()) return null;
-    const loaded = this.detail.value();
-    return loaded?.id === organization.id ? loaded : null;
-  }
-
-  protected readonly detailLoading = computed(() => this.detail.isLoading());
-
-  protected onExpand(event: { row: AdminOrganization; expanded: boolean }): void {
-    this.expandedId.set(event.expanded ? event.row.id : null);
+  /** The accounts of this organization, on the screen that can act on them. */
+  private openMembers(organization: AdminOrganization): void {
+    void this.router.navigate(['/admin/users'], {
+      queryParams: { organizationId: organization.id },
+    });
   }
 
   protected onLazyLoad(event: DuiTablelazyLoadEvent): void {

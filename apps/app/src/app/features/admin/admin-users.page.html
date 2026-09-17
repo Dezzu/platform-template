@@ -7,9 +7,16 @@
     </a>
   </nav>
 </div>
-<p class="text-muted-foreground mb-6 text-sm">{{ 'admin.usersDescription' | transloco }}</p>
+<p class="text-muted-foreground mb-4 text-sm">{{ 'admin.usersDescription' | transloco }}</p>
 
-@if (errorKey(); as key) {
+@if (organizationId()) {
+<div class="bg-muted mb-4 flex flex-wrap items-center gap-2 rounded-md px-3 py-2 text-sm">
+  <span> {{ 'admin.filteredByOrganization' | transloco: { organization: organizationName() } }} </span>
+  <button type="button" class="font-medium underline underline-offset-4" (click)="clearOrganization()">
+    {{ 'admin.clearFilter' | transloco }}
+  </button>
+</div>
+} @if (errorKey(); as key) {
 <p class="text-destructive mb-4 text-sm" role="alert">{{ key | transloco }}</p>
 } @if (notice(); as key) {
 <p class="text-muted-foreground mb-4 text-sm" role="status">{{ key | transloco }}</p>
@@ -49,4 +56,10 @@
   </ng-template>
 
   <ng-template duiTemplate="role" let-item="item"> {{ roleLabel(asUser(item)) }} </ng-template>
+
+  <ng-template duiTemplate="organizationRole" let-value>
+    @if (value) { {{ 'members.roles.' + value | transloco }} } @else {
+    <span class="text-muted-foreground">—</span>
+    }
+  </ng-template>
 </dui-table>

@@ -27,12 +27,28 @@ export const AdminUserSchema = z.object({
   createdAt: z.iso.datetime(),
   /** How many organizations the account belongs to. */
   organizationCount: z.number().int().nonnegative(),
+  /**
+   * The role this account holds in the organization the list was filtered by.
+   *
+   * Null whenever the list is not scoped to one — "member of what?" has no answer
+   * across tenants, and a column that is sometimes meaningless is worse than one that
+   * is explicitly absent.
+   */
+  organizationRole: z.enum(ORG_ROLES).nullable(),
 });
 export type AdminUser = z.infer<typeof AdminUserSchema>;
 
 export const AdminUserListQuerySchema = PageQuerySchema.extend({
   role: z.enum(PLATFORM_ROLES).optional(),
   banned: z.stringbool().optional(),
+  /**
+   * Narrows the list to the members of one organization.
+   *
+   * Safe to take from the client here, unlike everywhere else in the API: this
+   * endpoint is already platform-scoped and the caller has been granted the right to
+   * see every tenant. It is a filter, not a tenancy decision.
+   */
+  organizationId: z.string().min(1).optional(),
 });
 export type AdminUserListQuery = z.infer<typeof AdminUserListQuerySchema>;
 

@@ -1,10 +1,11 @@
 import { provideZonelessChangeDetection } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { AdminOrganization, AdminOrganizationDetail } from '@app/contracts';
-import { provideCore } from '@app/core';
+import type { AdminOrganization } from '@app/contracts';
+import type { TableAction } from '@app/ui/mix';
+import { PermissionsService, provideCore } from '@app/core';
 import { provideI18n } from '@app/i18n';
 import { pageAlerts } from '../../../testing/alerts';
 import { AdminApi } from './admin.api';
@@ -27,22 +28,20 @@ const PAID = organization({
   subscription: { plan: 'pro', status: 'active', periodEnd: null },
 });
 
-const detailOf = (base: AdminOrganization): AdminOrganizationDetail => ({
-  ...base,
-  members: [
-    { id: 'm1', role: 'owner', user: { id: 'u1', name: 'Fabio', email: 'fabio@test.local' } },
-    { id: 'm2', role: 'member', user: { id: 'u2', name: '', email: 'erika@test.local' } },
-  ],
-});
-
 const pageOf = (items: AdminOrganization[]) =>
   of({ items, meta: { page: 0, size: 10, total: items.length, totalPages: 1 } });
 
-function setup(api: Partial<AdminApi>) {
+let navigate: ReturnType<typeof vi.spyOn>;
+
+function setup(api: Partial<AdminApi>, platform: string[] = ['platform.users.read']) {
   TestBed.configureTestingModule({
     providers: [
       provideZonelessChangeDetection(),
       provideRouter([]),
+      {
+        provide: PermissionsService,
+        useValue: { anyOfPlatform: (...req: string[]) => req.some((p) => platform.includes(p)) },
+      },
       provideI18n('it'),
       provideCore({
         apiUrl: '/api',
@@ -55,17 +54,24 @@ function setup(api: Partial<AdminApi>) {
       { provide: AdminApi, useValue: api },
     ],
   });
+  /**
+   * The real Router with its `navigate` spied on, rather than a stub: `RouterLink` in
+   * the template reads more of it than a stub can plausibly fake, and these cases are
+   * about *where* the action goes, not about the navigation happening.
+   */
+  navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+
   return TestBed.createComponent(AdminOrganizationsPage);
 }
 
 const page = (fixture: { nativeElement: unknown }) => fixture.nativeElement as HTMLElement;
 
+/** Reaches the component's protected action list, which is where the logic lives. */
+const internalsOf = (fixture: { componentInstance: unknown }) =>
+  fixture.componentInstance as unknown as { actions: () => TableAction<AdminOrganization>[] };
+
 const rowFor = (fixture: { nativeElement: unknown }, text: string) =>
   [...page(fixture).querySelectorAll('tbody tr')].find((row) => row.textContent?.includes(text));
-
-/** The chevron that opens a row is the first button in it. */
-const expandButton = (row: Element | undefined) =>
-  row?.querySelector('button') as HTMLButtonElement | null;
 
 describe('AdminOrganizationsPage', () => {
   beforeEach(() => TestBed.resetTestingModule());
@@ -86,51 +92,32 @@ describe('AdminOrganizationsPage', () => {
     expect(rowFor(fixture, 'Acme Srl')?.textContent).toContain('nessun piano');
   });
 
-  it('does not fetch any members until a row is opened', async () => {
-    const getOrganization = vi.fn(() => of(detailOf(ACME)));
-    const fixture = setup({ listOrganizations: () => pageOf([ACME, PAID]), getOrganization });
+  it('offers an action that leads to the users of that organization', async () => {
+    const fixture = setup({ listOrganizations: () => pageOf([ACME]) });
     await fixture.whenStable();
 
-    // Loading every row's members so that expanding feels instant is the alternative,
-    // and it is one request per row on every page load.
-    expect(getOrganization).not.toHaveBeenCalled();
+    const actions = internalsOf(fixture).actions();
+    expect(actions).toHaveLength(1);
+    expect(actions[0]?.label).toBe('Gestisci gli utenti');
 
-    expandButton(rowFor(fixture, 'Acme Srl'))?.click();
+    actions[0]?.command(ACME, []);
     await fixture.whenStable();
 
-    expect(getOrganization).toHaveBeenCalledWith('acme');
-    expect(getOrganization).toHaveBeenCalledTimes(1);
-  });
-
-  it('shows the members of the row that was opened', async () => {
-    const fixture = setup({
-      listOrganizations: () => pageOf([ACME]),
-      getOrganization: () => of(detailOf(ACME)),
+    // The filter travels in the URL, not in component state: it has to survive a
+    // reload and a copied link.
+    expect(navigate).toHaveBeenCalledWith(['/admin/users'], {
+      queryParams: { organizationId: 'acme' },
     });
-    await fixture.whenStable();
-
-    expandButton(rowFor(fixture, 'Acme Srl'))?.click();
-    await fixture.whenStable();
-
-    expect(page(fixture).textContent).toContain('Fabio');
-    // Falls back to the email when the account has no name.
-    expect(page(fixture).textContent).toContain('erika@test.local');
-    expect(page(fixture).textContent).toContain('Owner');
   });
 
-  it('stops asking for members once the row is closed again', async () => {
-    const getOrganization = vi.fn(() => of(detailOf(ACME)));
-    const fixture = setup({ listOrganizations: () => pageOf([ACME]), getOrganization });
+  it('hides the action from someone who cannot open the users screen', async () => {
+    const fixture = setup({ listOrganizations: () => pageOf([ACME]) }, [
+      'platform.organizations.read',
+    ]);
     await fixture.whenStable();
 
-    const button = expandButton(rowFor(fixture, 'Acme Srl'));
-    button?.click();
-    await fixture.whenStable();
-    button?.click();
-    await fixture.whenStable();
-
-    expect(page(fixture).textContent).not.toContain('fabio@test.local');
-    expect(getOrganization).toHaveBeenCalledTimes(1);
+    const actions = internalsOf(fixture).actions();
+    expect(actions[0]?.visible?.(ACME, [])).toBe(false);
   });
 
   it('asks the server again when the table changes page or search', async () => {

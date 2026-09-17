@@ -2,18 +2,22 @@
   "admin": {
     "ban": "Suspend",
     "banned": "suspended",
+    "clearFilter": "Show all",
     "columns": {
       "createdAt": "Registered on",
       "email": "Email",
       "members": "Members",
       "name": "Name",
       "organization": "Organization",
+      "organizationRole": "Role in the organization",
       "organizations": "Organizations",
       "plan": "Plan",
       "role": "Platform role"
     },
+    "filteredByOrganization": "Filtered to the users of {{organization}}.",
     "hideMembers": "Hide",
     "makeRole": "Make {{role}}",
+    "manageMembers": "Manage the users",
     "memberCount": "{{count}} members",
     "noMembers": "No members.",
     "noPlan": "no plan",

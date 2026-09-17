@@ -77,24 +77,53 @@ export class AdminUsersService {
         : desc(column)
       : desc(user.createdAt);
 
+    /**
+     * Scoping to one organization turns the query into a join on membership, which is
+     * also what makes the org role available — the only place it has a meaning. Without
+     * a filter there is no single role to report and the column stays null.
+     */
+    const scoped = query.organizationId;
+
     const [rows, totals] = await Promise.all([
-      this.db
-        .select({
-          user,
-          organizationCount: sql<number>`(${organizationCount})`,
-        })
-        .from(user)
-        .where(where)
-        .orderBy(orderBy)
-        .limit(query.size)
-        .offset(query.page * query.size),
-      this.db.select({ value: count() }).from(user).where(where),
+      scoped
+        ? this.db
+            .select({
+              user,
+              organizationCount: sql<number>`(${organizationCount})`,
+              organizationRole: member.role,
+            })
+            .from(user)
+            .innerJoin(member, eq(member.userId, user.id))
+            .where(and(eq(member.organizationId, scoped), where))
+            .orderBy(orderBy)
+            .limit(query.size)
+            .offset(query.page * query.size)
+        : this.db
+            .select({
+              user,
+              organizationCount: sql<number>`(${organizationCount})`,
+              organizationRole: sql<string | null>`null`,
+            })
+            .from(user)
+            .where(where)
+            .orderBy(orderBy)
+            .limit(query.size)
+            .offset(query.page * query.size),
+      scoped
+        ? this.db
+            .select({ value: count() })
+            .from(user)
+            .innerJoin(member, eq(member.userId, user.id))
+            .where(and(eq(member.organizationId, scoped), where))
+        : this.db.select({ value: count() }).from(user).where(where),
     ]);
 
     const total = Number(totals[0]?.value ?? 0);
 
     return {
-      items: rows.map((row) => toDto(row.user, Number(row.organizationCount))),
+      items: rows.map((row) =>
+        toDto(row.user, Number(row.organizationCount), row.organizationRole),
+      ),
       meta: {
         page: query.page,
         size: query.size,
@@ -305,7 +334,11 @@ export class AdminUsersService {
   }
 }
 
-function toDto(row: UserRow, organizationCount: number): AdminUser {
+function toDto(
+  row: UserRow,
+  organizationCount: number,
+  organizationRole: string | null = null,
+): AdminUser {
   return {
     id: row.id,
     email: row.email,
@@ -319,5 +352,6 @@ function toDto(row: UserRow, organizationCount: number): AdminUser {
     banExpires: row.banExpires?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
     organizationCount,
+    organizationRole: (organizationRole as AdminUser['organizationRole']) ?? null,
   };
 }

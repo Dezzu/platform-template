@@ -1,5 +1,5 @@
 import { provideZonelessChangeDetection } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, provideRouter } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -23,6 +23,7 @@ const account = (over: Partial<AdminUser> & { id: string }): AdminUser => ({
   banExpires: null,
   createdAt: '2026-01-01T00:00:00.000Z',
   organizationCount: 1,
+  organizationRole: null,
   ...over,
 });
 
@@ -48,11 +49,20 @@ function setup(
   api: Partial<AdminApi>,
   viewer: { id: string; role: string } = { id: 'super', role: 'superadmin' },
   platform: string[] = ['platform.users.read', 'platform.users.manage'],
+  queryParams: Record<string, string> = {},
 ) {
   TestBed.configureTestingModule({
     providers: [
       provideZonelessChangeDetection(),
       provideRouter([]),
+      {
+        // The organization filter arrives in the URL, so the cases that exercise it
+        // have to put it there rather than reach into the component.
+        provide: ActivatedRoute,
+        useValue: {
+          queryParamMap: of({ get: (key: string) => queryParams[key] ?? null }),
+        },
+      },
       provideI18n('it'),
       provideCore({
         apiUrl: '/api',
@@ -235,6 +245,74 @@ describe('AdminUsersPage', () => {
     await settle(fixture);
 
     expect(pageAlerts(fixture)).toContain('ruolo superiore al tuo');
+  });
+
+  it('narrows the list to one organization when the URL says so', async () => {
+    const listUsers = vi.fn(() => pageOf([PLAIN]));
+    const getOrganization = vi.fn(() =>
+      of({
+        id: 'acme',
+        name: 'Acme Srl',
+        slug: 'acme',
+        logo: null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        memberCount: 1,
+        subscription: null,
+        members: [],
+      }),
+    );
+
+    const fixture = setup(
+      { listUsers, getOrganization },
+      { id: 'super', role: 'superadmin' },
+      ['platform.users.read', 'platform.users.manage'],
+      { organizationId: 'acme' },
+    );
+    await fixture.whenStable();
+
+    expect(listUsers).toHaveBeenLastCalledWith(expect.objectContaining({ organizationId: 'acme' }));
+    // Named, not just filtered: "filtered by an id you cannot read" is not an answer.
+    expect(page(fixture).textContent).toContain('Acme Srl');
+  });
+
+  it('shows the role inside that organization only while the filter is on', async () => {
+    const member = account({ id: 'plain', organizationRole: 'admin' });
+    const filtered = setup(
+      {
+        listUsers: () => pageOf([member]),
+        getOrganization: () =>
+          of({
+            id: 'acme',
+            name: 'Acme Srl',
+            slug: 'acme',
+            logo: null,
+            createdAt: '2026-01-01T00:00:00.000Z',
+            memberCount: 1,
+            subscription: null,
+            members: [],
+          }),
+      },
+      { id: 'super', role: 'superadmin' },
+      ['platform.users.read'],
+      { organizationId: 'acme' },
+    );
+    await filtered.whenStable();
+
+    expect(page(filtered).querySelector('thead')?.textContent).toContain(
+      "Ruolo nell'organizzazione",
+    );
+    expect(rowFor(filtered, 'plain@test.local')?.textContent).toContain('Amministratore');
+
+    TestBed.resetTestingModule();
+
+    // Unfiltered the column is absent rather than empty: across tenants there is no
+    // single role to report.
+    const unfiltered = setup({ listUsers: () => pageOf([member]) });
+    await unfiltered.whenStable();
+
+    expect(page(unfiltered).querySelector('thead')?.textContent).not.toContain(
+      "Ruolo nell'organizzazione",
+    );
   });
 
   it('offers nothing to someone who may only read', async () => {

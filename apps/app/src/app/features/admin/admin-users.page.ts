@@ -1,6 +1,7 @@
 import { Component, computed, inject, resource, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { map } from 'rxjs/operators';
 import { firstValueFrom, merge } from 'rxjs';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { provideIcons } from '@ng-icons/core';
@@ -32,6 +33,8 @@ interface Query {
   dir: 'asc' | 'desc';
 }
 
+const NO_ORGANIZATION = '';
+
 /**
  * Every account on the platform.
  *
@@ -59,6 +62,7 @@ interface Query {
 export class AdminUsersPage {
   private readonly api = inject(AdminApi);
   private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
   private readonly transloco = inject(TranslocoService);
   private readonly permissions = inject(PermissionsService);
 
@@ -77,6 +81,29 @@ export class AdminUsersPage {
 
   protected readonly errorKey = signal<string | null>(null);
   protected readonly notice = signal<string | null>(null);
+
+  /**
+   * The organization the list is narrowed to, from the URL rather than from component
+   * state: arriving here from the organizations screen is a navigation, so the filter
+   * has to survive a reload and a copied link like any other part of the address.
+   */
+  protected readonly organizationId = toSignal(
+    inject(ActivatedRoute).queryParamMap.pipe(
+      map((params) => params.get('organizationId') ?? NO_ORGANIZATION),
+    ),
+    { initialValue: NO_ORGANIZATION },
+  );
+
+  /** Only to name the filter on screen; the filtering itself is the id above. */
+  private readonly organization = resource({
+    params: () => this.organizationId(),
+    loader: ({ params }) =>
+      params ? firstValueFrom(this.api.getOrganization(params)) : Promise.resolve(null),
+  });
+
+  protected readonly organizationName = computed(() =>
+    this.organization.hasValue() ? (this.organization.value()?.name ?? '') : '',
+  );
 
   /**
    * Custom equality, and it is load-bearing: `onLazyLoad` fires once on init with the
@@ -99,7 +126,7 @@ export class AdminUsersPage {
   );
 
   private readonly page = resource({
-    params: () => this.query(),
+    params: () => ({ ...this.query(), organizationId: this.organizationId() }),
     loader: ({ params }) =>
       firstValueFrom(
         this.api.listUsers({
@@ -108,9 +135,15 @@ export class AdminUsersPage {
           dir: params.dir,
           ...(params.q ? { q: params.q } : {}),
           ...(params.sort ? { sort: params.sort } : {}),
+          ...(params.organizationId ? { organizationId: params.organizationId } : {}),
         }),
       ),
   });
+
+  /** Drops the organization filter by leaving the URL, not by mutating a signal. */
+  protected clearOrganization(): void {
+    void this.router.navigate(['/admin/users'], { queryParams: {} });
+  }
 
   /**
    * `hasValue()` rather than `value() ?? …`: a resource in an error state THROWS from
@@ -135,7 +168,11 @@ export class AdminUsersPage {
       { field: 'name', header: t('name'), sortable: true },
       { field: 'email', header: t('email'), sortable: true },
       { field: 'role', header: t('role'), sortable: false },
-      { field: 'organizationCount', header: t('organizations'), sortable: false },
+      // Only when scoped: "member of what?" has no answer across tenants, and a column
+      // that is sometimes meaningless is worse than one that is explicitly absent.
+      ...(this.organizationId()
+        ? [{ field: 'organizationRole', header: t('organizationRole'), sortable: false }]
+        : [{ field: 'organizationCount', header: t('organizations'), sortable: false }]),
       {
         field: 'createdAt',
         header: t('createdAt'),

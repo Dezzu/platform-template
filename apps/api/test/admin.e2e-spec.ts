@@ -128,6 +128,29 @@ describe('platform administration (e2e)', () => {
       expect(hostile.body.data.items.length).toBeGreaterThan(0);
     });
 
+    it('narrows the account list to one organization, with the role inside it', async () => {
+      const scoped = await request(app.getHttpServer())
+        .get('/api/admin/users')
+        .query({ organizationId: orgA, size: 200 })
+        .set(as(admin))
+        .expect(200);
+
+      const emails = scoped.body.data.items.map((u: { email: string }) => u.email);
+      expect(emails).toEqual([victim.email]);
+      expect(scoped.body.data.meta.total).toBe(1);
+      // The role only has a meaning once the list is scoped to one tenant.
+      expect(scoped.body.data.items[0].organizationRole).toBe('owner');
+
+      const unscoped = await request(app.getHttpServer())
+        .get('/api/admin/users')
+        .query({ size: 200 })
+        .set(as(admin))
+        .expect(200);
+
+      expect(unscoped.body.data.items.length).toBeGreaterThan(1);
+      expect(unscoped.body.data.items[0].organizationRole).toBeNull();
+    });
+
     it('sorts the organizations by the column asked for', async () => {
       const res = await request(app.getHttpServer())
         .get('/api/admin/organizations')

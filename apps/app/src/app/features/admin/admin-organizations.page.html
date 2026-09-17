@@ -18,13 +18,13 @@
   emptyMessage="common.empty"
   [cols]="columns()"
   [items]="rows()"
+  [actions]="actions()"
+  [actionsAsMenu]="true"
   [lazy]="true"
-  [expandable]="true"
   [loading]="loading()"
   [totalRecords]="total()"
   [showAddButton]="false"
   (onLazyLoad)="onLazyLoad($event)"
-  (expandedChange)="onExpand($event)"
 >
   <ng-template duiTemplate="subscription" let-item="item">
     @let organization = asOrganization(item); @if (organization.subscription; as plan) { {{ 'plans.' + plan.plan +
@@ -33,22 +33,5 @@
     } @else {
     <span class="text-muted-foreground">{{ 'admin.noPlan' | transloco }}</span>
     }
-  </ng-template>
-
-  <ng-template duiTemplate="expandedRow" let-item="item">
-    @let organization = asOrganization(item); @let detail = membersOf(organization); @if (!detail && detailLoading()) {
-    <p class="text-muted-foreground text-sm">{{ 'common.loading' | transloco }}</p>
-    } @else if (detail) { @if (detail.members.length === 0) {
-    <p class="text-muted-foreground text-sm">{{ 'admin.noMembers' | transloco }}</p>
-    } @else {
-    <ul class="space-y-1">
-      @for (member of detail.members; track member.id) {
-      <li class="text-sm">
-        {{ member.user.name || member.user.email }}
-        <span class="text-muted-foreground">— {{ 'members.roles.' + member.role | transloco }}</span>
-      </li>
-      }
-    </ul>
-    } }
   </ng-template>
 </dui-table>
