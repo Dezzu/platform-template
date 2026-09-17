@@ -18,6 +18,25 @@
     "signingUp": "Creating account…",
     "withGoogle": "Continue with Google"
   },
+  "billing": {
+    "current": "Current subscription",
+    "noSubscription": "No active subscription.",
+    "managePortal": "Manage on Stripe",
+    "plans": "Plans",
+    "subscribe": "Subscribe",
+    "currentPlan": "Current plan",
+    "perMonth": "/month",
+    "checkoutFailed": "Could not open checkout. Please try again.",
+    "portalFailed": "Could not open the billing portal.",
+    "status": {
+      "active": "active",
+      "trialing": "trialing",
+      "past_due": "past due",
+      "canceled": "canceled",
+      "incomplete": "incomplete",
+      "unpaid": "unpaid"
+    }
+  },
   "common": {
     "cancel": "Cancel",
     "clearDate": "Clear date",

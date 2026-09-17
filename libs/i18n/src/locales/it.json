@@ -18,6 +18,25 @@
     "signingUp": "Registrazione in corso…",
     "withGoogle": "Continua con Google"
   },
+  "billing": {
+    "current": "Abbonamento attuale",
+    "noSubscription": "Nessun abbonamento attivo.",
+    "managePortal": "Gestisci su Stripe",
+    "plans": "Piani",
+    "subscribe": "Attiva",
+    "currentPlan": "Piano attuale",
+    "perMonth": "/mese",
+    "checkoutFailed": "Non è stato possibile aprire il pagamento. Riprova.",
+    "portalFailed": "Non è stato possibile aprire il portale di fatturazione.",
+    "status": {
+      "active": "attivo",
+      "trialing": "in prova",
+      "past_due": "insoluto",
+      "canceled": "annullato",
+      "incomplete": "incompleto",
+      "unpaid": "non pagato"
+    }
+  },
   "common": {
     "cancel": "Annulla",
     "clearDate": "Svuota la data",

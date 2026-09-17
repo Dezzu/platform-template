@@ -1,6 +1,7 @@
 import { DOCUMENT, inject, InjectionToken } from '@angular/core';
 import { createAuthClient } from 'better-auth/client';
 import { adminClient, organizationClient, twoFactorClient } from 'better-auth/client/plugins';
+import { stripeClient } from '@better-auth/stripe/client';
 import { CORE_CONFIG } from '../config/core.config';
 
 /**
@@ -26,7 +27,13 @@ function createClient(baseURL: string) {
   return createAuthClient({
     baseURL,
     // Must mirror the server's plugin list, or the typed endpoints will not exist.
-    plugins: [organizationClient(), adminClient(), twoFactorClient()],
+    plugins: [
+      organizationClient(),
+      adminClient(),
+      twoFactorClient(),
+      // `subscription: true` is what adds the typed subscription endpoints.
+      stripeClient({ subscription: true }),
+    ],
     fetchOptions: {
       // The session lives in an httpOnly cookie: it has to ride along on every call,
       // and no token is ever readable from JavaScript.

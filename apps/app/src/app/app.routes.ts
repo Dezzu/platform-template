@@ -34,6 +34,11 @@ export const routes: Routes = [
           import('./features/projects/projects.page').then((m) => m.ProjectsPage),
       },
       {
+        path: 'billing',
+        canMatch: [navGuard('billing')],
+        loadComponent: () => import('./features/billing/billing.page').then((m) => m.BillingPage),
+      },
+      {
         // Reached from the profile menu rather than the sidebar, so it is deliberately
         // absent from NAV_MANIFEST.
         path: 'profile',

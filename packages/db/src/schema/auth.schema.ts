@@ -27,6 +27,7 @@ export const user = pgTable("user", {
   banReason: text("ban_reason"),
   banExpires: timestamp("ban_expires", { withTimezone: true }),
   twoFactorEnabled: boolean("two_factor_enabled").default(false),
+  stripeCustomerId: text("stripe_customer_id"),
 });
 
 export const session = pgTable(
@@ -97,6 +98,7 @@ export const organization = pgTable("organization", {
   logo: text("logo"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   metadata: text("metadata"),
+  stripeCustomerId: text("stripe_customer_id"),
 });
 
 export const member = pgTable(
@@ -158,6 +160,26 @@ export const twoFactor = pgTable(
     index("twoFactor_userId_idx").on(table.userId),
   ],
 );
+
+export const subscription = pgTable("subscription", {
+  id: text("id").primaryKey(),
+  plan: text("plan").notNull(),
+  referenceId: text("reference_id").notNull(),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  status: text("status").default("incomplete").notNull(),
+  periodStart: timestamp("period_start", { withTimezone: true }),
+  periodEnd: timestamp("period_end", { withTimezone: true }),
+  trialStart: timestamp("trial_start", { withTimezone: true }),
+  trialEnd: timestamp("trial_end", { withTimezone: true }),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false),
+  cancelAt: timestamp("cancel_at", { withTimezone: true }),
+  canceledAt: timestamp("canceled_at", { withTimezone: true }),
+  endedAt: timestamp("ended_at", { withTimezone: true }),
+  seats: integer("seats"),
+  billingInterval: text("billing_interval"),
+  stripeScheduleId: text("stripe_schedule_id"),
+});
 
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),

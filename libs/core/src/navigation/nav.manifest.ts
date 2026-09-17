@@ -29,6 +29,13 @@ export const NAV_MANIFEST: readonly NavItem[] = [
     route: '/projects',
     permissions: [PERMISSIONS.PROJECTS_READ],
   },
+  {
+    id: 'billing',
+    labelKey: 'nav.billing',
+    icon: 'lucideCreditCard',
+    route: '/billing',
+    permissions: [PERMISSIONS.BILLING_READ],
+  },
 ];
 
 /** Looks up an entry by id, including nested children. */

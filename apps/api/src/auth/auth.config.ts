@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { admin, organization, twoFactor } from 'better-auth/plugins';
+import { createStripePlugin } from '../modules/billing/stripe-plugin';
 import * as schema from '@app/db';
 import { db } from '../database/db';
 
@@ -35,6 +36,8 @@ const googleClientSecret = env('GOOGLE_CLIENT_SECRET');
  * `packages/db/src/schema/auth.schema.ts`. That file is NEVER hand-edited — it is
  * regenerated on every Better Auth upgrade and reviewed like any other diff.
  */
+const stripePlugin = createStripePlugin();
+
 export const auth = betterAuth({
   appName: env('APP_NAME') ?? 'saas-template',
   secret: required('BETTER_AUTH_SECRET'),
@@ -96,6 +99,11 @@ export const auth = betterAuth({
     }),
     // TOTP + backup codes.
     twoFactor(),
+
+    // Billing, when Stripe is configured. Absent locally without keys, so the rest of
+    // the application stays usable without a Stripe account; production config
+    // validation refuses to start without them.
+    ...(stripePlugin ? [stripePlugin] : []),
   ],
 });
 

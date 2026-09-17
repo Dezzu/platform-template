@@ -1,0 +1,73 @@
+<h1 class="mb-4 text-2xl font-semibold">{{ 'nav.billing' | transloco }}</h1>
+
+@if (errorKey(); as key) {
+<p class="text-destructive mb-4 text-sm" role="alert">{{ key | transloco }}</p>
+}
+
+<section hlmCard class="mb-6 max-w-2xl">
+  <div hlmCardHeader>
+    <h2 hlmCardTitle>{{ 'billing.current' | transloco }}</h2>
+    @if (subscriptions.isLoading()) {
+    <p hlmCardDescription>{{ 'common.loading' | transloco }}</p>
+    } @else if (current(); as subscription) {
+    <p hlmCardDescription>{{ subscription.plan }} · {{ 'billing.status.' + subscription.status | transloco }}</p>
+    } @else {
+    <p hlmCardDescription>{{ 'billing.noSubscription' | transloco }}</p>
+    }
+  </div>
+
+  <div hlmCardFooter>
+    <!--
+      Changing plan, updating the card and cancelling all live in the Stripe portal
+      rather than being rebuilt here: every screen not written is a screen that cannot
+      drift from what Stripe actually does.
+    -->
+    <button
+      hlmBtn
+      variant="outline"
+      *appCan="[permissionKeys.BILLING_MANAGE]"
+      [disabled]="busy()"
+      (click)="openPortal()"
+    >
+      {{ 'billing.managePortal' | transloco }}
+    </button>
+  </div>
+</section>
+
+<h2 class="mb-3 text-lg font-medium">{{ 'billing.plans' | transloco }}</h2>
+
+@if (plans.isLoading()) {
+<p class="text-muted-foreground text-sm">{{ 'common.loading' | transloco }}</p>
+} @else {
+<div class="grid gap-4 sm:grid-cols-3">
+  @for (plan of plans.value() ?? []; track plan.id) {
+  <article hlmCard>
+    <div hlmCardHeader>
+      <h3 hlmCardTitle>{{ plan.nameKey | transloco }}</h3>
+      <p hlmCardDescription>
+        <span class="text-foreground text-2xl font-semibold">{{ formatPrice(plan) }}</span>
+        @if (plan.amountMonthly > 0) {
+        <span class="text-muted-foreground text-sm">{{ 'billing.perMonth' | transloco }}</span>
+        }
+      </p>
+    </div>
+
+    <div hlmCardFooter>
+      @if (isCurrent(plan)) {
+      <span class="text-muted-foreground text-sm">{{ 'billing.currentPlan' | transloco }}</span>
+      } @else if (plan.amountMonthly > 0) {
+      <button
+        hlmBtn
+        class="w-full"
+        *appCan="[permissionKeys.BILLING_MANAGE]"
+        [disabled]="busy()"
+        (click)="subscribe(plan)"
+      >
+        {{ 'billing.subscribe' | transloco }}
+      </button>
+      }
+    </div>
+  </article>
+  }
+</div>
+}

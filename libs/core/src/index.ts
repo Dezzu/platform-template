@@ -13,6 +13,8 @@ export * from './http/app-error';
 export * from './http/api.interceptor';
 
 export * from './api/me.api';
+export * from './api/plans.api';
+export * from './billing/billing.service';
 
 export * from './permissions/permissions.service';
 export * from './permissions/permission.guards';
