@@ -1,7 +1,5 @@
 import { Component, computed, inject } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
-import { provideIcons } from '@ng-icons/core';
-import { lucideUser } from '@ng-icons/lucide';
 import { AuthService, NAV_MANIFEST, PermissionsService } from '@app/core';
 import {
   AppShellComponent,
@@ -22,7 +20,6 @@ import { environment } from '../../environments/environment';
 @Component({
   selector: 'app-shell-page',
   imports: [RouterOutlet, AppShellComponent, ProfileMenuComponent],
-  providers: [provideIcons({ lucideUser })],
   template: `
     <dui-app-shell [appName]="appName" [items]="visibleItems()">
       <dui-profile-menu
