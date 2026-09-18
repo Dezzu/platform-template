@@ -4,6 +4,7 @@ import { provideRouter } from '@angular/router';
 import { provideIcons } from '@ng-icons/core';
 import { lucideFolder, lucideHouse } from '@ng-icons/lucide';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { HlmSidebarService } from '@spartan-ng/helm/sidebar';
 import { provideI18n } from '@app/i18n';
 import { AppShellComponent, type ShellNavSection } from './app-shell.component';
 
@@ -35,9 +36,90 @@ class Host {
   readonly sections = SECTIONS;
 }
 
+describe('AppShellComponent sections', () => {
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideZonelessChangeDetection(),
+        provideRouter([]),
+        provideI18n('it'),
+        provideIcons({ lucideHouse, lucideFolder }),
+      ],
+    });
+    localStorage.clear();
+  });
+
+  const build = () => {
+    const fixture = TestBed.createComponent(Host);
+    return fixture;
+  };
+
+  const labelButton = (fixture: { nativeElement: unknown }) =>
+    (fixture.nativeElement as HTMLElement).querySelector(
+      '[data-slot="sidebar-group-label"], button[hlmsidebargrouplabel]',
+    ) as HTMLButtonElement | null;
+
+  it('starts with every section open', async () => {
+    const fixture = build();
+    await fixture.whenStable();
+
+    // A menu that opens empty helps nobody.
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Progetti');
+  });
+
+  it('closes a section when its heading is pressed, and remembers it', async () => {
+    const fixture = build();
+    await fixture.whenStable();
+
+    const heading = labelButton(fixture);
+    expect(heading).not.toBeNull();
+    expect(heading?.getAttribute('aria-expanded')).toBe('true');
+
+    heading?.click();
+    await fixture.whenStable();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Progetti');
+    expect(labelButton(fixture)?.getAttribute('aria-expanded')).toBe('false');
+    // Persisted, so it survives the reload that would otherwise undo it every time.
+    expect(localStorage.getItem('dui-menu-collapsed')).toContain('workspace');
+  });
+
+  it('forces a closed section open while the sidebar is icon-only', async () => {
+    const fixture = build();
+    await fixture.whenStable();
+
+    labelButton(fixture)?.click();
+    await fixture.whenStable();
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Progetti');
+
+    // In icon mode the headings are hidden, and with them the only control that could
+    // reopen a section: entries nobody can reach, and no way to find out why.
+    TestBed.inject(HlmSidebarService).setOpen(false);
+    await fixture.whenStable();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Progetti');
+  });
+
+  it('leaves the entries that belong to no section alone', async () => {
+    const fixture = build();
+    await fixture.whenStable();
+
+    labelButton(fixture)?.click();
+    await fixture.whenStable();
+
+    // Nothing to click above them, so nothing may hide them.
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Dashboard');
+  });
+});
+
 describe('AppShellComponent', () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
+    // The collapsed sections are persisted, so a case that closed one leaks into
+    // whatever runs next unless the store is cleared between them.
+    localStorage.clear();
     TestBed.configureTestingModule({
       providers: [
         provideZonelessChangeDetection(),

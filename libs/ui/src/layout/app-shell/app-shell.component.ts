@@ -5,7 +5,7 @@ import { filter, map, startWith } from 'rxjs';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideChevronRight } from '@ng-icons/lucide';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { HlmSidebarImports } from '@spartan-ng/helm/sidebar';
+import { HlmSidebarImports, HlmSidebarService } from '@spartan-ng/helm/sidebar';
 import { MenuExpansionService } from './menu-expansion.service';
 
 /**
@@ -58,9 +58,22 @@ export class AppShellComponent {
   private readonly router = inject(Router);
 
   protected readonly expansion = inject(MenuExpansionService);
+  private readonly sidebar = inject(HlmSidebarService);
 
   readonly appName = input.required<string>();
   readonly sections = input.required<readonly ShellNavSection[]>();
+
+  /**
+   * Whether a section's entries are showing.
+   *
+   * Open unless the reader closed it — and always open while the sidebar is collapsed
+   * to icons, because in that state the headings are hidden and with them the only
+   * control that could open a section again. A closed section there would be entries
+   * nobody can reach and no way to find out why.
+   */
+  protected sectionOpen(id: string): boolean {
+    return !this.expansion.isCollapsed(id) || this.sidebar.state() === 'collapsed';
+  }
 
   /** Single letter badge kept visible when the sidebar collapses to icons. */
   protected readonly initial = computed(() => this.appName().trim().charAt(0).toUpperCase() || '·');

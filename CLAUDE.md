@@ -202,6 +202,23 @@ confronta le due risposte fra loro invece di fissare uno status, che è anche
 l'invariante vero. **Se lo vedi fallire, non liquidarlo come rumore**: non è stata
 trovata una causa, quindi potrebbe essere reale.
 
+**Il 2026-09-18 il flake si è mostrato altre due volte, con firme nuove**, entrambe
+solo durante un `pnpm verify` completo e mai riproducibili dopo (5 esecuzioni isolate
+dello spec, 3 suite API complete, tutte verdi):
+
+- `tenant-isolation.e2e-spec.ts` → `Parse Error: Expected HTTP/, RTSP/ or ICE/`. Il
+  messaggio viene dal parser HTTP di Node, non dall'applicazione: la risposta non era
+  HTTP valido.
+- `auth-codes.e2e-spec.ts` → `404` dove ci si aspetta `400`, su
+  `POST /api/auth/sign-up/email`. Un 404 lì significa che nessuna rotta ha matchato,
+  cioè che l'handler di Better Auth non risultava montato in quell'istante.
+
+Il tratto comune è che **sono tutti guasti a livello HTTP, non di logica**, su spec
+diversi. L'ipotesi corrente è il riuso di una connessione verso un server già chiuso:
+gli spec girano in sequenza nello stesso processo e ognuno costruisce e chiude la
+propria app. **Nessuna causa provata.** Se lo rivedi, la pista da seguire è quella, non
+il codice dell'endpoint che ha fallito.
+
 **Il plugin admin di Better Auth accetta solo i ruoli che conosce**, e ne conosce due
 (`admin`, `user`). `superadmin` è dichiarato nel suo access control in `auth.config.ts`
 insieme a `adminRoles`: senza, ogni sua chiamata fatta da un superadmin verrebbe

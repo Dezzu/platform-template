@@ -22,15 +22,31 @@
     </hlm-sidebar-header>
 
     <hlm-sidebar-content>
-      @for (section of sections(); track section.id) {
+      @for (section of sections(); track section.id) { @let sectionIsOpen = sectionOpen(section.id);
       <hlm-sidebar-group>
         @if (section.labelKey) {
         <!--
-          Hidden when the sidebar collapses to icons: a heading with no room to be read
-          is just a gap between two glyphs.
+          A button, not a label: the heading is the control that opens and closes the
+          section. Hidden when the sidebar collapses to icons — a heading with no room
+          to be read is just a gap between two glyphs — which is also why a section
+          forces itself open in that state.
         -->
-        <div hlmSidebarGroupLabel class="group-data-[collapsible=icon]:hidden">{{ section.labelKey | transloco }}</div>
-        }
+        <button
+          hlmSidebarGroupLabel
+          type="button"
+          class="hover:text-sidebar-accent-foreground w-full group-data-[collapsible=icon]:hidden"
+          [attr.aria-expanded]="sectionIsOpen"
+          (click)="expansion.toggleCollapsed(section.id)"
+        >
+          {{ section.labelKey | transloco }}
+          <ng-icon
+            name="lucideChevronRight"
+            class="ms-auto transition-transform duration-200"
+            [class.rotate-90]="sectionIsOpen"
+            aria-hidden="true"
+          />
+        </button>
+        } @if (sectionIsOpen) {
         <div hlmSidebarGroupContent>
           <ul hlmSidebarMenu>
             @for (item of section.items; track item.id) {
@@ -87,6 +103,7 @@
             }
           </ul>
         </div>
+        }
       </hlm-sidebar-group>
       }
     </hlm-sidebar-content>
