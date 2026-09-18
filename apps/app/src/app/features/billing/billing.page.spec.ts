@@ -27,7 +27,34 @@ const PLAN = {
   isDefault: false,
 };
 
-function setup(subscriptions: OrgSubscription[]) {
+const FREE = {
+  id: '22222222-2222-4222-8222-222222222222',
+  key: 'free',
+  nameKey: 'plans.free.name',
+  descriptionKey: 'plans.free.description',
+  amountMonthly: 0,
+  amountYearly: 0,
+  currency: 'EUR',
+  limits: { members: 2, projects: 3, storageMb: 100 },
+  features: ['plans.features.basic'],
+  sortOrder: 10,
+  isDefault: true,
+};
+
+const BUSINESS = {
+  ...PLAN,
+  id: '33333333-3333-4333-8333-333333333333',
+  key: 'business',
+  nameKey: 'plans.business.name',
+  descriptionKey: 'plans.business.description',
+  amountMonthly: 4900,
+  amountYearly: 49000,
+  limits: { members: 100, projects: -1, storageMb: 102400 },
+  features: ['plans.features.priority_support'],
+  sortOrder: 30,
+};
+
+function setup(subscriptions: OrgSubscription[], plans: unknown[] = [PLAN]) {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -42,7 +69,7 @@ function setup(subscriptions: OrgSubscription[]) {
         defaultLocale: 'it',
         supportedLocales: ['it', 'en'],
       }),
-      { provide: PlansApi, useValue: { list: () => of([PLAN]) } },
+      { provide: PlansApi, useValue: { list: () => of(plans) } },
       { provide: BillingService, useValue: { list: async () => subscriptions } },
       {
         provide: PermissionsService,
@@ -68,8 +95,89 @@ const active: OrgSubscription = {
   trialEnd: null,
 };
 
+const text = (fixture: { nativeElement: unknown }) =>
+  (fixture.nativeElement as HTMLElement).textContent ?? '';
+
+/**
+ * Matched on the heading, not on the card's text: "Pro" appears inside the Free plan's
+ * own description ("Per iniziare e valutare il prodotto"), so a substring search over
+ * the whole card picks the wrong one.
+ */
+const cardFor = (fixture: { nativeElement: unknown }, name: string) =>
+  [...(fixture.nativeElement as HTMLElement).querySelectorAll('article')].find(
+    (card) => card.querySelector('h3')?.textContent?.trim() === name,
+  );
+
 describe('BillingPage', () => {
   beforeEach(() => TestBed.resetTestingModule());
+
+  describe('the plan cards', () => {
+    it('shows the quotas, which is what the plans actually differ by', async () => {
+      const fixture = setup([], [FREE, BUSINESS]);
+      await fixture.whenStable();
+
+      const free = cardFor(fixture, 'Gratuito');
+      expect(free?.textContent).toContain('Membri');
+      expect(free?.textContent).toContain('2');
+      expect(free?.textContent).toContain('Progetti');
+      // Storage carries its unit in the key, and only it needs converting.
+      expect(free?.textContent).toContain('100 MB');
+      expect(cardFor(fixture, 'Business')?.textContent).toContain('100 GB');
+    });
+
+    it('draws no ceiling as a symbol, and says the word for a screen reader', async () => {
+      const fixture = setup([], [BUSINESS]);
+      await fixture.whenStable();
+
+      const business = cardFor(fixture, 'Business');
+      expect(business?.textContent).toContain('∞');
+      // A symbol alone is read out inconsistently, or not at all.
+      expect(business?.querySelector('.sr-only')?.textContent?.trim()).toBe('Illimitati');
+    });
+
+    it('works out what paying yearly saves, rather than stating it separately', async () => {
+      const fixture = setup([], [PLAN]);
+      await fixture.whenStable();
+
+      // 1900 × 12 − 19000 = 3800. A figure written down next to the two prices would
+      // go stale the first time one of them changed.
+      expect(text(fixture)).toContain('38');
+    });
+
+    it('offers no yearly saving when there is none', async () => {
+      const noSaving = { ...PLAN, amountYearly: 1900 * 12 };
+      const fixture = setup([], [noSaving]);
+      await fixture.whenStable();
+
+      expect(text(fixture)).not.toContain('risparmi');
+    });
+
+    it('marks the default plan as current when nothing is subscribed', async () => {
+      const fixture = setup([], [FREE, PLAN]);
+      await fixture.whenStable();
+
+      // Somebody on Free is on Free — not on nothing.
+      expect(cardFor(fixture, 'Gratuito')?.textContent).toContain('Piano attuale');
+      expect(cardFor(fixture, 'Pro')?.textContent).not.toContain('Piano attuale');
+    });
+
+    it('moves the marker onto the plan being paid for', async () => {
+      const fixture = setup([active], [FREE, PLAN]);
+      await fixture.whenStable();
+
+      expect(cardFor(fixture, 'Pro')?.textContent).toContain('Piano attuale');
+      expect(cardFor(fixture, 'Gratuito')?.textContent).not.toContain('Piano attuale');
+    });
+
+    it('names the plan on its own button, so the action says what it does', async () => {
+      const fixture = setup([], [FREE, PLAN]);
+      await fixture.whenStable();
+
+      expect(cardFor(fixture, 'Pro')?.querySelector('button')?.textContent).toContain('Pro');
+      // Nothing to buy on the plan you already have.
+      expect(cardFor(fixture, 'Gratuito')?.querySelector('button')).toBeNull();
+    });
+  });
 
   it('says when a cancelled plan stops, instead of only that it was cancelled', async () => {
     // Recent Stripe API versions leave cancel_at_period_end false and set cancel_at, so

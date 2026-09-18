@@ -80,12 +80,16 @@
     "withGoogle": "Continua con Google"
   },
   "billing": {
+    "alwaysAvailable": "Sempre disponibile",
     "checkoutFailed": "Non è stato possibile aprire il pagamento. Riprova.",
     "current": "Abbonamento attuale",
     "currentPlan": "Piano attuale",
     "endsOn": "Attivo fino al {{date}}, poi non si rinnova.",
+    "free": "Gratis",
     "managePortal": "Gestisci su Stripe",
     "noSubscription": "Nessun abbonamento attivo.",
+    "onThisPlan": "È il tuo piano",
+    "orYearly": "oppure {{price}} all’anno — risparmi {{saving}}",
     "perMonth": "/mese",
     "plans": "Piani",
     "portalFailed": "Non è stato possibile aprire il portale di fatturazione.",
@@ -97,7 +101,9 @@
       "trialing": "in prova",
       "unpaid": "non pagato"
     },
-    "subscribe": "Attiva"
+    "subscribe": "Attiva",
+    "subscribeTo": "Passa a {{plan}}",
+    "unlimited": "Illimitati"
   },
   "common": {
     "cancel": "Annulla",
@@ -227,6 +233,11 @@
     "free": {
       "description": "Per iniziare e valutare il prodotto.",
       "name": "Gratuito"
+    },
+    "limits": {
+      "members": "Membri",
+      "projects": "Progetti",
+      "storageMb": "Spazio"
     },
     "pro": {
       "description": "Per chi lavora sul prodotto ogni giorno.",

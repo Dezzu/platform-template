@@ -80,12 +80,16 @@
     "withGoogle": "Continue with Google"
   },
   "billing": {
+    "alwaysAvailable": "Always available",
     "checkoutFailed": "Could not open checkout. Please try again.",
     "current": "Current subscription",
     "currentPlan": "Current plan",
     "endsOn": "Active until {{date}}, then it will not renew.",
+    "free": "Free",
     "managePortal": "Manage on Stripe",
     "noSubscription": "No active subscription.",
+    "onThisPlan": "Your current plan",
+    "orYearly": "or {{price}} a year — save {{saving}}",
     "perMonth": "/month",
     "plans": "Plans",
     "portalFailed": "Could not open the billing portal.",
@@ -97,7 +101,9 @@
       "trialing": "trialing",
       "unpaid": "unpaid"
     },
-    "subscribe": "Subscribe"
+    "subscribe": "Subscribe",
+    "subscribeTo": "Switch to {{plan}}",
+    "unlimited": "Unlimited"
   },
   "common": {
     "cancel": "Cancel",
@@ -227,6 +233,11 @@
     "free": {
       "description": "To get started and try the product.",
       "name": "Free"
+    },
+    "limits": {
+      "members": "Members",
+      "projects": "Projects",
+      "storageMb": "Storage"
     },
     "pro": {
       "description": "For people working on the product every day.",

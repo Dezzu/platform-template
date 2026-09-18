@@ -51,22 +51,77 @@
 @if (plans.isLoading()) {
 <p class="text-muted-foreground text-sm">{{ 'common.loading' | transloco }}</p>
 } @else {
-<div class="grid gap-4 sm:grid-cols-3">
-  @for (plan of plans.value() ?? []; track plan.id) {
-  <article hlmCard>
-    <div hlmCardHeader>
-      <h3 hlmCardTitle>{{ plan.nameKey | transloco }}</h3>
-      <p hlmCardDescription>
-        <span class="text-foreground text-2xl font-semibold">{{ formatPrice(plan) }}</span>
+<div class="grid items-stretch gap-4 sm:grid-cols-3">
+  @for (plan of plans.value() ?? []; track plan.id) { @let currentOne = isCurrent(plan);
+  <!--
+    The plan you are on is the only card that earns emphasis. A "most popular" ribbon
+    would be steering nobody asked for, and nothing in the data says which plan that
+    would be — so the one thing highlighted here is the one thing that is true.
+  -->
+  <article hlmCard class="flex flex-col" [class.ring-primary]="currentOne" [class.ring-2]="currentOne">
+    <div hlmCardHeader class="gap-3">
+      <div class="flex items-start justify-between gap-2">
+        <h3 class="text-muted-foreground text-xs font-semibold tracking-[0.12em] uppercase">
+          {{ plan.nameKey | transloco }}
+        </h3>
+        @if (currentOne) {
+        <span class="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs font-medium">
+          {{ 'billing.currentPlan' | transloco }}
+        </span>
+        }
+      </div>
+
+      <p class="flex items-baseline gap-1">
+        <span class="text-4xl font-semibold tracking-tight tabular-nums">{{ formatPrice(plan) }}</span>
         @if (plan.amountMonthly > 0) {
         <span class="text-muted-foreground text-sm">{{ 'billing.perMonth' | transloco }}</span>
         }
       </p>
+
+      @if (yearlySaving(plan); as saving) {
+      <p class="text-muted-foreground text-xs">
+        {{ 'billing.orYearly' | transloco: { price: formatYearly(plan), saving: saving } }}
+      </p>
+      } @if (plan.descriptionKey; as descriptionKey) {
+      <p class="text-muted-foreground text-sm">{{ descriptionKey | transloco }}</p>
+      }
     </div>
 
-    <div hlmCardFooter>
-      @if (isCurrent(plan)) {
-      <span class="text-muted-foreground text-sm">{{ 'billing.currentPlan' | transloco }}</span>
+    <div hlmCardContent class="flex flex-1 flex-col gap-4">
+      <!--
+        The quotas lead, and the feature list follows. Read the plans: the features say
+        "everything in the plan below, plus support", while the numbers say 2 against
+        10 against 100. The numbers are what you are actually choosing between.
+      -->
+      <dl class="divide-border divide-y text-sm">
+        @for (limit of limitsOf(plan); track limit.key) {
+        <div class="flex items-baseline justify-between gap-3 py-1.5">
+          <dt class="text-muted-foreground">{{ limitLabel(limit.key) | transloco }}</dt>
+          <dd class="font-medium tabular-nums">
+            @if (isUnlimited(limit.value)) {
+            <span aria-hidden="true">∞</span>
+            <span class="sr-only">{{ 'billing.unlimited' | transloco }}</span>
+            } @else { {{ formatLimit(limit.key, limit.value) }} }
+          </dd>
+        </div>
+        }
+      </dl>
+
+      @if (plan.features.length) {
+      <ul class="space-y-1.5 text-sm">
+        @for (feature of plan.features; track feature) {
+        <li class="flex items-start gap-2">
+          <ng-icon name="lucideCheck" class="text-primary mt-0.5 shrink-0 text-base" aria-hidden="true" />
+          <span>{{ feature | transloco }}</span>
+        </li>
+        }
+      </ul>
+      }
+    </div>
+
+    <div hlmCardFooter class="mt-auto">
+      @if (currentOne) {
+      <p class="text-muted-foreground w-full text-center text-sm">{{ 'billing.onThisPlan' | transloco }}</p>
       } @else if (plan.amountMonthly > 0) {
       <button
         hlmBtn
@@ -75,8 +130,10 @@
         [disabled]="busy()"
         (click)="subscribe(plan)"
       >
-        {{ 'billing.subscribe' | transloco }}
+        {{ 'billing.subscribeTo' | transloco: { plan: (plan.nameKey | transloco) } }}
       </button>
+      } @else {
+      <p class="text-muted-foreground w-full text-center text-sm">{{ 'billing.alwaysAvailable' | transloco }}</p>
       }
     </div>
   </article>
