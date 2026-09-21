@@ -343,7 +343,11 @@ Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-sna
 ### Decisioni prese (non ri-discutere senza motivo)
 
 - Organizzazioni dal giorno uno; `BILLING_SCOPE` sceglie se l'abbonamento è dell'org o
-  dell'utente. I dati restano org-scoped in entrambi i casi.
+  dell'utente. I dati restano org-scoped in entrambi i casi — le organizzazioni non sono
+  una feature del piano B2B, sono il confine di isolamento. Spiegato per intero in
+  [docs/modalita-utente-e-organizzazione.md](./docs/modalita-utente-e-organizzazione.md),
+  compreso **cosa manca oggi**: nessuno crea l'organizzazione alla registrazione, quindi
+  un account nuovo resta bloccato su `ORGANIZATION_REQUIRED`.
 - **Niente Stripe Connect** nel template — `docs/adr/0002` spiega perché.
 - Niente Playwright: i test browser sono component test con il builder Angular.
 - Backup Postgres automatici: fuori dalla v1, ma **da fare prima del primo cliente reale**.

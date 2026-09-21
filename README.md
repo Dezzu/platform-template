@@ -6,6 +6,11 @@ Angular 22 + NestJS 12 + PostgreSQL 17 + Drizzle + Better Auth + Stripe.
 **Prima di lavorarci: [CLAUDE.md](./CLAUDE.md)** — convenzioni, procedura per
 aggiungere una feature, stato del progetto e le trappole già pagate.
 
+**Prima di configurare una piattaforma nuova:**
+[modalità utente e organizzazione](./docs/modalita-utente-e-organizzazione.md) — cosa
+cambia fra un prodotto B2B e uno B2C, cosa non cambia, e cosa va fatto in un caso e
+nell'altro.
+
 ## Prerequisiti
 
 | Strumento  | Versione                                |
