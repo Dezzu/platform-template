@@ -90,7 +90,11 @@ describe('files: presigned upload round trip (e2e)', () => {
     const fetched = await fetch(download.body.data.downloadUrl);
     expect(fetched.status).toBe(200);
     expect(await fetched.text()).toBe(CONTENT);
-    // The download is named after what the user called it, not after the UUID key.
+    // `attachment` is what makes the download a download: the page that asks for this
+    // URL points the browser straight at it and stays where it is. Without the header
+    // the browser would render the file instead, and the screen would navigate away.
+    expect(fetched.headers.get('content-disposition')).toContain('attachment');
+    // Named after what the user called it, not after the UUID key.
     expect(fetched.headers.get('content-disposition')).toContain('note.txt');
 
     // Deleting removes the object, so the presigned URL — still unexpired — stops working.

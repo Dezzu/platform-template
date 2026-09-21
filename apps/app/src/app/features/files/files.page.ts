@@ -1,4 +1,4 @@
-import { Component, inject, resource, signal } from '@angular/core';
+import { Component, DOCUMENT, inject, resource, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
@@ -23,6 +23,7 @@ import { FilesApi } from './files.api';
 })
 export class FilesPage {
   private readonly api = inject(FilesApi);
+  private readonly document = inject(DOCUMENT);
 
   protected readonly permissions = PERMISSIONS;
   protected readonly errorKey = signal<string | null>(null);
@@ -54,24 +55,32 @@ export class FilesPage {
     }
   }
 
+  /**
+   * Downloads through the presigned URL, without opening a window.
+   *
+   * An earlier version opened a tab up front and pointed it at the URL once it
+   * arrived, to dodge the popup blocker. It could not work: `window.open` with
+   * `noopener` returns null *by specification* — refusing the handle is what noopener
+   * means — so the blank tab stayed blank and the fallback call, now after an `await`,
+   * was the blocked one. The unit test agreed with the code because its stub returned
+   * a window object the real API never returns.
+   *
+   * None of that is needed. The presigned GET carries `Content-Disposition:
+   * attachment`, so pointing the current document at it starts a download and leaves
+   * the page exactly where it was.
+   *
+   * `DOCUMENT` rather than the global `window`: it is the injectable seam this
+   * repository already uses, it survives server-side rendering, and it lets a test
+   * assert where the browser was sent instead of stubbing a global.
+   */
   protected async download(file: FileMetadata): Promise<void> {
     this.errorKey.set(null);
-
-    /**
-     * The tab is opened BEFORE the request, while the click is still on the stack.
-     * A `window.open` issued after an `await` has lost the user gesture that
-     * authorises it, and Safari and Firefox block it outright — a bug no unit test
-     * sees, because in a test `open` is a spy that never refuses.
-     */
-    const tab = window.open('', '_blank', 'noopener');
 
     try {
       const { downloadUrl } = await firstValueFrom(this.api.downloadUrl(file.id));
       // Straight to storage. Never a proxy through the API — see CLAUDE.md.
-      if (tab) tab.location.href = downloadUrl;
-      else window.open(downloadUrl, '_blank', 'noopener');
+      this.document.location.href = downloadUrl;
     } catch (error: unknown) {
-      tab?.close();
       this.errorKey.set(this.translationKeyFor(error));
     }
   }

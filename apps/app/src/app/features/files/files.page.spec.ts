@@ -1,6 +1,6 @@
-import { provideZonelessChangeDetection } from '@angular/core';
+import { DOCUMENT, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { from, of, throwError } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FileMetadata, FileUploadTicket } from '@app/contracts';
 import { AppError, PermissionsService, provideCore } from '@app/core';
@@ -41,6 +41,10 @@ function setup(api: Partial<FilesApi>, permissions: string[] = ['files.read', 'f
         supportedLocales: ['it', 'en'],
       }),
       { provide: FilesApi, useValue: api },
+      // The real document with only `location` intercepted: Angular reads plenty of
+      // the rest of it, and a bare stand-in takes the whole TestBed down. Stubbing
+      // `window.location` directly is not reliably possible in jsdom.
+      { provide: DOCUMENT, useValue: documentWithFakeLocation() },
       {
         provide: PermissionsService,
         useValue: {
@@ -55,6 +59,20 @@ function setup(api: Partial<FilesApi>, permissions: string[] = ['files.read', 'f
 
 const page = (fixture: { nativeElement: unknown }) => fixture.nativeElement as HTMLElement;
 
+/** Where the browser was told to go. Reset before each case. */
+const location = { href: '' };
+
+function documentWithFakeLocation(): Document {
+  return new Proxy(document, {
+    get(target, property) {
+      if (property === 'location') return location;
+      const value = Reflect.get(target, property) as unknown;
+      // Bound, or a DOM method called through the proxy raises "Illegal invocation".
+      return typeof value === 'function' ? value.bind(target) : value;
+    },
+  }) as Document;
+}
+
 /** Fires a change event carrying a file, the way the browser does. */
 function selectFile(fixture: { nativeElement: unknown }, file: File): Promise<void> {
   const input = page(fixture).querySelector('input[type="file"]') as HTMLInputElement;
@@ -64,7 +82,10 @@ function selectFile(fixture: { nativeElement: unknown }, file: File): Promise<vo
 }
 
 describe('FilesPage', () => {
-  beforeEach(() => TestBed.resetTestingModule());
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+    location.href = '';
+  });
 
   it('lists what the API returns, with a readable size', async () => {
     const fixture = setup({ list: () => listOf([READY]) });
@@ -140,43 +161,29 @@ describe('FilesPage', () => {
     );
   });
 
-  it('opens the tab on the click, then points it at the presigned URL', async () => {
-    const tab = { location: { href: '' }, close: vi.fn() };
-    const open = vi.fn(() => tab);
+  it('sends the browser to the presigned URL, without opening a window', async () => {
+    const open = vi.fn();
     vi.stubGlobal('open', open);
-
-    let resolveUrl: (value: { downloadUrl: string; expiresAt: string }) => void = () => {};
-    const pending = new Promise<{ downloadUrl: string; expiresAt: string }>((resolve) => {
-      resolveUrl = resolve;
-    });
 
     const fixture = setup({
       list: () => listOf([READY]),
-      downloadUrl: () => from(pending),
+      downloadUrl: () =>
+        of({ downloadUrl: 'http://storage.local/key?sig=2', expiresAt: READY.updatedAt }),
     });
     await fixture.whenStable();
 
     (page(fixture).querySelector('button') as HTMLButtonElement).click();
-
-    // While the request is still in flight: the tab must already exist, because a
-    // `window.open` issued after the await has lost the user gesture and browsers
-    // block it.
-    expect(open).toHaveBeenCalledWith('', '_blank', 'noopener');
-
-    resolveUrl({ downloadUrl: 'http://storage.local/key?sig=2', expiresAt: READY.updatedAt });
+    await fixture.whenStable();
     await fixture.whenStable();
 
-    expect(tab.location.href).toBe('http://storage.local/key?sig=2');
+    // The presigned GET carries Content-Disposition: attachment, so the download
+    // starts and the page stays put. No tab, and therefore no popup blocker.
+    expect(location.href).toBe('http://storage.local/key?sig=2');
+    expect(open).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
   });
 
-  it('closes the tab it opened when the URL never arrives', async () => {
-    const tab = { location: { href: '' }, close: vi.fn() };
-    vi.stubGlobal(
-      'open',
-      vi.fn(() => tab),
-    );
-
+  it('leaves the page alone when the URL never arrives', async () => {
     const fixture = setup({
       list: () => listOf([READY]),
       downloadUrl: () => throwError(() => new AppError(409, 'FILE_NOT_READY', 'not ready')),
@@ -185,11 +192,10 @@ describe('FilesPage', () => {
 
     (page(fixture).querySelector('button') as HTMLButtonElement).click();
     await fixture.whenStable();
+    await fixture.whenStable();
 
-    // Otherwise a failed download leaves a blank tab sitting there.
-    expect(tab.close).toHaveBeenCalled();
+    expect(location.href).toBe('');
     expect(page(fixture).querySelector('[role="alert"]')).not.toBeNull();
-    vi.unstubAllGlobals();
   });
 
   it('hides the upload control from a user who may only read', async () => {
