@@ -1,5 +1,5 @@
 import { provideZonelessChangeDetection } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -70,6 +70,12 @@ const rowFor = (fixture: { nativeElement: unknown }, name: string) =>
 const internalsOf = (fixture: { componentInstance: unknown }) =>
   fixture.componentInstance as unknown as { actions: () => TableAction<Project>[] };
 
+/** By what it is, not by where it sits: the order changes when an action is added. */
+const actionNamed = (fixture: { componentInstance: unknown }, label: string) =>
+  internalsOf(fixture)
+    .actions()
+    .find((action) => action.label === label);
+
 describe('ProjectsPage', () => {
   beforeEach(() => TestBed.resetTestingModule());
 
@@ -135,6 +141,30 @@ describe('ProjectsPage', () => {
     expect(page(fixture).textContent).toContain('Si è verificato un errore');
   });
 
+  it('leads to the form, rather than editing in place', async () => {
+    const fixture = setup({ list: () => pageOf([SITE]) }, ['projects.manage']);
+    await fixture.whenStable();
+
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    actionNamed(fixture, 'Modifica')?.command(SITE, []);
+
+    // A form is a page in this template: the address names what you are editing, and
+    // the back button does what it looks like it does.
+    expect(navigate).toHaveBeenCalledWith(['/projects', '1']);
+  });
+
+  it('offers the add control only to someone who may create', async () => {
+    const mayCreate = setup({ list: () => pageOf([SITE]) }, ['projects.manage']);
+    await mayCreate.whenStable();
+    expect(page(mayCreate).textContent).toContain('Aggiungi');
+
+    TestBed.resetTestingModule();
+
+    const readOnly = setup({ list: () => pageOf([SITE]) }, ['projects.read']);
+    await readOnly.whenStable();
+    expect(page(readOnly).textContent).not.toContain('Aggiungi');
+  });
+
   it('hides the delete action from a user without the permission', async () => {
     const fixture = setup({ list: () => pageOf([SITE]) }, ['projects.read']);
     await fixture.whenStable();
@@ -154,7 +184,7 @@ describe('ProjectsPage', () => {
     const fixture = setup({ list, remove: () => of(undefined) });
     await fixture.whenStable();
 
-    internalsOf(fixture).actions()[0]?.command(SITE, []);
+    actionNamed(fixture, 'Elimina')?.command(SITE, []);
     await new Promise((resolve) => setTimeout(resolve, 0));
     await fixture.whenStable();
 
@@ -173,7 +203,7 @@ describe('ProjectsPage', () => {
     });
     await fixture.whenStable();
 
-    internalsOf(fixture).actions()[0]?.command(SITE, []);
+    actionNamed(fixture, 'Elimina')?.command(SITE, []);
     await new Promise((resolve) => setTimeout(resolve, 0));
     await fixture.whenStable();
 

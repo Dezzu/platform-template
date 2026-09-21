@@ -1,0 +1,38 @@
+<div class="mx-auto max-w-2xl">
+  <h1 class="mb-1 text-2xl font-semibold">{{ (editing() ? 'projects.edit' : 'projects.new') | transloco }}</h1>
+  <p class="text-muted-foreground mb-6 text-sm">{{ 'projects.formHint' | transloco }}</p>
+
+  @if (failed()) {
+  <p class="text-destructive text-sm" role="alert">{{ 'errors.NOT_FOUND' | transloco }}</p>
+  <a routerLink="/projects" class="text-sm underline underline-offset-4"> {{ 'projects.backToList' | transloco }} </a>
+  } @else if (loading()) {
+  <p class="text-muted-foreground text-sm">{{ 'common.loading' | transloco }}</p>
+  } @else {
+  <section hlmCard>
+    <form hlmCardContent class="space-y-4 pt-6" (submit)="save($event)">
+      <dui-text-input autocomplete="off" [label]="'projects.columns.name' | transloco" [formField]="project.name" />
+
+      <dui-textarea-input
+        [rows]="4"
+        [label]="'projects.columns.description' | transloco"
+        [formField]="project.description"
+      />
+
+      <dui-select-input
+        [label]="'projects.columns.status' | transloco"
+        [options]="statusOptions()"
+        [showClear]="false"
+        [formField]="project.status"
+      />
+
+      <div class="flex items-center gap-3 pt-2">
+        <button hlmBtn type="submit" [disabled]="saving()">
+          {{ (saving() ? 'projects.saving' : 'common.save') | transloco }}
+        </button>
+
+        <a hlmBtn variant="outline" routerLink="/projects">{{ 'common.cancel' | transloco }}</a>
+      </div>
+    </form>
+  </section>
+  }
+</div>

@@ -3,13 +3,14 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { firstValueFrom, merge } from 'rxjs';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { provideIcons } from '@ng-icons/core';
-import { lucideTrash2 } from '@ng-icons/lucide';
+import { lucidePencil, lucideTrash2 } from '@ng-icons/lucide';
 import { PERMISSIONS } from '@app/contracts/permissions';
 import type { Project } from '@app/contracts';
 import { TableComponent } from '@app/ui/table';
 import { TemplateDirective } from '@app/ui/mix';
 import type { DuiTablelazyLoadEvent, TableAction, TableColumn } from '@app/ui/mix';
 import { PermissionsService, ToastService } from '@app/core';
+import { Router } from '@angular/router';
 import { ProjectsApi } from './projects.api';
 
 /** What the table last asked the server for. */
@@ -36,11 +37,12 @@ interface Query {
 @Component({
   selector: 'app-projects-page',
   imports: [TranslocoPipe, TableComponent, TemplateDirective],
-  providers: [provideIcons({ lucideTrash2 })],
+  providers: [provideIcons({ lucidePencil, lucideTrash2 })],
   templateUrl: './projects.page.html',
 })
 export class ProjectsPage {
   private readonly api = inject(ProjectsApi);
+  private readonly router = inject(Router);
   private readonly permissions = inject(PermissionsService);
   private readonly transloco = inject(TranslocoService);
   private readonly toasts = inject(ToastService);
@@ -115,6 +117,12 @@ export class ProjectsPage {
     this.translations();
     return [
       {
+        icon: 'lucidePencil',
+        label: this.transloco.translate('common.edit'),
+        visible: () => this.permissions.anyOf(PERMISSIONS.PROJECTS_MANAGE),
+        command: (row) => void this.router.navigate(['/projects', row.id]),
+      },
+      {
         icon: 'lucideTrash2',
         severity: 'destructive',
         label: this.transloco.translate('common.delete'),
@@ -123,6 +131,15 @@ export class ProjectsPage {
       },
     ];
   });
+
+  /** The table's own add button, so the control sits with the collection it adds to. */
+  protected openNew(): void {
+    void this.router.navigate(['/projects', 'new']);
+  }
+
+  protected readonly mayCreate = computed(() =>
+    this.permissions.anyOf(PERMISSIONS.PROJECTS_MANAGE),
+  );
 
   protected asProject(value: unknown): Project {
     return value as Project;

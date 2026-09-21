@@ -113,6 +113,7 @@
     "close": "Close",
     "confirm": "Confirm",
     "delete": "Delete",
+    "edit": "Edit",
     "empty": "No results",
     "hidePassword": "Hide password",
     "loading": "Loading…",
@@ -258,14 +259,21 @@
     "title": "Profile"
   },
   "projects": {
+    "backToList": "Back to projects",
     "columns": {
       "createdAt": "Created on",
       "description": "Description",
       "name": "Name",
       "status": "Status"
     },
+    "created": "Project “{{name}}” created.",
     "deleted": "Project “{{name}}” deleted.",
     "description": "The projects of this organization.",
+    "edit": "Edit project",
+    "formHint": "The name is required and unique within the organization.",
+    "new": "New project",
+    "saved": "Project “{{name}}” saved.",
+    "saving": "Saving…",
     "status": {
       "active": "Active",
       "archived": "Archived"

@@ -113,6 +113,7 @@
     "close": "Chiudi",
     "confirm": "Conferma",
     "delete": "Elimina",
+    "edit": "Modifica",
     "empty": "Nessun risultato",
     "hidePassword": "Nascondi la password",
     "loading": "Caricamento…",
@@ -258,14 +259,21 @@
     "title": "Profilo"
   },
   "projects": {
+    "backToList": "Torna ai progetti",
     "columns": {
       "createdAt": "Creato il",
       "description": "Descrizione",
       "name": "Nome",
       "status": "Stato"
     },
+    "created": "Progetto “{{name}}” creato.",
     "deleted": "Progetto “{{name}}” eliminato.",
     "description": "I progetti di questa organizzazione.",
+    "edit": "Modifica progetto",
+    "formHint": "Il nome è obbligatorio ed è unico dentro l’organizzazione.",
+    "new": "Nuovo progetto",
+    "saved": "Progetto “{{name}}” salvato.",
+    "saving": "Salvataggio…",
     "status": {
       "active": "Attivo",
       "archived": "Archiviato"

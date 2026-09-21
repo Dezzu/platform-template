@@ -1,7 +1,13 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Service } from '@angular/core';
 import { CORE_CONFIG } from '@app/core';
-import type { Paginated, Project, ProjectCreate, ProjectListQuery } from '@app/contracts';
+import type {
+  Paginated,
+  Project,
+  ProjectCreate,
+  ProjectListQuery,
+  ProjectUpdate,
+} from '@app/contracts';
 import type { Observable } from 'rxjs';
 
 /**
@@ -23,8 +29,16 @@ export class ProjectsApi {
     return this.http.get<Paginated<Project>>(this.base, { params });
   }
 
+  getById(id: string): Observable<Project> {
+    return this.http.get<Project>(`${this.base}/${id}`);
+  }
+
   create(project: ProjectCreate): Observable<Project> {
     return this.http.post<Project>(this.base, project);
+  }
+
+  update(id: string, project: ProjectUpdate): Observable<Project> {
+    return this.http.patch<Project>(`${this.base}/${id}`, project);
   }
 
   remove(id: string): Observable<void> {

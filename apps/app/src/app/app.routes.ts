@@ -1,5 +1,11 @@
-import { authGuard, guestGuard, navGuard, requireAnyPlatformPermission } from '@app/core';
-import { PLATFORM_PERMISSIONS } from '@app/contracts/permissions';
+import {
+  authGuard,
+  guestGuard,
+  navGuard,
+  requireAnyPermission,
+  requireAnyPlatformPermission,
+} from '@app/core';
+import { PERMISSIONS, PLATFORM_PERMISSIONS } from '@app/contracts/permissions';
 import type { Routes } from '@angular/router';
 
 /**
@@ -46,6 +52,22 @@ export const routes: Routes = [
         canMatch: [navGuard('projects')],
         loadComponent: () =>
           import('./features/projects/projects.page').then((m) => m.ProjectsPage),
+      },
+      {
+        /**
+         * Before ':id', or 'new' would be read as an identifier. The router matches in
+         * declaration order, so the literal has to come first.
+         */
+        path: 'projects/new',
+        canMatch: [requireAnyPermission(PERMISSIONS.PROJECTS_MANAGE)],
+        loadComponent: () =>
+          import('./features/projects/project-form.page').then((m) => m.ProjectFormPage),
+      },
+      {
+        path: 'projects/:id',
+        canMatch: [requireAnyPermission(PERMISSIONS.PROJECTS_MANAGE)],
+        loadComponent: () =>
+          import('./features/projects/project-form.page').then((m) => m.ProjectFormPage),
       },
       {
         path: 'members',

@@ -15,8 +15,9 @@
   [lazy]="true"
   [loading]="loading()"
   [totalRecords]="total()"
-  [showAddButton]="false"
+  [showAddButton]="mayCreate()"
   (onLazyLoad)="onLazyLoad($event)"
+  (openNew)="openNew()"
 >
   <ng-template duiTemplate="description" let-value>
     @if (value) {
