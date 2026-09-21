@@ -15,6 +15,8 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['src/**/*.spec.ts', 'test/**/*.e2e-spec.ts'],
+    // Disables HTTP connection pooling — see the file for why it matters here.
+    setupFiles: ['test/setup.ts'],
     // e2e specs boot the whole application and talk to Postgres.
     testTimeout: 30_000,
     hookTimeout: 30_000,

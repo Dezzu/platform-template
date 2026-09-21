@@ -117,6 +117,44 @@ describe('TableComponent', () => {
     expect(html).not.toContain('table.search');
   });
 
+  describe('where the actions column sits', () => {
+    const cellsOf = (fixture: { nativeElement: unknown }) => [
+      ...(fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr')[0]!.children,
+    ];
+
+    it('puts it last by default, where a reader expects it', async () => {
+      const fixture = setup([action('Elimina')]);
+      await fixture.whenStable();
+
+      const cells = cellsOf(fixture);
+      expect(cells.at(-1)?.querySelector('button')).not.toBeNull();
+      expect(cells[0]?.textContent).toContain('Acme');
+    });
+
+    it('puts it first when asked, ahead of every column', async () => {
+      const fixture = setup([action('Elimina')]);
+      fixture.componentRef.setInput('actionsPosition', 'start');
+      await fixture.whenStable();
+
+      const cells = cellsOf(fixture);
+      expect(cells[0]?.querySelector('button')).not.toBeNull();
+      // And the data still starts where the data starts.
+      expect(cells[1]?.textContent).toContain('Acme');
+    });
+
+    it('moves the header with it, so the columns still line up', async () => {
+      const fixture = setup([action('Elimina')]);
+      fixture.componentRef.setInput('actionsPosition', 'start');
+      await fixture.whenStable();
+
+      const headers = [...(fixture.nativeElement as HTMLElement).querySelectorAll('thead th')];
+      // A header row one cell out of step with the body is a table that reads wrong
+      // for every row at once.
+      expect(headers).toHaveLength(cellsOf(fixture).length);
+      expect(headers[0]?.textContent).toContain('Azioni');
+    });
+  });
+
   describe('the divider above the destructive actions', () => {
     it('goes exactly where the list turns destructive', () => {
       const actions = [action('Modifica'), action('Elimina', 'destructive')];

@@ -196,28 +196,24 @@ disdetta si legge da `cancel_at`. Usa `willNotRenew`, che considera entrambi.
 **Stripe: `automatic_tax` è disattivo di proposito.** Attivo senza una registrazione
 fiscale _attiva_ non dà errore e non raccoglie nulla. Vedi `docs/adr/0002`.
 
-**Flake noto.** `auth-codes.e2e-spec.ts` è fallito due volte in una lunga sessione e
-non è mai stato riproducibile (9 esecuzioni pulite, isolate e in suite). Il test ora
-confronta le due risposte fra loro invece di fissare uno status, che è anche
-l'invariante vero. **Se lo vedi fallire, non liquidarlo come rumore**: non è stata
-trovata una causa, quindi potrebbe essere reale.
+**Il flake degli e2e: causa trovata, 2026-09-21.** Per settimane la suite API ha
+fallito di rado e mai in modo riproducibile, su spec diversi e con due sintomi:
+`Parse Error: Expected HTTP/, RTSP/ or ICE/`, e uno status sbagliato dove la rotta
+esiste (`404` al posto di `400`/`403`). Sempre dentro un `pnpm verify` completo, mai
+isolando lo spec.
 
-**Il 2026-09-18 il flake si è mostrato altre due volte, con firme nuove**, entrambe
-solo durante un `pnpm verify` completo e mai riproducibili dopo (5 esecuzioni isolate
-dello spec, 3 suite API complete, tutte verdi):
+La causa è **Node 19, che ha acceso `keepAlive` su `http.globalAgent`**. supertest lo
+usa, ogni richiesta ascolta su una porta effimera e ogni spec costruisce e chiude la
+propria applicazione Nest: il sistema operativo ricicla quei numeri di porta, quindi un
+socket in pool verso `127.0.0.1:PORT` finisce servito a una richiesta diretta a
+un'applicazione _diversa_, o a una già chiusa. Da lì byte che non sono HTTP, oppure una
+richiesta che atterra su un'app che quella rotta non ce l'ha.
 
-- `tenant-isolation.e2e-spec.ts` → `Parse Error: Expected HTTP/, RTSP/ or ICE/`. Il
-  messaggio viene dal parser HTTP di Node, non dall'applicazione: la risposta non era
-  HTTP valido.
-- `auth-codes.e2e-spec.ts` → `404` dove ci si aspetta `400`, su
-  `POST /api/auth/sign-up/email`. Un 404 lì significa che nessuna rotta ha matchato,
-  cioè che l'handler di Better Auth non risultava montato in quell'istante.
+`apps/api/test/setup.ts` disattiva il pooling nel processo di test. Il pooling lì non
+comprava niente: la suite è sequenziale e aprire un socket costa nulla rispetto ad
+avviare un'applicazione Nest per file.
 
-Il tratto comune è che **sono tutti guasti a livello HTTP, non di logica**, su spec
-diversi. L'ipotesi corrente è il riuso di una connessione verso un server già chiuso:
-gli spec girano in sequenza nello stesso processo e ognuno costruisce e chiude la
-propria app. **Nessuna causa provata.** Se lo rivedi, la pista da seguire è quella, non
-il codice dell'endpoint che ha fallito.
+**Non toccare quel file** pensando che sia una micro-ottimizzazione da togliere.
 
 **Il plugin admin di Better Auth accetta solo i ruoli che conosce**, e ne conosce due
 (`admin`, `user`). `superadmin` è dichiarato nel suo access control in `auth.config.ts`

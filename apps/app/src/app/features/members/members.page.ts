@@ -1,14 +1,20 @@
 import { Component, computed, inject, resource, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { email as emailRule, form, FormField, required } from '@angular/forms/signals';
-import { firstValueFrom } from 'rxjs';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { firstValueFrom, merge } from 'rxjs';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { provideIcons } from '@ng-icons/core';
+import { lucideUserRoundCog, lucideUserRoundX, lucideX } from '@ng-icons/lucide';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 // Deep import: the barrel re-exports Zod schemas the bundler cannot tree-shake.
 // `outranksOrEquals` comes from here rather than being restated — a second copy of a
 // rule the server enforces is a rule that drifts.
 import { ORG_ROLES, outranksOrEquals, PERMISSIONS, type OrgRole } from '@app/contracts/permissions';
-import type { Member } from '@app/contracts';
+import type { Invitation, Member } from '@app/contracts';
 import { TextInputComponent } from '@app/ui/input';
+import { TableComponent } from '@app/ui/table';
+import { TemplateDirective } from '@app/ui/mix';
+import type { TableAction, TableColumn } from '@app/ui/mix';
 import { AuthService, CanDirective, PermissionsService, ToastService } from '@app/core';
 import { MembersApi } from './members.api';
 
@@ -23,7 +29,16 @@ import { MembersApi } from './members.api';
  */
 @Component({
   selector: 'app-members-page',
-  imports: [TranslocoPipe, HlmButtonImports, CanDirective, TextInputComponent, FormField],
+  imports: [
+    TranslocoPipe,
+    HlmButtonImports,
+    CanDirective,
+    TextInputComponent,
+    FormField,
+    TableComponent,
+    TemplateDirective,
+  ],
+  providers: [provideIcons({ lucideUserRoundCog, lucideUserRoundX, lucideX })],
   templateUrl: './members.page.html',
 })
 export class MembersPage {
@@ -31,6 +46,12 @@ export class MembersPage {
   private readonly auth = inject(AuthService);
   private readonly permissions = inject(PermissionsService);
   private readonly toasts = inject(ToastService);
+  private readonly transloco = inject(TranslocoService);
+
+  /** See admin-users.page.ts: `langChanges$` alone misses the first load. */
+  private readonly translations = toSignal(
+    merge(this.transloco.langChanges$, this.transloco.events$),
+  );
 
   protected readonly permissionCatalogue = PERMISSIONS;
   protected readonly roles = ORG_ROLES;
@@ -58,6 +79,74 @@ export class MembersPage {
     required(path.email);
     emailRule(path.email);
   });
+
+  private translate(key: string, params?: Record<string, unknown>): string {
+    this.translations();
+    return this.transloco.translate(key, params);
+  }
+
+  protected readonly memberColumns = computed<TableColumn[]>(() => {
+    const t = (key: string) => this.translate(`members.columns.${key}`);
+    return [
+      { field: 'name', header: t('name'), sortable: false },
+      { field: 'email', header: t('email'), sortable: false },
+      { field: 'role', header: t('role'), sortable: false },
+    ];
+  });
+
+  protected readonly invitationColumns = computed<TableColumn[]>(() => {
+    const t = (key: string) => this.translate(`members.columns.${key}`);
+    return [
+      { field: 'email', header: t('email'), sortable: false },
+      { field: 'role', header: t('role'), sortable: false },
+    ];
+  });
+
+  /**
+   * One entry per role instead of a select, the way the admin screen does it: a menu
+   * holds buttons. Only the roles this viewer may grant, and never the one the member
+   * already has — an entry that would do nothing only makes the menu longer.
+   */
+  protected readonly memberActions = computed<TableAction<Member>[]>(() => {
+    const roleEntries: TableAction<Member>[] = this.grantableRoles().map((role) => ({
+      icon: 'lucideUserRoundCog',
+      group: this.translate('members.role'),
+      label: this.translate(`members.roles.${role}`),
+      visible: (row: Member) =>
+        this.permissions.anyOf(PERMISSIONS.MEMBERS_MANAGE) &&
+        this.canActOn(row) &&
+        row.role !== role,
+      command: (row: Member) => this.setRole(row.id, role),
+    }));
+
+    return [
+      ...roleEntries,
+      {
+        icon: 'lucideUserRoundX',
+        severity: 'destructive',
+        label: this.translate('members.remove'),
+        visible: (row) =>
+          this.permissions.anyOf(PERMISSIONS.MEMBERS_REMOVE) &&
+          this.canActOn(row) &&
+          !this.isSelf(row),
+        command: (row) => this.remove(row),
+      },
+    ];
+  });
+
+  protected readonly invitationActions = computed<TableAction<Invitation>[]>(() => [
+    {
+      icon: 'lucideX',
+      severity: 'destructive',
+      label: this.translate('members.cancelInvitation'),
+      visible: () => this.permissions.anyOf(PERMISSIONS.MEMBERS_INVITE),
+      command: (row) => this.cancelInvitation(row.id),
+    },
+  ]);
+
+  protected asMember(value: unknown): Member {
+    return value as Member;
+  }
 
   /** Roles the viewer may hand out: their own and anything below it. */
   protected readonly grantableRoles = computed(() => {

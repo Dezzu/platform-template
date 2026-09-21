@@ -180,6 +180,12 @@
   },
   "members": {
     "acceptInvitation": "Accept the invitation",
+    "cancelInvitation": "Cancel the invitation",
+    "columns": {
+      "email": "Email",
+      "name": "Name",
+      "role": "Role"
+    },
     "description": "Who belongs to this organization, and who has been invited.",
     "invitationLinkMissing": "Incomplete link. Open the link from the email exactly as it is.",
     "invitationSent": "Invitation sent to {{email}}.",
@@ -192,6 +198,7 @@
     "joining": "Joining…",
     "noPendingInvitations": "No pending invitations.",
     "pendingInvitations": "Pending invitations",
+    "remove": "Remove from the organization",
     "role": "Role",
     "roles": {
       "admin": "Administrator",

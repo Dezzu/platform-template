@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Member, OrgRole } from '@app/contracts';
+import type { TableAction } from '@app/ui/mix';
 import { AppError, AuthService, PermissionsService, ToastService, provideCore } from '@app/core';
 import { provideI18n } from '@app/i18n';
 import { MembersApi } from './members.api';
@@ -78,6 +79,25 @@ function setup(
 
 const page = (fixture: { nativeElement: unknown }) => fixture.nativeElement as HTMLElement;
 
+/**
+ * The row actions live behind the three dots, and the menu only exists once opened —
+ * a CDK overlay, not markup on the page. These cases therefore read the component's
+ * own action list and run each `visible` predicate, which is where the server's rank
+ * rules are mirrored.
+ */
+const internalsOf = (fixture: { componentInstance: unknown }) =>
+  fixture.componentInstance as unknown as { memberActions: () => TableAction<Member>[] };
+
+const offered = (fixture: { componentInstance: unknown }, row: Member): string[] =>
+  internalsOf(fixture)
+    .memberActions()
+    .filter((action) => action.visible?.(row, []) ?? true)
+    .map((action) => (typeof action.label === 'function' ? action.label(row, []) : action.label))
+    .filter((label): label is string => label !== undefined);
+
+const rowFor = (fixture: { nativeElement: unknown }, email: string) =>
+  [...page(fixture).querySelectorAll('tbody tr')].find((row) => row.textContent?.includes(email));
+
 describe('MembersPage', () => {
   beforeEach(() => TestBed.resetTestingModule());
 
@@ -96,21 +116,20 @@ describe('MembersPage', () => {
     expect(page(fixture).textContent).toContain('(tu)');
   });
 
-  it('offers an admin no control over the owner', async () => {
+  it('offers an admin nothing at all on the owner', async () => {
     const fixture = setup(
       { list: () => listOf([OWNER, ADMIN, PLAIN]) },
       { viewerRole: 'admin', viewerId: 'u-admin' },
     );
     await fixture.whenStable();
 
-    const rows = [...page(fixture).querySelectorAll('li')];
-    const ownerRow = rows.find((row) => row.textContent?.includes('owner@test.local'));
-    const plainRow = rows.find((row) => row.textContent?.includes('plain@test.local'));
+    // The server refuses either way; offering the control means a 403 per click.
+    expect(offered(fixture, OWNER)).toEqual([]);
+    expect(offered(fixture, PLAIN).length).toBeGreaterThan(0);
 
-    // The server refuses either way; showing the button anyway means a 403 per click.
-    expect(ownerRow?.querySelector('select')).toBeNull();
-    expect(ownerRow?.querySelector('button')).toBeNull();
-    expect(plainRow?.querySelector('select')).not.toBeNull();
+    // And with nothing to offer, the three dots do not appear on that row either.
+    expect(rowFor(fixture, 'owner@test.local')?.querySelector('button')).toBeNull();
+    expect(rowFor(fixture, 'plain@test.local')?.querySelector('button')).not.toBeNull();
   });
 
   it('offers an admin only the roles an admin may grant', async () => {
@@ -120,11 +139,13 @@ describe('MembersPage', () => {
     );
     await fixture.whenStable();
 
-    const options = [...page(fixture).querySelectorAll('form option')].map((o) =>
-      o.getAttribute('value'),
-    );
-    expect(options).toEqual(['admin', 'member']);
-    expect(options).not.toContain('owner');
+    // Under the "Ruolo" heading the entry is just the role, which is why the heading
+    // is there at all.
+    const labels = offered(fixture, PLAIN);
+    expect(labels).toContain('Amministratore');
+    expect(labels).not.toContain('Owner');
+    // The role they already hold is not offered.
+    expect(labels).not.toContain('Membro');
   });
 
   it('hides the invite form from someone who may only read', async () => {
@@ -141,9 +162,11 @@ describe('MembersPage', () => {
     });
     await fixture.whenStable();
 
-    const select = page(fixture).querySelector('li select') as HTMLSelectElement;
-    select.value = 'admin';
-    select.dispatchEvent(new Event('change'));
+    const promote = internalsOf(fixture)
+      .memberActions()
+      .find((action) => action.label === 'Amministratore');
+    promote?.command(PLAIN, []);
+    await new Promise((resolve) => setTimeout(resolve, 0));
     await fixture.whenStable();
 
     // The outcome of an action is a toast, raised into the service the root renders.
@@ -160,9 +183,11 @@ describe('MembersPage', () => {
     await fixture.whenStable();
     expect(list).toHaveBeenCalledTimes(1);
 
-    const select = page(fixture).querySelector('li select') as HTMLSelectElement;
-    select.value = 'admin';
-    select.dispatchEvent(new Event('change'));
+    const promote = internalsOf(fixture)
+      .memberActions()
+      .find((action) => action.label === 'Amministratore');
+    promote?.command(PLAIN, []);
+    await new Promise((resolve) => setTimeout(resolve, 0));
     await fixture.whenStable();
 
     expect(list).toHaveBeenCalledTimes(2);

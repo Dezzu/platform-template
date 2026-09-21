@@ -114,6 +114,15 @@ export class TableComponent<T> {
   readonly loading = input(false);
   readonly totalRecords = input(0);
   readonly actions = input<TableAction<T>[]>([]);
+
+  /**
+   * Which side the actions column sits on.
+   *
+   * 'end' by default, where a reader expects it. 'start' is for a table whose rows are
+   * *acted on* more often than they are read — put the control under the cursor rather
+   * than at the far side of a row whose width depends on the data in it.
+   */
+  readonly actionsPosition = input<'start' | 'end'>('end');
   readonly expandable = input(false);
   readonly dataKey = input<string>();
   readonly title = input<string>();

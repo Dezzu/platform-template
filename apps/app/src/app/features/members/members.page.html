@@ -35,81 +35,59 @@
 
 <h2 class="mb-3 text-lg font-medium">{{ 'members.title' | transloco }}</h2>
 
-@if (members.isLoading()) {
-<p class="text-muted-foreground text-sm">{{ 'common.loading' | transloco }}</p>
-} @else if (members.error()) {
-<p class="text-destructive text-sm" role="alert">{{ 'errors.INTERNAL_ERROR' | transloco }}</p>
-} @else { @let page = members.value(); @if (!page || page.items.length === 0) {
-<p class="text-muted-foreground text-sm">{{ 'common.empty' | transloco }}</p>
-} @else {
-<ul class="divide-y rounded-md border">
-  @for (member of page.items; track member.id) {
-  <li class="flex flex-wrap items-center justify-between gap-3 p-3">
-    <div class="min-w-0">
-      <p class="truncate font-medium">
-        {{ member.user.name || member.user.email }} @if (isSelf(member)) {
-        <span class="text-muted-foreground text-xs">({{ 'members.you' | transloco }})</span>
-        }
-      </p>
-      <p class="text-muted-foreground truncate text-sm">{{ member.user.email }}</p>
-    </div>
+@if (members.error()) {
+<p class="text-destructive mb-4 text-sm" role="alert">{{ 'errors.INTERNAL_ERROR' | transloco }}</p>
+}
 
-    <div class="flex shrink-0 items-center gap-2">
-      @if (canActOn(member)) {
-      <select
-        *appCan="[permissionCatalogue.MEMBERS_MANAGE]"
-        class="border-input bg-background h-9 rounded-md border px-2 text-sm"
-        [value]="member.role"
-        (change)="setRole(member.id, $any($event.target).value)"
-      >
-        @for (role of grantableRoles(); track role) {
-        <option [value]="role">{{ 'members.roles.' + role | transloco }}</option>
-        }
-      </select>
-      } @else {
-      <span class="text-muted-foreground text-sm">{{ 'members.roles.' + member.role | transloco }}</span>
-      } @if (canActOn(member) && !isSelf(member)) {
-      <button
-        hlmBtn
-        variant="destructive"
-        size="sm"
-        *appCan="[permissionCatalogue.MEMBERS_REMOVE]"
-        (click)="remove(member)"
-      >
-        {{ 'common.delete' | transloco }}
-      </button>
-      }
-    </div>
-  </li>
-  }
-</ul>
-} }
+<!--
+  Actions on the left: on this screen a row is something you act on more often than
+  something you read, and at the end of the row the control sits at a distance that
+  depends on how long somebody's name happens to be.
+-->
+<dui-table
+  dataKey="id"
+  emptyMessage="common.empty"
+  actionsPosition="start"
+  [cols]="memberColumns()"
+  [items]="members.value()?.items ?? []"
+  [actions]="memberActions()"
+  [actionsAsMenu]="true"
+  [lazy]="false"
+  [paginator]="false"
+  [showSearch]="false"
+  [showColumnSelector]="false"
+  [showAddButton]="false"
+  [loading]="members.isLoading() && !members.hasValue()"
+>
+  <ng-template duiTemplate="name" let-value let-item="item">
+    @let row = asMember(item);
+    <span class="font-medium">{{ row.user.name || row.user.email }}</span>
+    @if (isSelf(row)) {
+    <span class="text-muted-foreground ms-1 text-xs">({{ 'members.you' | transloco }})</span>
+    }
+  </ng-template>
+
+  <ng-template duiTemplate="email" let-item="item">{{ asMember(item).user.email }}</ng-template>
+
+  <ng-template duiTemplate="role" let-value>{{ 'members.roles.' + value | transloco }}</ng-template>
+</dui-table>
 
 <h2 class="mt-8 mb-3 text-lg font-medium">{{ 'members.pendingInvitations' | transloco }}</h2>
 
-@if (invitations.isLoading()) {
-<p class="text-muted-foreground text-sm">{{ 'common.loading' | transloco }}</p>
-} @else { @let pending = invitations.value(); @if (!pending || pending.length === 0) {
-<p class="text-muted-foreground text-sm">{{ 'members.noPendingInvitations' | transloco }}</p>
-} @else {
-<ul class="divide-y rounded-md border">
-  @for (item of pending; track item.id) {
-  <li class="flex items-center justify-between gap-3 p-3">
-    <div class="min-w-0">
-      <p class="truncate font-medium">{{ item.email }}</p>
-      <p class="text-muted-foreground text-sm">{{ 'members.roles.' + item.role | transloco }}</p>
-    </div>
-
-    <button
-      hlmBtn
-      variant="outline"
-      size="sm"
-      *appCan="[permissionCatalogue.MEMBERS_INVITE]"
-      (click)="cancelInvitation(item.id)"
-    >
-      {{ 'common.cancel' | transloco }}
-    </button>
-  </li>
-  }
-</ul>
-} }
+<dui-table
+  dataKey="id"
+  emptyMessage="members.noPendingInvitations"
+  actionsPosition="start"
+  [cols]="invitationColumns()"
+  [items]="invitations.value() ?? []"
+  [actions]="invitationActions()"
+  [actionsAsMenu]="true"
+  [lazy]="false"
+  [paginator]="false"
+  [showSearch]="false"
+  [showColumnSelector]="false"
+  [showAddButton]="false"
+  [loading]="invitations.isLoading() && !invitations.hasValue()"
+>
+  <ng-template duiTemplate="role" let-value>{{ 'members.roles.' + value | transloco }}</ng-template>
+</dui-table>

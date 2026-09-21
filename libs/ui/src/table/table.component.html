@@ -65,6 +65,8 @@
         <tr hlmTr>
           @if (expandable()) {
           <th hlmTh class="w-10"><span class="sr-only">{{ 'table.expand' | transloco }}</span></th>
+          } @if (actions().length && actionsPosition() === 'start') {
+          <th hlmTh class="w-12"><span class="sr-only">{{ 'table.actions' | transloco }}</span></th>
           } @for (col of visibleColumns(); track col.field) {
           <th hlmTh [attr.aria-sort]="ariaSort(col)">
             @if (col.sortable === false) { {{ col.header }} } @else {
@@ -79,7 +81,7 @@
             </button>
             }
           </th>
-          } @if (actions().length) {
+          } @if (actions().length && actionsPosition() === 'end') {
           <th hlmTh class="text-end"><span class="sr-only">{{ 'table.actions' | transloco }}</span></th>
           }
         </tr>
@@ -108,6 +110,8 @@
               <ng-icon [name]="isExpanded(row, i) ? 'lucideChevronDown' : 'lucideChevronRight'" />
             </button>
           </td>
+          } @if (actions().length && actionsPosition() === 'start') {
+          <ng-container [ngTemplateOutlet]="actionsCell" [ngTemplateOutletContext]="{ $implicit: row, index: i }" />
           } @for (col of visibleColumns(); track col.field) {
           <td hlmTd>
             @if (templateFor(col.field); as cella) {
@@ -119,11 +123,20 @@
             dynamicPipe: getPipeToken(col.pipe) : col.pipeArgs }} } @else if (col.suffix) { {{ value(row, col.field) }}
             {{ col.suffix }} } @else { {{ value(row, col.field) }} }
           </td>
-          } @if (actions().length) {
-          <td hlmTd>
-            <div class="flex flex-row justify-end gap-1">
-              @if (actionsAsMenu()) {
-              <!--
+          } @if (actions().length && actionsPosition() === 'end') {
+          <ng-container [ngTemplateOutlet]="actionsCell" [ngTemplateOutletContext]="{ $implicit: row, index: i }" />
+          }
+
+          <!--
+            Defined once and rendered on whichever side `actionsPosition` asks for.
+            Duplicating this markup would mean two menus to keep in step, and they
+            would not stay in step.
+          -->
+          <ng-template #actionsCell let-row let-i="index">
+            <td hlmTd>
+              <div class="flex flex-row gap-1" [class.justify-end]="actionsPosition() === 'end'">
+                @if (actionsAsMenu()) {
+                <!--
                         I tre puntini compaiono solo se questa riga ha davvero
                         qualcosa da offrire: un pulsante che apre un menu vuoto
                         e' peggio di nessun pulsante.
@@ -131,58 +144,58 @@
                         The #actionsMenu ref lives inside the @for, so there is one
                         per row: each menu carries its own row's actions.
                       -->
-              @if (visibleActions(row); as azioni) { @if (azioni.length) {
-              <button
-                hlmBtn
-                size="icon-sm"
-                type="button"
-                variant="ghost"
-                align="end"
-                [hlmDropdownMenuTrigger]="menuAzioni"
-                [attr.aria-label]="'table.rowActions' | transloco"
-                [title]="'table.actions' | transloco"
-              >
-                <ng-icon name="lucideEllipsisVertical" />
-              </button>
+                @if (visibleActions(row); as azioni) { @if (azioni.length) {
+                <button
+                  hlmBtn
+                  size="icon-sm"
+                  type="button"
+                  variant="ghost"
+                  align="end"
+                  [hlmDropdownMenuTrigger]="menuAzioni"
+                  [attr.aria-label]="'table.rowActions' | transloco"
+                  [title]="'table.actions' | transloco"
+                >
+                  <ng-icon name="lucideEllipsisVertical" />
+                </button>
 
-              <ng-template #menuAzioni>
-                <hlm-dropdown-menu class="w-56">
-                  @for (action of azioni; track $index) { @if (needsSeparator(azioni, $index)) {
-                  <hlm-dropdown-menu-separator />
-                  } @if (groupLabel(azioni, $index); as intestazione) {
-                  <div hlmDropdownMenuLabel class="text-muted-foreground text-xs font-medium">{{ intestazione }}</div>
-                  }
-                  <button
-                    hlmDropdownMenuItem
-                    type="button"
-                    [class]="actionMenuClass(action)"
-                    [disabled]="actionDisabled(action, row)"
-                    (click)="action.command(row, items())"
-                  >
-                    <ng-icon [name]="actionIcon(action, row)" />
-                    {{ actionLabel(action, row) }}
-                  </button>
-                  }
-                </hlm-dropdown-menu>
-              </ng-template>
-              } } } @else { @for (action of actions(); track $index) { @if (actionVisible(action, row)) {
-              <button
-                hlmBtn
-                size="icon-sm"
-                type="button"
-                [variant]="actionVariant(action)"
-                [class]="action.class"
-                [attr.aria-label]="action.tooltip"
-                [attr.title]="action.tooltip"
-                [disabled]="actionDisabled(action, row)"
-                (click)="action.command(row, items())"
-              >
-                <ng-icon [name]="actionIcon(action, row)" />
-              </button>
-              } } }
-            </div>
-          </td>
-          }
+                <ng-template #menuAzioni>
+                  <hlm-dropdown-menu class="w-56">
+                    @for (action of azioni; track $index) { @if (needsSeparator(azioni, $index)) {
+                    <hlm-dropdown-menu-separator />
+                    } @if (groupLabel(azioni, $index); as intestazione) {
+                    <div hlmDropdownMenuLabel class="text-muted-foreground text-xs font-medium">{{ intestazione }}</div>
+                    }
+                    <button
+                      hlmDropdownMenuItem
+                      type="button"
+                      [class]="actionMenuClass(action)"
+                      [disabled]="actionDisabled(action, row)"
+                      (click)="action.command(row, items())"
+                    >
+                      <ng-icon [name]="actionIcon(action, row)" />
+                      {{ actionLabel(action, row) }}
+                    </button>
+                    }
+                  </hlm-dropdown-menu>
+                </ng-template>
+                } } } @else { @for (action of actions(); track $index) { @if (actionVisible(action, row)) {
+                <button
+                  hlmBtn
+                  size="icon-sm"
+                  type="button"
+                  [variant]="actionVariant(action)"
+                  [class]="action.class"
+                  [attr.aria-label]="action.tooltip"
+                  [attr.title]="action.tooltip"
+                  [disabled]="actionDisabled(action, row)"
+                  (click)="action.command(row, items())"
+                >
+                  <ng-icon [name]="actionIcon(action, row)" />
+                </button>
+                } } }
+              </div>
+            </td>
+          </ng-template>
         </tr>
 
         @if (expandable() && isExpanded(row, i)) {

@@ -180,6 +180,12 @@
   },
   "members": {
     "acceptInvitation": "Accetta l’invito",
+    "cancelInvitation": "Annulla l'invito",
+    "columns": {
+      "email": "Email",
+      "name": "Nome",
+      "role": "Ruolo"
+    },
     "description": "Chi fa parte di questa organizzazione e chi è stato invitato.",
     "invitationLinkMissing": "Link incompleto. Apri il link dall’email così com’è.",
     "invitationSent": "Invito inviato a {{email}}.",
@@ -192,6 +198,7 @@
     "joining": "Ingresso in corso…",
     "noPendingInvitations": "Nessun invito in sospeso.",
     "pendingInvitations": "Inviti in sospeso",
+    "remove": "Rimuovi dall'organizzazione",
     "role": "Ruolo",
     "roles": {
       "admin": "Amministratore",
