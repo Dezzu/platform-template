@@ -1,30 +1,46 @@
-<div class="mb-4 flex items-center justify-between">
-  <h1 class="text-2xl font-semibold">{{ 'nav.projects' | transloco }}</h1>
+<h1 class="mb-1 text-2xl font-semibold">{{ 'nav.projects' | transloco }}</h1>
+<p class="text-muted-foreground mb-6 text-sm">{{ 'projects.description' | transloco }}</p>
 
-  <button hlmBtn *appCan="[permissions.PROJECTS_MANAGE]">{{ 'common.save' | transloco }}</button>
-</div>
+@if (failed()) {
+<p class="text-destructive mb-4 text-sm" role="alert">{{ 'errors.INTERNAL_ERROR' | transloco }}</p>
+}
 
-@if (errorKey(); as key) {
-<p class="text-destructive mb-4 text-sm" role="alert">{{ key | transloco }}</p>
-} @if (projects.isLoading()) {
-<p class="text-muted-foreground text-sm">{{ 'common.loading' | transloco }}</p>
-} @else if (projects.error()) {
-<p class="text-destructive text-sm" role="alert">{{ 'errors.INTERNAL_ERROR' | transloco }}</p>
-} @else { @let page = projects.value(); @if (!page || page.items.length === 0) {
-<p class="text-muted-foreground text-sm">{{ 'common.empty' | transloco }}</p>
-} @else {
-<ul class="divide-y rounded-md border">
-  @for (project of page.items; track project.id) {
-  <li class="flex items-center justify-between p-3">
-    <div class="min-w-0">
-      <p class="truncate font-medium">{{ project.name }}</p>
-      <p class="text-muted-foreground truncate text-sm">{{ project.description }}</p>
-    </div>
+<dui-table
+  dataKey="id"
+  emptyMessage="common.empty"
+  [cols]="columns()"
+  [items]="rows()"
+  [actions]="actions()"
+  [actionsAsMenu]="true"
+  [lazy]="true"
+  [loading]="loading()"
+  [totalRecords]="total()"
+  [showAddButton]="false"
+  (onLazyLoad)="onLazyLoad($event)"
+>
+  <ng-template duiTemplate="description" let-value>
+    @if (value) {
+    <span class="text-muted-foreground">{{ value }}</span>
+    } @else {
+    <span class="text-muted-foreground">—</span>
+    }
+  </ng-template>
 
-    <button hlmBtn variant="destructive" size="sm" *appCan="[permissions.PROJECTS_DELETE]" (click)="remove(project)">
-      {{ 'common.delete' | transloco }}
-    </button>
-  </li>
-  }
-</ul>
-} }
+  <!--
+    A status is a small closed set, so it reads as a badge rather than as a word in a
+    column of words: the eye finds "archiviato" among twenty rows without reading them.
+  -->
+  <ng-template duiTemplate="status" let-item="item">
+    @let project = asProject(item);
+    <span
+      class="rounded-full px-2 py-0.5 text-xs font-medium"
+      [class]="
+        project.status === 'active'
+          ? 'bg-green-100 text-green-900 dark:bg-green-900/40 dark:text-green-100'
+          : 'bg-muted text-muted-foreground'
+      "
+    >
+      {{ 'projects.status.' + project.status | transloco }}
+    </span>
+  </ng-template>
+</dui-table>

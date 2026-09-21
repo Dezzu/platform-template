@@ -47,7 +47,7 @@
 <dui-table
   dataKey="id"
   emptyMessage="common.empty"
-  actionsPosition="start"
+  actionsPosition="end"
   [cols]="memberColumns()"
   [items]="members.value()?.items ?? []"
   [actions]="memberActions()"
@@ -77,7 +77,7 @@
 <dui-table
   dataKey="id"
   emptyMessage="members.noPendingInvitations"
-  actionsPosition="start"
+  actionsPosition="end"
   [cols]="invitationColumns()"
   [items]="invitations.value() ?? []"
   [actions]="invitationActions()"

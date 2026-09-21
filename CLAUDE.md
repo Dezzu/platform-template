@@ -26,6 +26,10 @@ Mai `any`. Mai `@ts-ignore` senza una riga che spieghi perché.
 - **3 file per componente** (.ts/.html/.scss) per le feature. I piccoli componenti di
   `libs/ui` usano template inline: è la scelta del progetto da cui provengono.
 - I form sono **pagine**, non modali.
+- Gli elenchi sono `dui-table` (`@app/ui/table`), non liste fatte a mano: paginazione,
+  ordinamento, ricerca, selettore di colonne e azioni nei tre puntini stanno già lì, e
+  una seconda versione di ognuno è un posto in più in cui divergere. `projects` è
+  l'esempio da copiare.
 - Signal = stato, Observable = trasporto. I servizi HTTP si chiamano `*Api`.
 
 **Backend.**
@@ -115,8 +119,11 @@ Esempio: `projects` — è già implementata, **copiala**.
    stessa transazione**.
 8. Test: unit sul service + e2e HTTP, **incluso un test di isolamento cross-org**.
 9. `libs/core/api/<x>.api.ts` tipizzato dai tipi di `@app/contracts`.
-10. `apps/app/src/app/features/<x>/` — lista e form (Signal Forms, **pagina**).
-    Rotta lazy con `canMatch: [navGuard('<x>')]`.
+10. `apps/app/src/app/features/<x>/` — lista con `dui-table` e form (Signal Forms,
+    **pagina**). La lista è **lazy**: la tabella annuncia pagina, ordinamento e ricerca
+    con `onLazyLoad`, il server risponde. Filtrare nel browser sulla pagina caricata
+    vuol dire in silenzio "cerca fra le righe che stai guardando". Rotta lazy con
+    `canMatch: [navGuard('<x>')]`.
 11. Voce in `NAV_MANIFEST` **solo se la pagina esiste** (un test lo verifica) + icona
     registrata in `apps/app/src/app/icons.ts`.
 12. Chiavi in `it.json` **e** `en.json`.

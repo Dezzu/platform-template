@@ -257,6 +257,20 @@
     "saved": "Modifiche salvate.",
     "title": "Profilo"
   },
+  "projects": {
+    "columns": {
+      "createdAt": "Creato il",
+      "description": "Descrizione",
+      "name": "Nome",
+      "status": "Stato"
+    },
+    "deleted": "Progetto “{{name}}” eliminato.",
+    "description": "I progetti di questa organizzazione.",
+    "status": {
+      "active": "Attivo",
+      "archived": "Archiviato"
+    }
+  },
   "table": {
     "actions": "Azioni",
     "add": "Aggiungi",
