@@ -1,6 +1,16 @@
 import { inject, Service } from '@angular/core';
 import { AUTH_CLIENT } from '../auth/auth.client';
 
+/**
+ * Whose Stripe customer the subscription hangs off.
+ *
+ * Not cosmetic, and not derivable by the plugin: `@better-auth/stripe` defaults it to
+ * `'user'`, so leaving it out makes an organization-scoped subscription attach to the
+ * Stripe customer of whoever happened to click subscribe. That is precisely what
+ * organization billing exists to prevent — the plan must not leave with the person.
+ */
+export type BillingCustomerType = 'user' | 'organization';
+
 export interface OrgSubscription {
   plan: string;
   status: string;
@@ -44,6 +54,7 @@ export class BillingService {
    */
   async subscribe(options: {
     reference: string;
+    customerType: BillingCustomerType;
     plan: string;
     annual?: boolean;
     successUrl: string;
@@ -52,6 +63,9 @@ export class BillingService {
     const { error } = await this.client.subscription.upgrade({
       plan: options.plan,
       referenceId: options.reference,
+      // Without this the plugin takes its `'user'` branch and bills the person, even
+      // though the reference it was handed is an organization.
+      customerType: options.customerType,
       successUrl: options.successUrl,
       cancelUrl: options.cancelUrl,
       annual: options.annual ?? false,
@@ -66,10 +80,17 @@ export class BillingService {
    * rebuilt here: Stripe keeps it correct across payment methods, dunning and tax, and
    * every screen not written is a screen that cannot drift from what Stripe does.
    */
-  async openPortal(reference: string, returnUrl: string): Promise<{ error?: string }> {
+  async openPortal(options: {
+    reference: string;
+    customerType: BillingCustomerType;
+    returnUrl: string;
+  }): Promise<{ error?: string }> {
     const { error } = await this.client.subscription.billingPortal({
-      referenceId: reference,
-      returnUrl,
+      referenceId: options.reference,
+      // Same reason as `subscribe`: the default is `'user'`, which opens the portal of
+      // the caller's personal Stripe customer rather than the organization's.
+      customerType: options.customerType,
+      returnUrl: options.returnUrl,
     });
     return error ? { error: error.code ?? 'UNKNOWN' } : {};
   }

@@ -298,6 +298,31 @@ importato **prima** di `AuthModule` in `app.module.ts`.
 del progetto, malgrado lo schema dica il contrario) e trova i test solo **dentro** la
 root del progetto: da qui il progetto `libs` separato in `angular.json`.
 
+**`@better-auth/stripe` predefinisce `customerType: 'user'`.** Omesso, una subscription
+riferita a un'**organizzazione** finisce attaccata al customer Stripe di chi ha cliccato
+"attiva" — cioè esattamente ciò che la fatturazione per organizzazione dovrebbe
+impedire: il piano se ne va con la persona. Non fallisce e non si vede a schermo
+(`organization.stripe_customer_id` resta vuoto e la riga `subscription` porta il
+customer personale), quindi `subscribe` **e** `billingPortal` lo passano esplicitamente,
+derivato da `APP_MODE`, e tre test in `billing.page.spec.ts` lo sorvegliano.
+
+**I test non chiamano Stripe, ed è imposto — non promesso.** `createCustomerOnSignUp`
+scatta a ogni `signUp`, e la suite ne fa decine per esecuzione: **18 chiamate solo dai
+tre account di `billing.e2e-spec`** (misurate rimettendo il flag a `true`). Su una
+sandbox _claimable_, che ha limiti bassi, questo esaurisce la quota; da lì in poi
+**ogni** chiamata risponde 429, il plugin la traduce in
+`UNABLE_TO_CREATE_BILLING_PORTAL` e l'interfaccia dice "non è stato possibile aprire il
+portale" — un guasto che sembra del codice e non lo è. È successo.
+
+Quindi: il plugin non crea customer sotto `NODE_ENV=test`, **e** `test/setup.ts` rifiuta
+qualunque richiesta verso `stripe.com` registrandola in `stripeCallAttempts`. Un hook
+nuovo che ricominciasse a chiamare Stripe fa fallire la suite invece di spendere in
+silenzio: il flag è la metà gentile della regola, il blocco è quella con i denti.
+
+Se il portale non si apre, prima di cercare il bug nel codice prova
+`curl -u "$STRIPE_SECRET_KEY:" https://api.stripe.com/v1/customers/<id>`: se anche
+quella risponde 429, la quota è esaurita e bisogna solo aspettare.
+
 **Fuori dalla shell il tema scuro non si applicava, e nessuno se ne accorgeva.**
 `ThemeService` è ciò che mette `.dark` sul documento, e l'unico a costruirlo era il menu
 profilo — che vive dentro la shell. Login, reset password e la pagina di manutenzione
@@ -350,7 +375,7 @@ Poi 10 osservabilità · 11 Docker+CI · 12 Terraform.
 
 Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-snail.md`.
 
-**315 test.** `pnpm verify` verde.
+**321 test.** `pnpm verify` verde.
 
 ### Cosa ha aggiunto la 9c
 

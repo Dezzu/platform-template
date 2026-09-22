@@ -15,6 +15,7 @@ import {
   CanDirective,
   PermissionsService,
   PlansApi,
+  type BillingCustomerType,
   type OrgSubscription,
 } from '@app/core';
 
@@ -52,6 +53,14 @@ export class BillingPage {
     this.permissions.personalBilling()
       ? (this.auth.user()?.id ?? null)
       : this.permissions.organizationId(),
+  );
+  /**
+   * Whose Stripe customer pays — the other half of `reference`, and it has to travel
+   * with it. `@better-auth/stripe` defaults this to `'user'`, so omitting it attaches
+   * an organization's subscription to the personal customer of whoever subscribed.
+   */
+  protected readonly customerType = computed<BillingCustomerType>(() =>
+    this.permissions.personalBilling() ? 'user' : 'organization',
   );
   protected readonly errorKey = signal<string | null>(null);
   protected readonly busy = signal(false);
@@ -94,6 +103,7 @@ export class BillingPage {
     const origin = window.location.origin;
     const { error } = await this.billing.subscribe({
       reference,
+      customerType: this.customerType(),
       plan: plan.key,
       successUrl: `${origin}/billing?checkout=success`,
       cancelUrl: `${origin}/billing?checkout=cancelled`,
@@ -114,7 +124,11 @@ export class BillingPage {
     this.busy.set(true);
     this.errorKey.set(null);
 
-    const { error } = await this.billing.openPortal(reference, `${window.location.origin}/billing`);
+    const { error } = await this.billing.openPortal({
+      reference,
+      customerType: this.customerType(),
+      returnUrl: `${window.location.origin}/billing`,
+    });
     if (error) {
       this.busy.set(false);
       this.errorKey.set('billing.portalFailed');

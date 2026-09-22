@@ -111,8 +111,22 @@ export function createStripePlugin(): ReturnType<typeof stripePlugin> | null {
     stripeClient,
     stripeWebhookSecret: webhookSecret,
 
-    // A Stripe customer per user, so a personal account can be billed too.
-    createCustomerOnSignUp: true,
+    /**
+     * A Stripe customer per user, so a personal account can be billed too — except
+     * under test.
+     *
+     * This hook fires on EVERY sign-up, and the e2e suite signs up dozens of accounts
+     * per run: a `customers.search` plus a `customers.create` each time, against a
+     * live account. On a claimable sandbox that exhausts the request budget, and from
+     * then on every Stripe call answers 429 — including the customer portal, which
+     * then fails in the browser for a reason that has nothing to do with the code.
+     *
+     * Nothing in the suite needs the customer: the billing specs are written to be
+     * provable without a Stripe account, and the checkout creates the customer lazily
+     * anyway. `test/setup.ts` refuses outbound requests to Stripe outright, so this is
+     * the polite half of a rule that is also enforced.
+     */
+    createCustomerOnSignUp: process.env['NODE_ENV'] !== 'test',
 
     // And per organization: the subscription belongs to the tenant, not to whoever
     // happened to click subscribe. Someone leaving must not take the plan with them.

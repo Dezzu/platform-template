@@ -1,3 +1,4 @@
+import https from 'node:https';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { eq, inArray } from 'drizzle-orm';
@@ -5,6 +6,7 @@ import { member, organization, stripeEvent, subscription, user } from '@app/db';
 import { db } from '../src/database/db';
 import { canActOnSubscription, recordStripeEvent } from '../src/modules/billing/stripe-plugin';
 import { createTestApp } from './app.factory';
+import { stripeCallAttempts, targetsStripe } from './setup';
 import { createOrganization, signUp, type TestUser } from './helpers/auth';
 
 /**
@@ -153,6 +155,58 @@ describe('billing (e2e)', () => {
         .expect((res) => {
           expect([400, 402, 404]).toContain(res.status);
         });
+    });
+  });
+
+  /**
+   * The suite must not spend Stripe's request budget. It used to: the sign-up hook
+   * called `customers.search` and `customers.create` for every account created here,
+   * dozens per run, and exhausting a claimable sandbox makes EVERY later Stripe call
+   * answer 429 — including the customer portal in the browser, which then fails for a
+   * reason that has nothing to do with this code.
+   */
+  describe('Stripe is never called from a test', () => {
+    it('does not even try, for the three accounts this spec signed up', async () => {
+      /**
+       * The attempts list, not the absence of a customer id: with the network blocked
+       * the id would be null either way, so asserting on it would pass whether or not
+       * `createCustomerOnSignUp` had been switched back on. This fails the moment
+       * something tries.
+       */
+      expect(stripeCallAttempts).toEqual([]);
+
+      const [row] = await db
+        .select({ stripeCustomerId: user.stripeCustomerId })
+        .from(user)
+        .where(eq(user.id, owner.id));
+
+      expect(row?.stripeCustomerId ?? null).toBeNull();
+    });
+
+    // Runs after the assertion above on purpose: these calls are themselves recorded.
+    it('refuses an outbound request, so a new hook cannot quietly start one', () => {
+      // Enforced in test/setup.ts, because a flag that can be flipped back is a
+      // promise and this is a guarantee.
+      expect(() => https.request('https://api.stripe.com/v1/customers')).toThrow(/must not/);
+      expect(() => void fetch('https://api.stripe.com/v1/customers')).toThrow(/must not/);
+    });
+
+    it('matches Stripe and nothing else', () => {
+      /**
+       * Asserted on the predicate rather than by opening a socket: a blanket ban would
+       * take MinIO and Mailpit with it, and "check by connecting somewhere" is both a
+       * real network call from a test — the thing this whole block exists to stop —
+       * and a source of unhandled ECONNRESETs. It was, briefly.
+       */
+      expect(targetsStripe('https://api.stripe.com/v1/customers')).toBe(true);
+      expect(targetsStripe({ hostname: 'api.stripe.com', path: '/v1/charges' })).toBe(true);
+      expect(targetsStripe(new URL('https://files.stripe.com/x'))).toBe(true);
+
+      expect(targetsStripe('http://localhost:9000/bucket')).toBe(false);
+      expect(targetsStripe({ hostname: 'localhost', port: 1025 })).toBe(false);
+      // Not a suffix match on the string: a lookalike host must not be trusted either.
+      expect(targetsStripe('https://notstripe.com/')).toBe(false);
+      expect(targetsStripe('https://api.stripe.com.evil.test/')).toBe(false);
     });
   });
 

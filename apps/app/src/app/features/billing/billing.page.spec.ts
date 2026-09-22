@@ -2,8 +2,9 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  AuthService,
   BillingService,
   PermissionsService,
   PlansApi,
@@ -54,7 +55,12 @@ const BUSINESS = {
   sortOrder: 30,
 };
 
-function setup(subscriptions: OrgSubscription[], plans: unknown[] = [PLAN]) {
+function setup(
+  subscriptions: OrgSubscription[],
+  plans: unknown[] = [PLAN],
+  billing: Record<string, unknown> = {},
+  personalBilling = false,
+) {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -70,13 +76,15 @@ function setup(subscriptions: OrgSubscription[], plans: unknown[] = [PLAN]) {
         supportedLocales: ['it', 'en'],
       }),
       { provide: PlansApi, useValue: { list: () => of(plans) } },
-      { provide: BillingService, useValue: { list: async () => subscriptions } },
+      { provide: BillingService, useValue: { list: async () => subscriptions, ...billing } },
+      // Only read for the b2c reference, which is the signed-in user's own id.
+      { provide: AuthService, useValue: { user: () => ({ id: 'user-1', email: 'a@b.c' }) } },
       {
         provide: PermissionsService,
         useValue: {
           organizationId: () => 'org-1',
-          personalBilling: () => false,
-          mode: () => 'b2b' as const,
+          personalBilling: () => personalBilling,
+          mode: () => (personalBilling ? ('b2c' as const) : ('b2b' as const)),
           anyOf: () => true,
           allOf: () => true,
         },
@@ -209,6 +217,60 @@ describe('BillingPage', () => {
     const summary = (fixture.nativeElement as HTMLElement).querySelector('section p');
     expect(summary?.textContent).toContain('Pro');
     expect(summary?.textContent).not.toContain('pro ·');
+  });
+
+  /**
+   * `@better-auth/stripe` defaults `customerType` to `'user'`. Omitting it does not
+   * fail — it quietly bills the person who clicked, and opens that person's portal,
+   * for a subscription the organization is supposed to own. Nothing on screen shows
+   * the difference, which is why it needs a test rather than a reading.
+   */
+  describe('whose Stripe customer pays', () => {
+    it('says organization when the tenant is what pays', async () => {
+      const openPortal = vi.fn(async () => ({}));
+      const subscribe = vi.fn(async () => ({}));
+      const fixture = setup([active], [PLAN], { openPortal, subscribe });
+      await fixture.whenStable();
+
+      const page = fixture.componentInstance as unknown as {
+        openPortal: () => Promise<void>;
+      };
+      await page.openPortal();
+
+      expect(openPortal).toHaveBeenCalledWith(
+        expect.objectContaining({ reference: 'org-1', customerType: 'organization' }),
+      );
+    });
+
+    it('says user when the person pays', async () => {
+      const openPortal = vi.fn(async () => ({}));
+      const fixture = setup([active], [PLAN], { openPortal }, true);
+      await fixture.whenStable();
+
+      const page = fixture.componentInstance as unknown as {
+        openPortal: () => Promise<void>;
+      };
+      await page.openPortal();
+
+      expect(openPortal).toHaveBeenCalledWith(
+        expect.objectContaining({ reference: 'user-1', customerType: 'user' }),
+      );
+    });
+
+    it('carries it into checkout too, not only into the portal', async () => {
+      const subscribe = vi.fn(async () => ({}));
+      const fixture = setup([], [PLAN], { subscribe });
+      await fixture.whenStable();
+
+      const page = fixture.componentInstance as unknown as {
+        subscribe: (plan: unknown) => Promise<void>;
+      };
+      await page.subscribe(PLAN);
+
+      expect(subscribe).toHaveBeenCalledWith(
+        expect.objectContaining({ customerType: 'organization', plan: 'pro' }),
+      );
+    });
   });
 
   it('never renders a raw translation key', async () => {
