@@ -1,5 +1,7 @@
 import { computed, inject, Service, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { SessionApi } from '../api/session.api';
 import { CORE_CONFIG } from '../config/core.config';
 import { AUTH_CLIENT } from './auth.client';
 
@@ -31,6 +33,7 @@ export interface SessionState {
 @Service()
 export class AuthService {
   private readonly client = inject(AUTH_CLIENT);
+  private readonly api = inject(SessionApi);
   private readonly router = inject(Router);
   private readonly config = inject(CORE_CONFIG);
 
@@ -105,6 +108,19 @@ export class AuthService {
     await this.client.signOut();
     this.state.set({ user: null, activeOrganizationId: null });
     await this.router.navigateByUrl(this.config.loginRoute);
+  }
+
+  /**
+   * Ends an impersonation: the server issues the administrator's own session back.
+   *
+   * A session operation, not an administrative one — the caller is whoever is being
+   * impersonated, and they hold no platform rights at all. Deliberately does not
+   * reload anything: the cookie has just been replaced, so every signal in memory
+   * still describes somebody else, and the only honest next step is a full page load.
+   * Where to land is the caller's decision.
+   */
+  async stopImpersonating(): Promise<void> {
+    await firstValueFrom(this.api.stopImpersonating());
   }
 
   /** Switches the active organization and re-reads the session it changed. */

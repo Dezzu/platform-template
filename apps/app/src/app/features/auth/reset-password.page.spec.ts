@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthService, provideCore } from '@app/core';
 import { provideI18n } from '@app/i18n';
-import { pageAlerts } from '../../../testing/alerts';
+import { pageAlerts } from '@app/ui/testing';
 import { ResetPasswordPage } from './reset-password.page';
 
 function setup(token: string | null, resetPassword = vi.fn(() => Promise.resolve({}))) {

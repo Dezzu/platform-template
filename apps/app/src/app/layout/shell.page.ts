@@ -1,6 +1,5 @@
 import { Component, computed, DOCUMENT, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import {
@@ -12,7 +11,6 @@ import {
   PermissionsService,
   ToastService,
 } from '@app/core';
-import { AdminApi } from '../features/admin/admin.api';
 import {
   AppShellComponent,
   ProfileMenuComponent,
@@ -112,7 +110,6 @@ import { environment } from '../../environments/environment';
 export class ShellPage {
   private readonly permissions = inject(PermissionsService);
   private readonly flags = inject(FeatureFlagsService);
-  private readonly adminApi = inject(AdminApi);
   private readonly toasts = inject(ToastService);
   private readonly document = inject(DOCUMENT);
   private readonly auth = inject(AuthService);
@@ -197,7 +194,10 @@ export class ShellPage {
     this.leaving.set(true);
 
     try {
-      await firstValueFrom(this.adminApi.stopImpersonating());
+      await this.auth.stopImpersonating();
+      // A literal rather than an import: after this the shell must know nothing about
+      // the administration area, and a URL is not a dependency. Whoever was
+      // impersonating necessarily holds the rights to land here.
       this.document.location.href = '/admin/users';
     } catch (error: unknown) {
       this.leaving.set(false);

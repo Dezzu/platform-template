@@ -2,7 +2,6 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { of } from 'rxjs';
 import {
   AuthService,
   NAV_SECTIONS,
@@ -10,7 +9,6 @@ import {
   ToastService,
   provideCore,
 } from '@app/core';
-import { AdminApi } from '../features/admin/admin.api';
 import type { ShellNavSection } from '@app/ui/layout';
 import { provideI18n } from '@app/i18n';
 import { ShellPage } from './shell.page';
@@ -37,9 +35,13 @@ function setup(
       }),
       {
         provide: AuthService,
-        useValue: { user: () => ({ id: 'u1', name: 'Fabio', email: 'fabio@demo.it' }) },
+        useValue: {
+          user: () => ({ id: 'u1', name: 'Fabio', email: 'fabio@demo.it' }),
+          // Leaving an impersonation is a session operation now, not an
+          // administrative one — the shell no longer knows the admin area exists.
+          stopImpersonating: () => Promise.resolve(),
+        },
       },
-      { provide: AdminApi, useValue: { stopImpersonating: () => of(undefined) } },
       ToastService,
       {
         provide: PermissionsService,

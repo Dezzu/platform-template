@@ -13,6 +13,7 @@ export * from './http/app-error';
 export * from './http/api.interceptor';
 
 export * from './api/me.api';
+export * from './api/session.api';
 export * from './api/plans.api';
 export * from './billing/billing.service';
 

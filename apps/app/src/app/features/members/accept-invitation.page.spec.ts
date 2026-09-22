@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { InvitationPreview } from '@app/contracts';
 import { AppError, AuthService, PermissionsService, provideCore } from '@app/core';
 import { provideI18n } from '@app/i18n';
-import { pageAlerts } from '../../../testing/alerts';
+import { pageAlerts } from '@app/ui/testing';
 import { AcceptInvitationPage } from './accept-invitation.page';
 import { MembersApi } from './members.api';
 

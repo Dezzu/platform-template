@@ -16,6 +16,7 @@
     "paths": {
       "@spartan-ng/helm/*": ["./libs/primitives/*/src/index.ts", "./libs/primitives/*"],
       "@app/ui/*": ["./libs/ui/src/*"],
+      "@app/admin/*": ["./libs/admin/src/*"],
       "@app/core": ["./libs/core/src/index.ts"],
       "@app/core/*": ["./libs/core/src/*"],
       "@app/i18n": ["./libs/i18n/src/index.ts"],

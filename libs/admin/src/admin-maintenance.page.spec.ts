@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MaintenanceMode } from '@app/contracts';
 import { AppError, PermissionsService, ToastService, provideCore } from '@app/core';
 import { provideI18n } from '@app/i18n';
-import { pageAlerts } from '../../../testing/alerts';
+import { pageAlerts } from '@app/ui/testing';
 import { AdminApi } from './admin.api';
 import { AdminMaintenancePage } from './admin-maintenance.page';
 

@@ -7,7 +7,7 @@ import type { FeatureFlag } from '@app/contracts';
 import type { TableAction } from '@app/ui/mix';
 import { AppError, PermissionsService, ToastService, provideCore } from '@app/core';
 import { provideI18n } from '@app/i18n';
-import { pageAlerts } from '../../../testing/alerts';
+import { pageAlerts } from '@app/ui/testing';
 import { AdminApi } from './admin.api';
 import { AdminFlagsPage } from './admin-flags.page';
 

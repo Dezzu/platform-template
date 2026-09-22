@@ -9,7 +9,10 @@ import prettier from 'eslint-config-prettier';
  * Layering rules are enforced here because this monorepo has no Nx to do it.
  * The dependency direction is one-way and is part of the template's contract:
  *
- *   apps/*          -> libs/*, packages/*
+ *   apps/app        -> libs/*, packages/contracts
+ *   apps/web        -> libs/core, libs/ui, libs/i18n, libs/primitives, contracts
+ *                      (NOT libs/admin: the marketing site has no back office)
+ *   libs/admin      -> libs/core, libs/ui, libs/i18n, libs/primitives, contracts
  *   libs/ui         -> libs/primitives, libs/i18n, packages/contracts
  *   libs/core       -> packages/contracts ONLY  (no UI, and never `environment`)
  *   libs/primitives -> nothing internal
@@ -24,6 +27,20 @@ const ELEMENTS = [
   { type: 'app-web', pattern: 'apps/web' },
   { type: 'app-dashboard', pattern: 'apps/app' },
   { type: 'lib-core', pattern: 'libs/core' },
+  /**
+   * The platform's back office, kept out of the tenant's product on purpose.
+   *
+   * It is the largest single area of the dashboard and the one almost nobody sees, so
+   * the direction of the dependency is what keeps it from seeping: the app may load it
+   * lazily, and it may use the shared libraries — but no tenant screen can import from
+   * it, and it can import nothing of the tenant's. Without that rule the separation is
+   * a folder name.
+   *
+   * It stays a library rather than becoming apps/admin for now: the split is a
+   * deployment decision (see CLAUDE.md), and with this boundary in place making it one
+   * is moving a folder and adding a build target.
+   */
+  { type: 'lib-admin', pattern: 'libs/admin' },
   { type: 'lib-ui', pattern: 'libs/ui' },
   { type: 'lib-primitives', pattern: 'libs/primitives' },
   { type: 'lib-i18n', pattern: 'libs/i18n' },
@@ -90,11 +107,30 @@ export default tseslint.config(
     settings: {
       'boundaries/elements': ELEMENTS,
       'boundaries/include': ['apps/**', 'libs/**', 'packages/**'],
-      // Required: boundaries resolves imports through the standard resolver settings.
-      // Without the TypeScript resolver the `@app/*` aliases resolve to nothing and
-      // every layering policy silently passes.
+      /**
+       * How `@app/*` imports get classified — and it is load-bearing.
+       *
+       * The plugin resolves every import through eslint-module-utils, which reads
+       * this setting. When it cannot resolve one, the dependency is described as an
+       * EXTERNAL module and no policy applies to it: the import is not refused, it is
+       * invisible. That is the failure mode to fear here, because the rules keep
+       * passing.
+       *
+       * `tsconfig.json` ALONE, and that is the fix rather than an omission: it is the
+       * only one carrying the `@app/*` paths, and passing it together with
+       * `tsconfig.base.json` makes the resolver answer "not found" for every alias.
+       * Verified by calling the resolver directly, after a deliberately forbidden
+       * aliased import went through without a word.
+       *
+       * The backend aliases need nothing here: `@app/contracts` and `@app/db` are real
+       * workspace packages and resolve as packages.
+       *
+       * If you add a path to tsconfig.json, write a forbidden import that uses it and
+       * watch the rule fail. `boundaries/debug` prints what the plugin made of a
+       * dependency when it does not.
+       */
       'import/resolver': {
-        typescript: { alwaysTryTypes: true, project: ['tsconfig.base.json'] },
+        typescript: { alwaysTryTypes: true, project: ['tsconfig.json'] },
       },
     },
     rules: {
@@ -111,9 +147,14 @@ export default tseslint.config(
               ],
             },
             {
+              // Explicit rather than `lib-*`: the marketing site must never be able to
+              // pull in the platform's back office.
               from: { element: { type: 'app-web' } },
               allow: [
-                { to: { element: { type: 'lib-*' } } },
+                { to: { element: { type: 'lib-core' } } },
+                { to: { element: { type: 'lib-ui' } } },
+                { to: { element: { type: 'lib-i18n' } } },
+                { to: { element: { type: 'lib-primitives' } } },
                 { to: { element: { type: 'pkg-contracts' } } },
               ],
             },
@@ -121,6 +162,40 @@ export default tseslint.config(
               from: { element: { type: 'app-dashboard' } },
               allow: [
                 { to: { element: { type: 'lib-*' } } },
+                { to: { element: { type: 'pkg-contracts' } } },
+              ],
+            },
+            /**
+             * ...with one exception: no tenant screen may import the back office.
+             *
+             * `lib-*` above would otherwise allow it, and the whole point of moving
+             * the administration area out of `features/` was to stop it seeping back
+             * in one convenient import at a time.
+             *
+             * These two rules are last-write-wins, so the narrower one comes second:
+             * the route table is the single legitimate door, because the router has to
+             * name the chunks it lazy-loads. Everything else is refused.
+             */
+            {
+              from: { element: { type: 'app-dashboard' } },
+              disallow: { to: { element: { type: 'lib-admin' } } },
+            },
+            {
+              from: { file: { path: '**/app.routes.ts' } },
+              allow: { to: { element: { type: 'lib-admin' } } },
+            },
+            {
+              /**
+               * Administration screens are built from the same shared pieces as every
+               * other screen — which is the evidence that they needed a boundary and
+               * not a rewrite. What they may not do is reach back into an application.
+               */
+              from: { element: { type: 'lib-admin' } },
+              allow: [
+                { to: { element: { type: 'lib-core' } } },
+                { to: { element: { type: 'lib-ui' } } },
+                { to: { element: { type: 'lib-i18n' } } },
+                { to: { element: { type: 'lib-primitives' } } },
                 { to: { element: { type: 'pkg-contracts' } } },
               ],
             },

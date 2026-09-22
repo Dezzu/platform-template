@@ -115,20 +115,24 @@ export const routes: Routes = [
       },
       {
         /**
-         * Platform administration. Guarded by a PLATFORM permission, which comes from
-         * `user.role` — an organization owner has none of these however many tenants
-         * they own.
+         * Platform administration, which lives in `libs/admin` rather than in this
+         * app's features: it is the platform's back office, not the tenant's product,
+         * and eslint-plugin-boundaries now refuses any import in either direction.
+         *
+         * Loaded by subpath, never through a barrel — a barrel would put every
+         * administration screen in whichever chunk asked for the first one.
+         *
+         * Guarded by a PLATFORM permission, which comes from `user.role`: an
+         * organization owner has none of these however many tenants they own.
          */
         path: 'admin/users',
         canMatch: [navGuard('admin')],
-        loadComponent: () =>
-          import('./features/admin/admin-users.page').then((m) => m.AdminUsersPage),
+        loadComponent: () => import('@app/admin/admin-users.page').then((m) => m.AdminUsersPage),
       },
       {
         path: 'admin/flags',
         canMatch: [navGuard('admin-flags')],
-        loadComponent: () =>
-          import('./features/admin/admin-flags.page').then((m) => m.AdminFlagsPage),
+        loadComponent: () => import('@app/admin/admin-flags.page').then((m) => m.AdminFlagsPage),
       },
       {
         // Before ':key', or 'new' would be read as a flag key — the router matches in
@@ -136,25 +140,25 @@ export const routes: Routes = [
         path: 'admin/flags/new',
         canMatch: [requireAnyPlatformPermission(PLATFORM_PERMISSIONS.FLAGS_MANAGE)],
         loadComponent: () =>
-          import('./features/admin/admin-flag-form.page').then((m) => m.AdminFlagFormPage),
+          import('@app/admin/admin-flag-form.page').then((m) => m.AdminFlagFormPage),
       },
       {
         path: 'admin/flags/:key',
         canMatch: [requireAnyPlatformPermission(PLATFORM_PERMISSIONS.FLAGS_MANAGE)],
         loadComponent: () =>
-          import('./features/admin/admin-flag-form.page').then((m) => m.AdminFlagFormPage),
+          import('@app/admin/admin-flag-form.page').then((m) => m.AdminFlagFormPage),
       },
       {
         path: 'admin/maintenance',
         canMatch: [navGuard('admin-maintenance')],
         loadComponent: () =>
-          import('./features/admin/admin-maintenance.page').then((m) => m.AdminMaintenancePage),
+          import('@app/admin/admin-maintenance.page').then((m) => m.AdminMaintenancePage),
       },
       {
         path: 'admin/organizations',
         canMatch: [requireAnyPlatformPermission(PLATFORM_PERMISSIONS.ORGANIZATIONS_READ)],
         loadComponent: () =>
-          import('./features/admin/admin-organizations.page').then((m) => m.AdminOrganizationsPage),
+          import('@app/admin/admin-organizations.page').then((m) => m.AdminOrganizationsPage),
       },
       {
         // Reached from the profile menu rather than the sidebar, so it is deliberately

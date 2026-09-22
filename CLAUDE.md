@@ -69,6 +69,14 @@ Mai `any`. Mai `@ts-ignore` senza una riga che spieghi perché.
 `apps → libs/*` · `libs/ui → libs/primitives, libs/i18n, packages/contracts` ·
 `libs/core → packages/contracts` e **mai** `environment.*` (riceve tutto da `provideCore()`).
 
+**`libs/admin` è il back office della piattaforma, e il confine è a senso unico.**
+Nessuna schermata del prodotto può importarne qualcosa — l'unica porta è
+`app.routes.ts`, che deve nominare i chunk da caricare — e `libs/admin` non può
+importare niente di un'applicazione. Era il 42% delle feature della dashboard e la
+parte che quasi nessuno vede: senza una regola, rientra un import comodo alla volta.
+Resta una libreria e non `apps/admin` perché lo split è una decisione di deploy, non di
+codice — vedi §6.
+
 ---
 
 ## 2. Comandi
@@ -306,6 +314,21 @@ impedire: il piano se ne va con la persona. Non fallisce e non si vede a schermo
 customer personale), quindi `subscribe` **e** `billingPortal` lo passano esplicitamente,
 derivato da `APP_MODE`, e tre test in `billing.page.spec.ts` lo sorvegliano.
 
+**Le regole di layering non vedevano gli import con alias, e passavano in silenzio.**
+`eslint-plugin-boundaries` risolve ogni import con `eslint-module-utils`, che legge
+`settings['import/resolver']`. Quando non risolve, la dipendenza è descritta come
+modulo **esterno** e nessuna policy la riguarda: l'import non viene rifiutato, è
+invisibile. Il resolver era puntato su `tsconfig.base.json`, che **non** contiene i
+path `@app/*` — quelli stanno in `tsconfig.json` — e passarli entrambi fa rispondere
+"not found" a ogni alias. Risultato: per mesi le regole hanno controllato solo gli
+import relativi. Ora `project: ['tsconfig.json']`, da solo.
+
+Se aggiungi un path a `tsconfig.json`, **scrivi un import vietato che lo usa e guarda
+la regola fallire**. Se non fallisce, la regola non c'è: è esattamente così che è stato
+trovato questo. `'boundaries/debug': { enabled: true }` stampa cosa il plugin ha capito
+di una dipendenza. Da non usare: `boundaries/alias`, che è deprecato e, attivandolo,
+zittisce anche le regole che funzionavano.
+
 **I test non chiamano Stripe, ed è imposto — non promesso.** `createCustomerOnSignUp`
 scatta a ogni `signUp`, e la suite ne fa decine per esecuzione: **18 chiamate solo dai
 tre account di `billing.e2e-spec`** (misurate rimettendo il flag a `true`). Su una
@@ -390,6 +413,28 @@ Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-sna
   momento in cui serve è il momento in cui non vuoi fare un deploy.
 - **L'area di amministrazione ha quattro schede**, ora in un componente solo
   (`admin-nav.component`), ognuna dietro il permesso della propria schermata.
+
+### Il back office: confine ora, decisione di deploy dopo
+
+L'area di amministrazione era il **42% del codice feature** della dashboard (1841 righe
+su 4390) e la parte che quasi nessuno vede. Non conteneva però logiche custom: 214
+righe proprie in tutto (`admin.api.ts` e `admin-nav.component`), tutto il resto preso
+da `@app/core`, `@app/ui`, `@app/contracts`. È il maggior _consumatore_ delle
+astrazioni condivise, non una divergenza — ed è anche dove si scopre se reggono.
+
+Quindi è diventata `libs/admin` con un confine imposto (§1), non `apps/admin`. La
+domanda che deciderà lo split è una sola, e non è di codice: **il back office deve
+essere raggiungibile dai browser dei clienti?** Se no, un'app separata dietro VPN o
+allowlist vale il suo prezzo; se sì, non compra molto.
+
+Il prezzo, quando si deciderà, è soprattutto uno: **l'impersonation attraversa le due
+aree** (`/admin/users` → cookie sostituito → `/dashboard` → e il ritorno riporta
+indietro) e vive su una sessione same-origin. Due hostname significano cookie sul
+dominio padre configurato a mano, o la funzionalità si rompe.
+
+Da farsi alla fase 11, con Docker e CI sul tavolo: è lì che una terza app costa
+davvero o rende davvero. Con il confine già in piedi, lo split è spostare una cartella
+e aggiungere un target di build.
 
 ### Consolidamento fatto dopo la 9b, fuori piano
 

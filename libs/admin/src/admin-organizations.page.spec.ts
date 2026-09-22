@@ -7,7 +7,7 @@ import type { AdminOrganization } from '@app/contracts';
 import type { TableAction } from '@app/ui/mix';
 import { PermissionsService, provideCore } from '@app/core';
 import { provideI18n } from '@app/i18n';
-import { pageAlerts } from '../../../testing/alerts';
+import { pageAlerts } from '@app/ui/testing';
 import { AdminApi } from './admin.api';
 import { AdminOrganizationsPage } from './admin-organizations.page';
 
