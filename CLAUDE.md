@@ -203,24 +203,27 @@ disdetta si legge da `cancel_at`. Usa `willNotRenew`, che considera entrambi.
 **Stripe: `automatic_tax` è disattivo di proposito.** Attivo senza una registrazione
 fiscale _attiva_ non dà errore e non raccoglie nulla. Vedi `docs/adr/0002`.
 
-**Il flake degli e2e: causa trovata, 2026-09-21.** Per settimane la suite API ha
-fallito di rado e mai in modo riproducibile, su spec diversi e con due sintomi:
-`Parse Error: Expected HTTP/, RTSP/ or ICE/`, e uno status sbagliato dove la rotta
-esiste (`404` al posto di `400`/`403`). Sempre dentro un `pnpm verify` completo, mai
+**Il flake degli e2e: causa trovata (2026-09-22).** Per settimane la suite API ha
+fallito di rado e mai in modo riproducibile, su spec diversi e con tre sintomi:
+`Parse Error: Expected HTTP/, RTSP/ or ICE/`, uno status sbagliato dove la rotta esiste
+(`404` al posto di `400`/`403`), e `ECONNRESET`. Sempre dentro una suite lunga, mai
 isolando lo spec.
 
-La causa è **Node 19, che ha acceso `keepAlive` su `http.globalAgent`**. supertest lo
-usa, ogni richiesta ascolta su una porta effimera e ogni spec costruisce e chiude la
-propria applicazione Nest: il sistema operativo ricicla quei numeri di porta, quindi un
-socket in pool verso `127.0.0.1:PORT` finisce servito a una richiesta diretta a
-un'applicazione _diversa_, o a una già chiusa. Da lì byte che non sono HTTP, oppure una
-richiesta che atterra su un'app che quella rotta non ce l'ha.
+La causa è che **`createTestApp` faceva solo `app.init()`, senza mettersi in ascolto**.
+`request(app.getHttpServer())` gestisce il ciclo di vita del server quando lo trova
+chiuso: supertest chiama `listen(0)` prima della richiesta e `close()` dopo. Succedeva
+a **ogni singola richiesta**, centinaia di volte per esecuzione, ognuna su una porta
+effimera diversa. Da quella girandola venivano entrambe le classi di guasto: un socket
+in pool verso una porta che il sistema operativo aveva nel frattempo riciclato, e una
+`close()` che correva contro una richiesta ancora in volo.
 
-`apps/api/test/setup.ts` disattiva il pooling nel processo di test. Il pooling lì non
-comprava niente: la suite è sequenziale e aprire un socket costa nulla rispetto ad
-avviare un'applicazione Nest per file.
+La correzione è una riga — `await app.listen(0)` nel factory — e il resto sparisce:
+supertest trova il server già su e lo lascia stare, `app.close()` lo abbatte una volta
+sola. `apps/api/test/setup.ts` disattiva comunque il pooling HTTP, che con Node 19+ è
+acceso di default e qui non comprava niente.
 
-**Non toccare quel file** pensando che sia una micro-ottimizzazione da togliere.
+**Non rimettere il factory a solo `init()`** pensando che `listen` sia superfluo perché
+supertest "se la cava": se la cava aprendo e chiudendo un server per richiesta.
 
 **Il plugin admin di Better Auth accetta solo i ruoli che conosce**, e ne conosce due
 (`admin`, `user`). `superadmin` è dichiarato nel suo access control in `auth.config.ts`
@@ -312,10 +315,39 @@ maintenance · notifiche + preferenze · GDPR + cookie banner. Poi 10 osservabil
 
 Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-snail.md`.
 
-**152 test.** `pnpm verify` verde.
+**236 test.** `pnpm verify` verde.
 
-**Lasciato in sospeso dalla fase 8**, di proposito:
+### Consolidamento fatto dopo la 9b, fuori piano
 
+Non erano fasi, ma hanno cambiato le convenzioni — quindi vanno lette prima di scrivere
+una schermata nuova:
+
+- **gli elenchi sono `dui-table`**, lazy, con le azioni nei tre puntini raggruppate per
+  concetto e la riga che separa quelle distruttive. Fa eccezione la pagina **file**, che
+  è ancora una lista `<ul>` scritta a mano: è l'unica rimasta, ed è da convertire;
+- **gli esiti delle azioni sono toast** (`ToastService` in `libs/core`, `dui-toaster`
+  montato nel root). Non lo è invece una lista che non si carica: quella è lo stato
+  della pagina e va detta dove sarebbe la lista;
+- **`projects` è completa end-to-end** — lista in tabella e form come pagina separata,
+  con Signal Forms. È l'esempio da copiare per entrambi gli idiomi;
+- **il menu è a sezioni collassabili**, ordinate da `NAV_SECTIONS`;
+- **`APP_MODE`** sostituisce `BILLING_SCOPE` e decide il tipo di prodotto — compresa la
+  creazione automatica dell'organizzazione alla registrazione in `b2c`;
+- **Node 24 è imposto** da `scripts/check-node.mjs`, primo passo di `verify`;
+- **il flake degli e2e ha una causa e una correzione** — vedi §5.
+
+### Aperto, e consapevole
+
+- **La pagina file usa ancora una lista a mano.** Unica incoerenza rimasta dopo il
+  passaggio a `dui-table`.
+- **In `b2b` manca l'onboarding "crea la tua organizzazione".** Il hook non crea niente
+  di proposito in quella modalità, quindi senza quella schermata un account nuovo resta
+  bloccato su `ORGANIZATION_REQUIRED`. Vedi
+  [docs/modalita-utente-e-organizzazione.md](./docs/modalita-utente-e-organizzazione.md).
+- **Il bundle iniziale supera il budget**: 763 kB contro 700 (avviso; l'errore è a 850).
+  Peggio: **`pnpm verify` non costruisce le app Angular** — `pnpm build` è `pnpm -r`, che
+  copre solo i pacchetti del workspace — quindi i budget non li guarda nessuno. Sono
+  stretti apposta e sono stati superati per tre commit senza che se ne accorgesse niente.
 - `AUTH_REQUIRE_EMAIL_VERIFICATION` è `false` in locale e **obbligatorio a true in
   produzione** (`crossFieldIssues`). Prima di accenderlo in dev, considera che il link
   arriva su Mailpit e funziona.
@@ -325,6 +357,8 @@ Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-sna
   commento in `admin-organizations.service.ts`.
 - Non esiste un modo dall'interfaccia per creare il primo superadmin — è voluto. Si fa
   una volta con una `UPDATE`, e da lì la schermata amministra se stessa.
+- L'audit log si riempie dalla fase 5 e **nessuno può leggerlo**: esiste solo
+  `AuditService`, che scrive. Contratto, controller e pagina sono il prossimo punto.
 
 ### Ambiente locale già configurato
 

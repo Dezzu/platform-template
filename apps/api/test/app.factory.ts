@@ -48,6 +48,24 @@ export async function createTestApp(): Promise<INestApplication> {
   app.useGlobalInterceptors(new RequestContextInterceptor(), new ResponseEnvelopeInterceptor());
   app.useGlobalFilters(new AppExceptionFilter(false));
 
+  /**
+   * Listening, not merely initialised — and this is what keeps the suite stable.
+   *
+   * `request(app.getHttpServer())` manages the server's lifecycle when it finds it
+   * closed: supertest calls `listen(0)` before the request and `close()` after. With
+   * only `init()` that happened for EVERY request, hundreds of times per run, each on
+   * a fresh ephemeral port. Two things fell out of that churn, both of them damage at
+   * the HTTP layer rather than in the logic under test:
+   *
+   *  - a pooled socket aimed at a port the operating system had since recycled, which
+   *    surfaced as `Parse Error: Expected HTTP/…` or as a request landing on an
+   *    application that did not have that route (a 404 where the route exists);
+   *  - a `close()` racing a request still in flight, which surfaced as `ECONNRESET`.
+   *
+   * Listening once per spec file removes the churn: supertest finds the server up and
+   * leaves it alone, and `app.close()` in `afterAll` takes it down once.
+   */
   await app.init();
+  await app.listen(0);
   return app;
 }
