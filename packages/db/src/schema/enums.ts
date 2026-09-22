@@ -16,3 +16,12 @@ export const fileStatus = pgEnum('file_status', ['pending', 'ready']);
 
 /** Lifecycle of an outgoing email, from queued to delivered to the provider. */
 export const emailMessageStatus = pgEnum('email_message_status', ['pending', 'sent', 'failed']);
+
+/**
+ * Where a notification can reach somebody.
+ *
+ * Two channels and no more for now: the in-app centre, and email. A third — push,
+ * Slack — is a value here plus a sender; the preference table and the resolution logic
+ * already treat the channel as data rather than as two hardcoded branches.
+ */
+export const notificationChannel = pgEnum('notification_channel', ['in_app', 'email']);

@@ -14,6 +14,7 @@ export * from './http/api.interceptor';
 
 export * from './api/me.api';
 export * from './api/session.api';
+export * from './api/notifications.api';
 export * from './api/plans.api';
 export * from './billing/billing.service';
 
@@ -24,6 +25,7 @@ export * from './permissions/can-platform.directive';
 export * from './features/feature-flags.service';
 export * from './features/if-flag.directive';
 export * from './notifications/toast.service';
+export * from './notifications/notification-center.service';
 
 export * from './navigation/nav.model';
 export * from './navigation/nav.manifest';

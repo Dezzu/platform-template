@@ -1,5 +1,7 @@
 import type { EmailTemplate } from './template.types';
 import { emailVerificationTemplate } from './email-verification.template';
+import { memberJoinedTemplate } from './member-joined.template';
+import { paymentFailedTemplate } from './payment-failed.template';
 import { organizationInvitationTemplate } from './organization-invitation.template';
 import { passwordResetTemplate } from './password-reset.template';
 
@@ -19,6 +21,12 @@ export const EMAIL_TEMPLATES = {
   'email-verification': emailVerificationTemplate,
   'password-reset': passwordResetTemplate,
   'organization-invitation': organizationInvitationTemplate,
+  // The email half of the notification types that can reach somebody that way. One
+  // template per type, rather than one generic template fed rendered text: the i18n
+  // catalogue lives in the browser, and a backend that pre-rendered sentences would
+  // freeze the reader's language at the moment the event happened.
+  'member-joined': memberJoinedTemplate,
+  'payment-failed': paymentFailedTemplate,
 } as const;
 
 export type EmailTemplateId = keyof typeof EMAIL_TEMPLATES;

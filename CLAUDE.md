@@ -429,15 +429,15 @@ il test falliva sul dato di qualcun altro. Filtra sempre anche per `actorUserId`
 
 **Fatte:** 0 tooling · 1 database · 2 auth · 3 config/envelope · 4 contratti+OpenAPI ·
 5 tenancy/permessi/audit · 6 frontend · 7 billing Stripe · 8 code+email+storage ·
-9a membri+inviti+pagine auth · 9b area di amministrazione · 9c feature flag + maintenance.
+9a membri+inviti+pagine auth · 9b area di amministrazione · 9c feature flag + maintenance · 9d notifiche + preferenze.
 
-**Da fare (fase 9, nell'ordine deciso):** notifiche + preferenze · GDPR + cookie banner.
+**Da fare (fase 9, nell'ordine deciso):** GDPR + cookie banner.
 Poi 10 osservabilità · 11 Docker+CI · 12 Terraform.
 (Audit UI e impersonation: fatti.)
 
 Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-snail.md`.
 
-**321 test.** `pnpm verify` verde.
+**329 test.** `pnpm verify` verde.
 
 ### Cosa ha aggiunto la 9c
 
@@ -452,6 +452,35 @@ Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-sna
   momento in cui serve è il momento in cui non vuoi fare un deploy.
 - **L'area di amministrazione ha quattro schede**, ora in un componente solo
   (`admin-nav.component`), ognuna dietro il permesso della propria schermata.
+
+### Cosa ha aggiunto la 9d
+
+- **Niente è pre-renderizzato.** Una `notification` conserva `titleKey`, `bodyKey` e i
+  `params`, mai una frase: chi legge può cambiare lingua, e una notifica scritta in
+  italiano il mese scorso resterebbe italiana per sempre. Le chiavi sono _salvate_
+  invece di derivate dal tipo, così una notifica vecchia mantiene la formulazione con
+  cui è nata anche quando il registro cambia.
+- **Una riga di preferenza assente non vuol dire "spento"**, vuol dire "mai deciso": il
+  default arriva dal registro in `packages/contracts`. È ciò che permette a un tipo
+  nuovo di nascere acceso senza scrivere una riga per utente per canale.
+- **Alcuni canali non si spengono.** `billing.payment_failed` via email è `mandatory`, e
+  il tentativo di spegnerlo risponde 403 invece di essere ignorato: un rinnovo fallito
+  toglie il prodotto in pochi giorni, e chi vorrebbe zittirlo è chi ne ha più bisogno.
+  Da usare con parsimonia — è l'unico oggi.
+- **Le preferenze sono a scope utente, le notifiche a scope organizzazione.** "Non
+  scrivermi per questo" è un'affermazione su una persona; "chi si è unito" è un fatto di
+  un tenant. Per questo `notification_preference` è nell'elenco delle eccezioni a
+  `organization_id` e `notification` no.
+- **Nessuna coda nuova.** `notify()` inserisce le righe in-app con una sola statement e
+  passa le email a `MailService`, che accoda: nessun handler HTTP aspetta un mail
+  server, che è la proprietà che contava. Una coda `notifications` servirà quando un
+  evento si aprirà a ventaglio su centinaia di persone; oggi il massimo è "gli admin di
+  un'organizzazione". Il punto in cui cambiarlo è quel metodo, e chi lo chiama non deve
+  saperlo.
+- **La campanella non fa polling.** Si aggiorna al caricamento della shell e dopo ogni
+  azione che la cambia. Un timer sarebbe una richiesta per utente per intervallo per
+  sempre, per un numero quasi sempre zero: quando servirà muoversi da sola, la risposta
+  onesta sono gli SSE, non il poll.
 
 ### Il back office: una sola applicazione, con un confine
 

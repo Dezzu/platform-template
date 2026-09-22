@@ -16,6 +16,15 @@ const SAMPLES: Record<string, Record<string, unknown>> = {
     role: 'member',
     url: 'https://app.example.com/accept-invitation?id=inv_1',
   },
+  'member-joined': {
+    organizationName: 'Acme Srl',
+    memberName: 'Erika',
+    url: 'https://app.example.com/members',
+  },
+  'payment-failed': {
+    organizationName: 'Acme Srl',
+    url: 'https://app.example.com/billing',
+  },
 };
 
 describe('email template registry', () => {

@@ -343,6 +343,45 @@
     },
     "settings": "Settings"
   },
+  "notifications": {
+    "channels": {
+      "email": "Email",
+      "in_app": "In app"
+    },
+    "description": "What happened while you were elsewhere, in this organization.",
+    "empty": "Nothing here.",
+    "emptyUnread": "Nothing left to read.",
+    "groups": {
+      "billing": "Billing",
+      "organization": "Organization"
+    },
+    "markAllRead": "Mark all as read",
+    "preferences": {
+      "always": "always",
+      "description": "Where you want to be reached. This is about you, not about an organization: if you belong to several, the choice is made once.",
+      "title": "Notification preferences",
+      "type": "Notification"
+    },
+    "showAll": "Show all",
+    "showUnread": "Unread only",
+    "title": "Notifications",
+    "types": {
+      "billing": {
+        "payment_failed": {
+          "body": "Usually an expired card. The subscription stays active for a few more days.",
+          "label": "Payment failed",
+          "title": "The renewal for {{organizationName}} did not go through"
+        }
+      },
+      "member": {
+        "joined": {
+          "body": "They accepted the invitation and are now part of the organization.",
+          "label": "Someone new joins",
+          "title": "{{memberName}} joined the organization"
+        }
+      }
+    }
+  },
   "plans": {
     "business": {
       "description": "For larger teams, with no project limit.",

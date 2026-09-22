@@ -1,0 +1,61 @@
+<section hlmCard>
+  <div hlmCardHeader>
+    <h2 hlmCardTitle>{{ 'notifications.preferences.title' | transloco }}</h2>
+    <p hlmCardDescription>{{ 'notifications.preferences.description' | transloco }}</p>
+  </div>
+
+  <div hlmCardContent>
+    @if (failed()) {
+    <p class="text-destructive text-sm" role="alert">{{ 'errors.INTERNAL_ERROR' | transloco }}</p>
+    } @else if (loading()) {
+    <p class="text-muted-foreground text-sm">{{ 'common.loading' | transloco }}</p>
+    } @else {
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-muted-foreground text-left text-xs">
+          <th class="pb-2 font-normal">{{ 'notifications.preferences.type' | transloco }}</th>
+          @for (channel of channels; track channel) {
+          <th class="w-24 pb-2 text-center font-normal">{{ 'notifications.channels.' + channel | transloco }}</th>
+          }
+        </tr>
+      </thead>
+
+      <tbody class="divide-border divide-y">
+        @for (row of rows(); track row.type) {
+        <tr>
+          <td class="py-3 pr-4">
+            <span class="block">{{ 'notifications.types.' + row.type + '.label' | transloco }}</span>
+            <span class="text-muted-foreground block text-xs">
+              {{ 'notifications.groups.' + row.group | transloco }}
+            </span>
+          </td>
+
+          @for (channel of channels; track channel) { @let cell = cellFor(row, channel);
+          <td class="py-3 text-center">
+            @if (cell) {
+            <span class="inline-flex flex-col items-center gap-1">
+              <hlm-switch
+                [checked]="cell.enabled"
+                [disabled]="!cell.editable || saving()"
+                (checkedChange)="toggle(row, channel, $event)"
+              />
+              @if (!cell.editable) {
+              <!--
+                Shown locked rather than hidden: a missing switch reads as an
+                oversight, a disabled one says the product insists.
+              -->
+              <span class="text-muted-foreground text-[10px]">
+                {{ 'notifications.preferences.always' | transloco }}
+              </span>
+              }
+            </span>
+            }
+          </td>
+          }
+        </tr>
+        }
+      </tbody>
+    </table>
+    }
+  </div>
+</section>

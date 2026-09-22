@@ -1,0 +1,51 @@
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <div>
+    <h1 class="mb-1 text-2xl font-semibold">{{ 'notifications.title' | transloco }}</h1>
+    <p class="text-muted-foreground text-sm">{{ 'notifications.description' | transloco }}</p>
+  </div>
+
+  <div class="flex items-center gap-2">
+    <button hlmBtn variant="outline" size="sm" type="button" (click)="toggleUnreadOnly()">
+      {{ (onlyUnread() ? 'notifications.showAll' : 'notifications.showUnread') | transloco }}
+    </button>
+    <button hlmBtn size="sm" type="button" [disabled]="busy()" (click)="markAllRead()">
+      {{ 'notifications.markAllRead' | transloco }}
+    </button>
+  </div>
+</div>
+
+@if (failed()) {
+<p class="text-destructive mt-6 text-sm" role="alert">{{ 'errors.INTERNAL_ERROR' | transloco }}</p>
+} @else if (loading()) {
+<p class="text-muted-foreground mt-6 text-sm">{{ 'common.loading' | transloco }}</p>
+} @else if (empty()) {
+<p class="text-muted-foreground mt-6 text-sm">
+  {{ (onlyUnread() ? 'notifications.emptyUnread' : 'notifications.empty') | transloco }}
+</p>
+} @else {
+<ul class="divide-border mt-6 divide-y">
+  @for (row of rows(); track row.id) {
+  <li>
+    <!--
+      A button, not a link: where it goes is data on the row, and marking it read has
+      to happen before the navigation.
+    -->
+    <button
+      type="button"
+      class="hover:bg-muted/60 flex w-full flex-col items-start gap-1 px-2 py-3 text-left"
+      (click)="open(row)"
+    >
+      <span class="flex w-full items-center gap-2">
+        @if (!row.readAt) {
+        <span class="bg-primary size-2 shrink-0 rounded-full" aria-hidden="true"></span>
+        }
+        <span class="text-sm" [class.font-semibold]="!row.readAt"> {{ row.titleKey | transloco: paramsOf(row) }} </span>
+        <span class="text-muted-foreground ml-auto shrink-0 text-xs"> {{ row.createdAt | date: 'short' }} </span>
+      </span>
+
+      <span class="text-muted-foreground text-sm"> {{ row.bodyKey | transloco: paramsOf(row) }} </span>
+    </button>
+  </li>
+  }
+</ul>
+}

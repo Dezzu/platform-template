@@ -343,6 +343,45 @@
     },
     "settings": "Impostazioni"
   },
+  "notifications": {
+    "channels": {
+      "email": "Email",
+      "in_app": "In app"
+    },
+    "description": "Quello che è successo mentre eri altrove, in questa organizzazione.",
+    "empty": "Nessuna notifica.",
+    "emptyUnread": "Nessuna notifica da leggere.",
+    "groups": {
+      "billing": "Abbonamento",
+      "organization": "Organizzazione"
+    },
+    "markAllRead": "Segna tutte come lette",
+    "preferences": {
+      "always": "sempre",
+      "description": "Dove vuoi essere raggiunto. Vale per te, non per l'organizzazione: se ne hai più di una, la scelta è unica.",
+      "title": "Preferenze di notifica",
+      "type": "Notifica"
+    },
+    "showAll": "Mostra tutte",
+    "showUnread": "Solo da leggere",
+    "title": "Notifiche",
+    "types": {
+      "billing": {
+        "payment_failed": {
+          "body": "Di solito è una carta scaduta. L'abbonamento resta attivo ancora per qualche giorno.",
+          "label": "Pagamento non riuscito",
+          "title": "Il rinnovo di {{organizationName}} non è andato a buon fine"
+        }
+      },
+      "member": {
+        "joined": {
+          "body": "Ha accettato l'invito e ora fa parte dell'organizzazione.",
+          "label": "Un nuovo membro si unisce",
+          "title": "{{memberName}} si è unito all'organizzazione"
+        }
+      }
+    }
+  },
   "plans": {
     "business": {
       "description": "Per team strutturati, senza limiti sui progetti.",

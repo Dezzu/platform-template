@@ -6,6 +6,7 @@ import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { TextInputComponent } from '@app/ui/input';
 import { AppError, AuthService, MeApi } from '@app/core';
+import { NotificationPreferencesComponent } from '../notifications/notification-preferences.component';
 
 /**
  * The account screen, reachable from the profile menu.
@@ -16,7 +17,14 @@ import { AppError, AuthService, MeApi } from '@app/core';
  */
 @Component({
   selector: 'app-profile-page',
-  imports: [TextInputComponent, FormField, TranslocoPipe, HlmButtonImports, HlmCardImports],
+  imports: [
+    TextInputComponent,
+    FormField,
+    TranslocoPipe,
+    HlmButtonImports,
+    HlmCardImports,
+    NotificationPreferencesComponent,
+  ],
   templateUrl: './profile.page.html',
 })
 export class ProfilePage {

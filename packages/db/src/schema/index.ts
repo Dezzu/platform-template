@@ -24,3 +24,5 @@ export * from './app/audit-log';
 export * from './app/project';
 export * from './app/file';
 export * from './app/email-message';
+export * from './app/notification';
+export * from './app/notification-preference';

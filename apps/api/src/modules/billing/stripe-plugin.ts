@@ -1,11 +1,12 @@
 import { and, eq } from 'drizzle-orm';
 import Stripe from 'stripe';
 import { stripe as stripePlugin } from '@better-auth/stripe';
-import { member, plan as planTable, stripeEvent } from '@app/db';
+import { member, plan as planTable, stripeEvent, subscription } from '@app/db';
 import { billsThePerson, PERMISSIONS, permissionsForRole, type OrgRole } from '@app/contracts';
 import { Logger } from '@nestjs/common';
 import { appMode } from '../../config/app-mode';
 import { db } from '../../database/db';
+import { webhookNotifier } from '../notifications/notifications.bridge';
 
 /**
  * Builds the Better Auth Stripe plugin, or returns null when Stripe is not configured.
@@ -200,10 +201,66 @@ export function createStripePlugin(): ReturnType<typeof stripePlugin> | null {
         logger.log(`stripe: ${event.type} (${event.id})`);
       }
 
+      if (event.type === 'invoice.payment_failed') {
+        await announcePaymentFailure(event);
+      }
+
       await db
         .update(stripeEvent)
         .set({ processedAt: new Date() })
         .where(eq(stripeEvent.id, event.id));
+    },
+  });
+}
+
+/**
+ * Tells whoever pays that the renewal did not go through.
+ *
+ * Reached through the bridge because this file is a module singleton: `auth.config.ts`
+ * imports it directly and the Better Auth CLI has no DI container. A missing notifier
+ * is logged rather than thrown — an unacknowledged webhook makes Stripe retry for
+ * three days, and that is a worse outcome than one lost notification.
+ *
+ * The recipients are the owners: `billing.manage` is deliberately absent from `admin`
+ * (see ROLE_PERMISSIONS), so they are the only people who can actually fix it.
+ */
+async function announcePaymentFailure(event: { id: string; data: { object: unknown } }) {
+  const notifications = webhookNotifier();
+  if (!notifications) {
+    logger.warn(`no notifier registered; skipped the alert for ${event.id}`);
+    return;
+  }
+
+  const invoice = event.data.object as { customer?: string | null };
+  const customerId = invoice.customer;
+  if (!customerId) return;
+
+  // From the customer to the tenant: the subscription row is the only place that
+  // mapping exists, since `referenceId` is what this application bills.
+  const [row] = await db
+    .select({ referenceId: subscription.referenceId })
+    .from(subscription)
+    .where(eq(subscription.stripeCustomerId, customerId))
+    .limit(1);
+
+  const organizationId = row?.referenceId;
+  if (!organizationId) {
+    logger.warn(`payment failed for customer ${customerId}, which matches no subscription`);
+    return;
+  }
+
+  const recipients = await notifications.recipientsInRoles(organizationId, ['owner']);
+  const organizationName = await notifications.organizationName(organizationId);
+
+  await notifications.notify({
+    organizationId,
+    userIds: recipients,
+    type: 'billing.payment_failed',
+    params: { organizationName },
+    actionUrl: '/billing',
+    email: {
+      organizationName,
+      url: `${process.env['DASHBOARD_URL'] ?? 'http://localhost:4300'}/billing`,
     },
   });
 }

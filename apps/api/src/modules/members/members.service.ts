@@ -1,4 +1,7 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import type { ConfigType } from '@nestjs/config';
+import { eq } from 'drizzle-orm';
+import { user, type Database } from '@app/db';
 import {
   ERROR_CODES,
   outranksOrEquals,
@@ -14,6 +17,9 @@ import { auth } from '../../auth/auth.config';
 import { callAuthApi } from '../../auth/better-auth.bridge';
 import { AppException } from '../../common';
 import { AuditService } from '../audit/audit.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { appConfig } from '../../config/namespaces';
+import { DRIZZLE } from '../../database/database.module';
 import type { OrgContext } from '../../auth/org-context';
 import { MembersRepository, type MemberRow } from './members.repository';
 
@@ -36,6 +42,9 @@ export class MembersService {
   constructor(
     private readonly repository: MembersRepository,
     private readonly audit: AuditService,
+    private readonly notifications: NotificationsService,
+    @Inject(DRIZZLE) private readonly db: Database,
+    @Inject(appConfig.KEY) private readonly app: ConfigType<typeof appConfig>,
   ) {}
 
   async list(ctx: OrgContext, query: MemberListQuery): Promise<Paginated<Member>> {
@@ -237,7 +246,51 @@ export class MembersService {
       resourceId: invitationId,
     });
 
+    await this.announceJoin(organizationId, userId);
+
     return { organizationId };
+  }
+
+  /**
+   * Tells whoever runs the organization that somebody accepted.
+   *
+   * Here rather than in a Better Auth hook because this is the endpoint acceptance
+   * actually goes through — a hook on the `member` table would also fire for the
+   * personal organization created at signup in `b2c`, and the first thing a new user
+   * would see is a notification that they joined themselves.
+   *
+   * Owners and admins only: it is news about the tenant, and the people who can act on
+   * it are the people who hold `members.manage`. Never notifies the joiner — they
+   * were there when it happened.
+   */
+  private async announceJoin(organizationId: string, joinedUserId: string): Promise<void> {
+    if (!organizationId) return;
+
+    const recipients = (
+      await this.notifications.recipientsInRoles(organizationId, ['owner', 'admin'])
+    ).filter((id) => id !== joinedUserId);
+
+    const [joined] = await this.db
+      .select({ name: user.name, email: user.email })
+      .from(user)
+      .where(eq(user.id, joinedUserId))
+      .limit(1);
+
+    const memberName = joined?.name?.trim() || joined?.email || '';
+    const organizationName = await this.notifications.organizationName(organizationId);
+
+    await this.notifications.notify({
+      organizationId,
+      userIds: recipients,
+      type: 'member.joined',
+      params: { memberName },
+      actionUrl: '/members',
+      email: {
+        organizationName,
+        memberName,
+        url: `${this.app.dashboardUrl}/members`,
+      },
+    });
   }
 
   /** A membership inside the caller's tenant, or 404. */

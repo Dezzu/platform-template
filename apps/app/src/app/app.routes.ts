@@ -161,6 +161,16 @@ export const routes: Routes = [
           import('@app/admin/admin-organizations.page').then((m) => m.AdminOrganizationsPage),
       },
       {
+        /**
+         * Opened from the bell in the header rather than from the sidebar, so it is
+         * deliberately absent from NAV_MANIFEST — the count is the entry point, and a
+         * menu item next to it would be a second door to the same room.
+         */
+        path: 'notifications',
+        loadComponent: () =>
+          import('./features/notifications/notifications.page').then((m) => m.NotificationsPage),
+      },
+      {
         // Reached from the profile menu rather than the sidebar, so it is deliberately
         // absent from NAV_MANIFEST.
         path: 'profile',
