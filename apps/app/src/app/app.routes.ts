@@ -83,6 +83,11 @@ export const routes: Routes = [
           import('./features/members/accept-invitation.page').then((m) => m.AcceptInvitationPage),
       },
       {
+        path: 'audit',
+        canMatch: [navGuard('audit')],
+        loadComponent: () => import('./features/audit/audit.page').then((m) => m.AuditPage),
+      },
+      {
         path: 'files',
         canMatch: [navGuard('files')],
         loadComponent: () => import('./features/files/files.page').then((m) => m.FilesPage),

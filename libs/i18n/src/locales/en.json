@@ -47,6 +47,37 @@
     "verificationQueued": "Verification email sent to {{email}}.",
     "verified": "Email verified"
   },
+  "audit": {
+    "actions": {
+      "file.deleted": "File deleted",
+      "file.uploaded": "File uploaded",
+      "invitation.accepted": "Invitation accepted",
+      "invitation.cancelled": "Invitation cancelled",
+      "member.invited": "Member invited",
+      "member.removed": "Member removed",
+      "member.role_changed": "Role changed",
+      "project.created": "Project created",
+      "project.deleted": "Project deleted",
+      "project.updated": "Project updated"
+    },
+    "after": "After",
+    "allActions": "All actions",
+    "before": "Before",
+    "columns": {
+      "action": "Action",
+      "actor": "Who",
+      "resource": "Object",
+      "when": "When"
+    },
+    "deletedActor": "Deleted account",
+    "description": "What happened in this organization, newest first.",
+    "empty": "No activity recorded.",
+    "ip": "IP address",
+    "requestId": "Request id",
+    "resourceId": "Object id",
+    "userAgent": "Browser",
+    "viaImpersonation": "· via {{who}}"
+  },
   "auth": {
     "backToSignIn": "Back to sign in",
     "confirmPassword": "Confirm password",
@@ -211,7 +242,7 @@
   },
   "nav": {
     "admin": "Administration",
-    "audit": "Audit log",
+    "audit": "Activity log",
     "billing": "Billing",
     "dashboard": "Dashboard",
     "files": "Files",

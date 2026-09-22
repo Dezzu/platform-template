@@ -1,0 +1,96 @@
+<h1 class="mb-1 text-2xl font-semibold">{{ 'nav.audit' | transloco }}</h1>
+<p class="text-muted-foreground mb-6 text-sm">{{ 'audit.description' | transloco }}</p>
+
+@if (failed()) {
+<p class="text-destructive mb-4 text-sm" role="alert">{{ 'errors.INTERNAL_ERROR' | transloco }}</p>
+}
+
+<label class="mb-4 flex flex-col gap-1 text-sm sm:w-64">
+  <span class="font-medium">{{ 'audit.columns.action' | transloco }}</span>
+  <select class="border-input bg-background h-9 rounded-md border px-3 text-sm" (change)="onFilter($event)">
+    <option value="">{{ 'audit.allActions' | transloco }}</option>
+    @for (action of actions(); track action) {
+    <option [value]="action">{{ actionLabel(action) }}</option>
+    }
+  </select>
+</label>
+
+<!--
+  No actions column: entries are written inside the transaction that made the change,
+  and nothing here can amend or remove one. A trail with an edit button is not a trail.
+-->
+<dui-table
+  dataKey="id"
+  emptyMessage="audit.empty"
+  [cols]="columns()"
+  [items]="rows()"
+  [lazy]="true"
+  [expandable]="true"
+  [showSearch]="false"
+  [loading]="loading()"
+  [totalRecords]="total()"
+  [showAddButton]="false"
+  (onLazyLoad)="onLazyLoad($event)"
+>
+  <!-- The row, not `$implicit`: the template context types the cell value as unknown. -->
+  <ng-template duiTemplate="action" let-item="item">
+    <span class="font-medium">{{ actionLabel(asEntry(item).action) }}</span>
+  </ng-template>
+
+  <ng-template duiTemplate="actorEmail" let-item="item">
+    @let entry = asEntry(item);
+    <span>{{ entry.actorName || entry.actorEmail || ('audit.deletedActor' | transloco) }}</span>
+    @if (entry.impersonatorEmail) {
+    <!--
+      Somebody acted as somebody else. It belongs in the row and not behind the
+      chevron: an entry that reads as the customer's own doing, when it was support,
+      is the one thing this trail must never let happen.
+    -->
+    <span class="text-muted-foreground ms-1 text-xs">
+      {{ 'audit.viaImpersonation' | transloco: { who: entry.impersonatorEmail } }}
+    </span>
+    }
+  </ng-template>
+
+  <ng-template duiTemplate="resourceType" let-item="item">
+    @let entry = asEntry(item); @if (entry.resourceType) {
+    <span>{{ entry.resourceType }}</span>
+    } @else {
+    <span class="text-muted-foreground">—</span>
+    }
+  </ng-template>
+
+  <ng-template duiTemplate="expandedRow" let-item="item">
+    @let entry = asEntry(item);
+    <div class="grid gap-4 text-sm md:grid-cols-2">
+      @if (entry.before) {
+      <div>
+        <p class="text-muted-foreground mb-1 text-xs font-medium uppercase">{{ 'audit.before' | transloco }}</p>
+        <pre class="bg-muted overflow-x-auto rounded-md p-2 text-xs">{{ asJson(entry.before) }}</pre>
+      </div>
+      } @if (entry.after) {
+      <div>
+        <p class="text-muted-foreground mb-1 text-xs font-medium uppercase">{{ 'audit.after' | transloco }}</p>
+        <pre class="bg-muted overflow-x-auto rounded-md p-2 text-xs">{{ asJson(entry.after) }}</pre>
+      </div>
+      }
+
+      <dl class="text-muted-foreground grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs md:col-span-2">
+        @if (entry.resourceId) {
+        <dt>{{ 'audit.resourceId' | transloco }}</dt>
+        <dd class="font-mono break-all">{{ entry.resourceId }}</dd>
+        } @if (entry.ip) {
+        <dt>{{ 'audit.ip' | transloco }}</dt>
+        <dd class="font-mono">{{ entry.ip }}</dd>
+        } @if (entry.requestId) {
+        <!-- The thread back to the logs, and later to the trace. -->
+        <dt>{{ 'audit.requestId' | transloco }}</dt>
+        <dd class="font-mono break-all">{{ entry.requestId }}</dd>
+        } @if (entry.userAgent) {
+        <dt>{{ 'audit.userAgent' | transloco }}</dt>
+        <dd class="break-all">{{ entry.userAgent }}</dd>
+        }
+      </dl>
+    </div>
+  </ng-template>
+</dui-table>

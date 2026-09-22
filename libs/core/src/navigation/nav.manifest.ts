@@ -83,6 +83,18 @@ export const NAV_MANIFEST: readonly NavItem[] = [
     permissions: [PERMISSIONS.MEMBERS_READ],
   },
   {
+    /**
+     * Not gated on a mode: a personal product has a trail too — "what did I do to this
+     * file" is a question one person asks about their own account just as often.
+     */
+    id: 'audit',
+    section: 'organization',
+    labelKey: 'nav.audit',
+    icon: 'lucideScrollText',
+    route: '/audit',
+    permissions: [PERMISSIONS.AUDIT_READ],
+  },
+  {
     id: 'billing',
     section: 'organization',
     labelKey: 'nav.billing',

@@ -47,6 +47,37 @@
     "verificationQueued": "Email di verifica inviata a {{email}}.",
     "verified": "Email verificata"
   },
+  "audit": {
+    "actions": {
+      "file.deleted": "File eliminato",
+      "file.uploaded": "File caricato",
+      "invitation.accepted": "Invito accettato",
+      "invitation.cancelled": "Invito annullato",
+      "member.invited": "Membro invitato",
+      "member.removed": "Membro rimosso",
+      "member.role_changed": "Ruolo cambiato",
+      "project.created": "Progetto creato",
+      "project.deleted": "Progetto eliminato",
+      "project.updated": "Progetto modificato"
+    },
+    "after": "Dopo",
+    "allActions": "Tutte le azioni",
+    "before": "Prima",
+    "columns": {
+      "action": "Azione",
+      "actor": "Chi",
+      "resource": "Oggetto",
+      "when": "Quando"
+    },
+    "deletedActor": "Account eliminato",
+    "description": "Cosa è successo in questa organizzazione, dal più recente.",
+    "empty": "Nessuna attività registrata.",
+    "ip": "Indirizzo IP",
+    "requestId": "Id richiesta",
+    "resourceId": "Id oggetto",
+    "userAgent": "Browser",
+    "viaImpersonation": "· tramite {{who}}"
+  },
   "auth": {
     "backToSignIn": "Torna all’accesso",
     "confirmPassword": "Conferma password",
