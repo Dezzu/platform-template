@@ -1,10 +1,12 @@
 import { Component, computed, DOCUMENT, inject, signal } from '@angular/core';
-import { Router, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import {
   AuthService,
+  CanPlatformDirective,
+  FeatureFlagsService,
   NAV_MANIFEST,
   NAV_SECTIONS,
   PermissionsService,
@@ -30,7 +32,15 @@ import { environment } from '../../environments/environment';
  */
 @Component({
   selector: 'app-shell-page',
-  imports: [RouterOutlet, AppShellComponent, ProfileMenuComponent, TranslocoPipe, HlmButtonImports],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    AppShellComponent,
+    ProfileMenuComponent,
+    CanPlatformDirective,
+    TranslocoPipe,
+    HlmButtonImports,
+  ],
   template: `
     <dui-app-shell [appName]="appName" [sections]="visibleSections()">
       <dui-profile-menu
@@ -66,12 +76,42 @@ import { environment } from '../../environments/environment';
         </div>
       }
 
+      <!--
+        The product is closed and this account is one of the few still let in. Said
+        permanently, for the same reason the impersonation notice is: an administrator
+        who forgets that customers are looking at a maintenance page is an
+        administrator who leaves it up.
+      -->
+      @if (maintenance(); as notice) {
+        <div
+          class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-500/40 bg-amber-100 px-4 py-2 text-sm text-amber-950 dark:bg-amber-950/40 dark:text-amber-100"
+          role="status"
+        >
+          <span>
+            {{ 'maintenance.activeNotice' | transloco }}
+            @if (notice.messageKey) {
+              <span class="opacity-80">— {{ notice.messageKey | transloco }}</span>
+            }
+          </span>
+          <a
+            hlmBtn
+            size="sm"
+            variant="secondary"
+            routerLink="/admin/maintenance"
+            *appCanPlatform="['platform.maintenance.manage']"
+          >
+            {{ 'maintenance.manage' | transloco }}
+          </a>
+        </div>
+      }
+
       <router-outlet />
     </dui-app-shell>
   `,
 })
 export class ShellPage {
   private readonly permissions = inject(PermissionsService);
+  private readonly flags = inject(FeatureFlagsService);
   private readonly adminApi = inject(AdminApi);
   private readonly toasts = inject(ToastService);
   private readonly document = inject(DOCUMENT);
@@ -100,6 +140,11 @@ export class ShellPage {
     NAV_MANIFEST.filter((item) => {
       const modes = item.modes;
       if (modes && !modes.includes(this.permissions.mode())) return false;
+
+      // The same rule navGuard() applies, so the sidebar cannot offer a link the
+      // router refuses — which is the whole reason both read this one array.
+      const flag = item.featureFlag;
+      if (flag && !this.flags.enabled(flag)) return false;
 
       const platform = item.platformPermissions ?? [];
       if (platform.length > 0 && !this.permissions.anyOfPlatform(...platform)) return false;
@@ -137,6 +182,8 @@ export class ShellPage {
 
   /** True while a platform administrator is using the application as this account. */
   protected readonly impersonating = computed(() => this.permissions.impersonating());
+  /** Non-null only when maintenance is on AND this account was let through anyway. */
+  protected readonly maintenance = computed(() => this.permissions.maintenance());
   protected readonly leaving = signal(false);
 
   /**

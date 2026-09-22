@@ -20,6 +20,7 @@ function setup(
   platform: string[] = [],
   mode = 'b2b',
   impersonating = false,
+  maintenance: { enabled: boolean; messageKey: string | null } | null = null,
 ) {
   TestBed.configureTestingModule({
     providers: [
@@ -48,6 +49,8 @@ function setup(
           anyOfPlatform: (...required: string[]) => required.some((p) => platform.includes(p)),
           mode: () => mode,
           impersonating: () => impersonating,
+          maintenance: () => maintenance,
+          hasPlatform: (p: string) => platform.includes(p),
         },
       },
     ],
@@ -129,6 +132,28 @@ describe('ShellPage menu grouping', () => {
     // forgets does damage in that person's name.
     expect(text).toContain('fabio@demo.it');
     expect(text).toContain('Torna al tuo account');
+  });
+
+  it('says nothing about maintenance while the product is open', async () => {
+    const fixture = setup();
+    await fixture.whenStable();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain(
+      'chiuso per manutenzione',
+    );
+  });
+
+  it('warns whoever was let through that everybody else is seeing a notice', async () => {
+    const fixture = setup([], ['platform.maintenance.manage'], 'b2b', false, {
+      enabled: true,
+      messageKey: 'maintenance.upgrading',
+    });
+    await fixture.whenStable();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    // The notice itself is a key, translated here like anywhere else.
+    expect(text).toContain('chiuso per manutenzione');
+    expect(text).toContain('Stiamo aggiornando il sistema');
   });
 
   it('drops the entries that do not belong to this kind of product', () => {

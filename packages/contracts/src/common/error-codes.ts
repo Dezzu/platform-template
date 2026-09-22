@@ -58,6 +58,11 @@ export const ERROR_CODES = {
   // Platform state
   MAINTENANCE_MODE: 'MAINTENANCE_MODE',
   FEATURE_DISABLED: 'FEATURE_DISABLED',
+  FLAG_NOT_FOUND: 'FLAG_NOT_FOUND',
+  /** A flag with that key already exists — keys are the identity, so they are unique. */
+  FLAG_ALREADY_EXISTS: 'FLAG_ALREADY_EXISTS',
+  /** There is already an override for that flag and that subject. */
+  FLAG_OVERRIDE_EXISTS: 'FLAG_OVERRIDE_EXISTS',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

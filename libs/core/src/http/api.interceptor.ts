@@ -45,6 +45,19 @@ export const apiInterceptor: HttpInterceptorFn = (request, next) => {
         void router.navigateByUrl(config.loginRoute);
       }
 
+      /**
+       * The product is closed and this visitor is not on the allow list. Every request
+       * they make will answer the same way, so showing the notice once beats an
+       * application that reports a different failure on each screen.
+       *
+       * Only when a route is configured: an application without a maintenance screen
+       * keeps the error and lets the caller decide what to render.
+       */
+      if (normalized.status === 503 && normalized.code === 'MAINTENANCE_MODE') {
+        const route = config.maintenanceRoute;
+        if (route) void router.navigateByUrl(route);
+      }
+
       return throwError(() => normalized);
     }),
   );

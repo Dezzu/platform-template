@@ -31,6 +31,7 @@ export const appConfig: ApplicationConfig = {
       apiUrl: environment.apiUrl,
       authUrl: environment.authUrl,
       loginRoute: '/sign-in',
+      maintenanceRoute: '/maintenance',
       homeRoute: '/dashboard',
       defaultLocale: 'it',
       supportedLocales: ['it', 'en'],

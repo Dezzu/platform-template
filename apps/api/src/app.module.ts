@@ -20,8 +20,11 @@ import { InsightsModule } from './modules/insights/insights.module';
 import { FilesModule } from './modules/files/files.module';
 import { MembersModule } from './modules/members/members.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { FlagsModule } from './modules/flags/flags.module';
+import { FeatureGuard } from './modules/flags/feature.guard';
 import { MailModule } from './modules/mail/mail.module';
 import { MaintenanceModule } from './modules/maintenance/maintenance.module';
+import { MaintenanceGuard } from './modules/maintenance/maintenance.guard';
 import { PermissionsGuard } from './auth/permissions.guard';
 
 @Module({
@@ -78,6 +81,7 @@ import { PermissionsGuard } from './auth/permissions.guard';
     FilesModule,
     MembersModule,
     AdminModule,
+    FlagsModule,
     MaintenanceModule,
   ],
   providers: [
@@ -89,13 +93,22 @@ import { PermissionsGuard } from './auth/permissions.guard';
      *
      * 1. AuthGuard        — is there a session? (401) Every route is protected unless
      *                       it opts out with @AllowAnonymous() / @OptionalAuth().
-     * 2. PermissionsGuard — resolves the tenant and enforces @RequirePermissions()
+     * 2. MaintenanceGuard — is the product open? (503) After authentication because
+     *                       the answer depends on `user.role`: running it first would
+     *                       mean locking out the administrator who has to switch it
+     *                       back off along with everybody else.
+     * 3. PermissionsGuard — resolves the tenant and enforces @RequirePermissions()
      *                       (403), and is inert on routes that declare none.
+     * 4. FeatureGuard     — enforces @RequireFeature() (403 FEATURE_DISABLED). After
+     *                       the tenant is resolved, because an organization override
+     *                       is the level most rollouts actually use.
      */
     { provide: APP_GUARD, useClass: AuthGuard },
+    { provide: APP_GUARD, useClass: MaintenanceGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
+    { provide: APP_GUARD, useClass: FeatureGuard },
     /**
-     * 3. SubscriptionGuard — the paywall (402). Last, because it relies on the tenant
+     * 5. SubscriptionGuard — the paywall (402). Last, because it relies on the tenant
      *    PermissionsGuard resolved: a paywall that had to work out which organization
      *    it was talking about would be a second place to get tenancy wrong.
      */

@@ -16,6 +16,11 @@ export interface CoreConfig {
   loginRoute: string;
   /** Where to land after signing in. */
   homeRoute: string;
+  /**
+   * Where to send a visitor while the product is closed for maintenance. Optional:
+   * an application that has no such screen simply keeps showing the error.
+   */
+  maintenanceRoute?: string;
   defaultLocale: string;
   supportedLocales: readonly string[];
 }

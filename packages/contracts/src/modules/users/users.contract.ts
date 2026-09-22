@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { APP_MODES } from '../../common/app-mode';
 import { ORG_ROLES } from '../../common/permissions';
+import { MaintenanceModeSchema } from '../maintenance/maintenance.contract';
+import { ResolvedFlagsSchema } from '../flags/flags.contract';
 
 export const UserProfileSchema = z.object({
   id: z.string().min(1),
@@ -55,6 +57,26 @@ export const MeSchema = z.object({
    * name — and every audit entry written meanwhile already records both of them.
    */
   impersonating: z.boolean(),
+  /**
+   * Every feature flag, already resolved for this caller.
+   *
+   * Sent with the session rather than fetched separately: the shell needs them before
+   * it can decide which menu entries exist, and a second round trip would mean a
+   * sidebar that grows an entry a moment after the page has settled.
+   *
+   * Resolved server-side, like permissions and for the same reason: the ordering
+   * (user override, organization override, rollout, global) has exactly one owner.
+   */
+  flags: ResolvedFlagsSchema,
+  /**
+   * The maintenance notice, when one is in force and the caller is allowed through.
+   *
+   * Anybody who is not allowed through never sees this field — their request was
+   * answered 503 by the guard. So a non-null value means "you are inside a closed
+   * shop", and the interface says so permanently rather than letting an administrator
+   * forget that customers are looking at a notice.
+   */
+  maintenance: MaintenanceModeSchema.nullable(),
   /**
    * The subscription that entitles the caller to paid features, or null.
    *

@@ -1,0 +1,143 @@
+<app-admin-nav />
+
+<!-- Left-aligned, not centred: it sits under the administration tabs, and a
+     centred card under a left-aligned tab bar reads as a different page. -->
+<div class="max-w-2xl">
+  <h1 class="mt-4 mb-1 text-2xl font-semibold">{{ (editing ? 'flags.edit' : 'flags.new') | transloco }}</h1>
+  <p class="text-muted-foreground mb-6 text-sm">{{ 'flags.formHint' | transloco }}</p>
+
+  @if (failed()) {
+  <p class="text-destructive text-sm" role="alert">{{ 'errors.FLAG_NOT_FOUND' | transloco }}</p>
+  <a routerLink="/admin/flags" class="text-sm underline underline-offset-4"> {{ 'flags.backToList' | transloco }} </a>
+  } @else if (loading()) {
+  <p class="text-muted-foreground text-sm">{{ 'common.loading' | transloco }}</p>
+  } @else {
+  <section hlmCard>
+    <form hlmCardContent class="space-y-4 pt-6" (submit)="save($event)">
+      @if (editing) {
+      <!--
+        Shown, not editable. Renaming a key would leave every guard and menu entry
+        pointing at a name that no longer exists — and since an unknown key resolves
+        to off, the feature would vanish quietly instead of failing loudly.
+      -->
+      <div>
+        <p class="text-muted-foreground text-xs">{{ 'flags.columns.key' | transloco }}</p>
+        <p class="font-mono text-sm">{{ flagKey }}</p>
+      </div>
+      } @else {
+      <dui-text-input
+        autocomplete="off"
+        [label]="'flags.columns.key' | transloco"
+        [placeholder]="'flags.keyPlaceholder' | transloco"
+        [formField]="flag.key"
+      />
+      <p class="text-muted-foreground -mt-2 text-xs">{{ 'flags.keyHint' | transloco }}</p>
+      }
+
+      <dui-textarea-input [rows]="2" [label]="'flags.columns.description' | transloco" [formField]="flag.description" />
+
+      <label class="flex items-center justify-between gap-4 text-sm">
+        <span>
+          <span class="font-medium">{{ 'flags.enabledLabel' | transloco }}</span>
+          <span class="text-muted-foreground block text-xs"> {{ 'flags.enabledHint' | transloco }} </span>
+        </span>
+        <hlm-switch [checked]="model().enabled" (checkedChange)="setEnabled($event)" />
+      </label>
+
+      <dui-number-input
+        [label]="'flags.columns.rollout' | transloco"
+        [showClear]="false"
+        [formField]="flag.rolloutPercent"
+      />
+      <p class="text-muted-foreground -mt-2 text-xs">{{ 'flags.rolloutHint' | transloco }}</p>
+
+      <div class="flex items-center gap-3 pt-2">
+        <button hlmBtn type="submit" [disabled]="saving()">
+          {{ (saving() ? 'common.saving' : 'common.save') | transloco }}
+        </button>
+
+        <a hlmBtn variant="outline" routerLink="/admin/flags">{{ 'common.cancel' | transloco }}</a>
+      </div>
+    </form>
+  </section>
+
+  <!--
+    Exceptions live next to the value they contradict: "off for everyone except these
+    two" is one statement, and splitting it across two screens is how somebody turns a
+    flag on without noticing that a customer has been pinned off since March.
+  -->
+  @if (editing) {
+  <section hlmCard class="mt-6">
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'flags.overrides' | transloco }}</h2>
+      <p hlmCardDescription>{{ 'flags.overridesHint' | transloco }}</p>
+    </div>
+
+    <div hlmCardContent class="space-y-4">
+      @if (overridesFailed()) {
+      <p class="text-destructive text-sm" role="alert">{{ 'errors.INTERNAL_ERROR' | transloco }}</p>
+      } @else if (overrides().length === 0) {
+      <p class="text-muted-foreground text-sm">{{ 'flags.noOverrides' | transloco }}</p>
+      } @else {
+      <ul class="divide-border divide-y text-sm">
+        @for (override of overrides(); track override.id) {
+        <li class="flex flex-wrap items-center justify-between gap-2 py-2">
+          <span class="flex flex-wrap items-center gap-2">
+            <span class="text-muted-foreground text-xs">
+              {{ (override.userId ? 'flags.subject.user' : 'flags.subject.organization') | transloco }}
+            </span>
+            <span class="font-medium">{{ subjectLabel(override) }}</span>
+            <span
+              class="rounded-full px-2 py-0.5 text-xs font-medium"
+              [class]="
+                override.enabled
+                  ? 'bg-green-100 text-green-900 dark:bg-green-900/40 dark:text-green-100'
+                  : 'bg-muted text-muted-foreground'
+              "
+            >
+              {{ (override.enabled ? 'flags.on' : 'flags.off') | transloco }}
+            </span>
+          </span>
+
+          <button
+            type="button"
+            class="text-destructive text-xs underline underline-offset-4"
+            (click)="removeOverride(override)"
+          >
+            {{ 'common.delete' | transloco }}
+          </button>
+        </li>
+        }
+      </ul>
+      }
+
+      <form class="grid gap-3 sm:grid-cols-[10rem_1fr_auto]" (submit)="addOverride($event)">
+        <dui-select-input
+          [label]="'flags.subjectLabel' | transloco"
+          [options]="subjectOptions()"
+          [showClear]="false"
+          [formField]="overrideForm.subject"
+        />
+
+        <dui-text-input
+          autocomplete="off"
+          [label]="'flags.subjectIdLabel' | transloco"
+          [placeholder]="'flags.subjectIdPlaceholder' | transloco"
+          [formField]="overrideForm.subjectId"
+        />
+
+        <div class="flex items-end gap-3 pb-1">
+          <label class="flex items-center gap-2 text-sm">
+            <hlm-switch [checked]="overrideModel().enabled" (checkedChange)="setOverrideEnabled($event)" />
+            <span>{{ (overrideModel().enabled ? 'flags.on' : 'flags.off') | transloco }}</span>
+          </label>
+
+          <button hlmBtn type="submit" size="sm" [disabled]="addingOverride()">
+            {{ 'flags.addOverride' | transloco }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+  } }
+</div>

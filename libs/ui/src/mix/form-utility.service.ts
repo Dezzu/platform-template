@@ -18,6 +18,7 @@ export const FORM_ERROR_KEYS: Readonly<Record<string, string>> = {
   maxlength: 'form.maxlength',
   min: 'form.min',
   max: 'form.max',
+  pattern: 'form.pattern',
   passwordMismatch: 'form.passwordMismatch',
 };
 
@@ -53,6 +54,7 @@ export const FORM_ERROR_FALLBACK: Readonly<Record<string, string>> = {
   maxlength: 'At most {requiredLength} characters',
   min: 'Il valore minimo è {min}',
   max: 'Il valore massimo è {max}',
+  pattern: 'Invalid format',
   passwordMismatch: 'Passwords do not match',
 };
 

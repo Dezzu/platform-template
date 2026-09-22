@@ -298,6 +298,41 @@ importato **prima** di `AuthModule` in `app.module.ts`.
 del progetto, malgrado lo schema dica il contrario) e trova i test solo **dentro** la
 root del progetto: da qui il progetto `libs` separato in `angular.json`.
 
+**Fuori dalla shell il tema scuro non si applicava, e nessuno se ne accorgeva.**
+`ThemeService` è ciò che mette `.dark` sul documento, e l'unico a costruirlo era il menu
+profilo — che vive dentro la shell. Login, reset password e la pagina di manutenzione
+rendevano quindi in chiaro qualunque fosse la preferenza. Ora lo istanzia `App`, la root.
+Trovato aprendo la pagina, come i sette prima.
+
+**Il catalogo dei messaggi di validazione non era collegato all'i18n.**
+`FORM_ERROR_KEYS` dichiara da sempre la chiave i18n di ogni validator e `form.required`
+esiste in entrambi i locali, ma **nessuno chiamava `loadErrors()`**: ogni form mostrava
+le stringhe inglesi hard-coded dentro `FormUtilityService`. Lo carica `App`, con un
+effect sulle lingue. Se aggiungi un validator, aggiungi la chiave lì e in `it/en.json`.
+
+**La guard di manutenzione va dopo l'autenticazione, non prima.** La decisione dipende
+da `user.role`: messa prima di `AuthGuard` chiuderebbe fuori anche chi deve riaprire.
+Per lo stesso motivo le rotte di Better Auth (`/api/auth/*`) sono esentate **per path** —
+sono middleware e non c'è niente da decorare — e le sonde di salute con
+`@AllowDuringMaintenance()`: un orchestratore legge 503 come "riavviami".
+
+**Il bucket del rollout è un hash, non un sorteggio.** `sha256(key:subject)` mod 100, con
+`subject` = organizzazione se c'è, altrimenti utente. Un sorteggio per richiesta farebbe
+entrare e uscire la stessa persona dalla feature mentre la usa, e l'organizzazione prima
+dell'utente evita che metà di un team veda un prodotto diverso dall'altra metà.
+
+**Una chiave sconosciuta è "spento", su entrambi i lati.** Backend e frontend rispondono
+`false` a un flag mai dichiarato: un refuso in una guard non deve aprire niente.
+
+**Le e2e puliscono anche gli utenti e le organizzazioni che creano.** La suite condivide
+il database con lo sviluppo: due spec che non lo facevano avevano lasciato 26 account
+`e2e-…@test.local`, 5 organizzazioni e 712 righe `email_message` dentro le schermate di
+amministrazione.
+
+**Un'asserzione su `audit_log` va scopata agli attori del run.** `admin.e2e-spec` cercava
+per sola `action` e trovava un'impersonation reale fatta dall'interfaccia giorni prima:
+il test falliva sul dato di qualcun altro. Filtra sempre anche per `actorUserId`.
+
 **`@nestjs/cli` è stato rimosso**: `nest build` si rompe su Node 22+ (ciclo ESM su
 `ora`). Si usa `tsc -b` con project references.
 
@@ -307,15 +342,29 @@ root del progetto: da qui il progetto `libs` separato in `angular.json`.
 
 **Fatte:** 0 tooling · 1 database · 2 auth · 3 config/envelope · 4 contratti+OpenAPI ·
 5 tenancy/permessi/audit · 6 frontend · 7 billing Stripe · 8 code+email+storage ·
-9a membri+inviti+pagine auth · 9b area di amministrazione.
+9a membri+inviti+pagine auth · 9b area di amministrazione · 9c feature flag + maintenance.
 
-**Da fare (fase 9, nell'ordine deciso):** feature flag + maintenance · notifiche +
-preferenze · GDPR + cookie banner. Poi 10 osservabilità · 11 Docker+CI · 12 Terraform.
+**Da fare (fase 9, nell'ordine deciso):** notifiche + preferenze · GDPR + cookie banner.
+Poi 10 osservabilità · 11 Docker+CI · 12 Terraform.
 (Audit UI e impersonation: fatti.)
 
 Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-snail.md`.
 
-**260 test.** `pnpm verify` verde.
+**315 test.** `pnpm verify` verde.
+
+### Cosa ha aggiunto la 9c
+
+- **I flag si risolvono sul server**, in un posto solo: eccezione utente → eccezione
+  organizzazione → rollout percentuale → interruttore globale. Il browser riceve la
+  risposta già risolta dentro `/me`, non le definizioni: una seconda implementazione
+  dell'ordine sarebbe una seconda implementazione da cui divergere.
+- **Si applicano in tre punti**: `@RequireFeature('x')` sul backend (403
+  `FEATURE_DISABLED`), `featureFlag` su una voce di `NAV_MANIFEST` — che ora `navGuard`
+  e la sidebar leggono entrambi — e `*appIfFlag` nei template.
+- **La manutenzione è una riga di `app_setting`**, non una variabile d'ambiente: il
+  momento in cui serve è il momento in cui non vuoi fare un deploy.
+- **L'area di amministrazione ha quattro schede**, ora in un componente solo
+  (`admin-nav.component`), ognuna dietro il permesso della propria schermata.
 
 ### Consolidamento fatto dopo la 9b, fuori piano
 
@@ -344,7 +393,10 @@ una schermata nuova:
   di proposito in quella modalità, quindi senza quella schermata un account nuovo resta
   bloccato su `ORGANIZATION_REQUIRED`. Vedi
   [docs/modalita-utente-e-organizzazione.md](./docs/modalita-utente-e-organizzazione.md).
-- **Il bundle iniziale supera il budget**: 763 kB contro 700 (avviso; l'errore è a 850).
+- **Il bundle iniziale supera il budget**: 783 kB contro 700 (avviso; l'errore è a 850).
+  Di quei 783, i due locali `it.json`/`en.json` pesano ~34 kB **eager**: `provideI18n`
+  li importa, non li scarica. Ogni schermata nuova aggiunge il suo testo al primo
+  caricamento — le due di questa fase da sole valgono ~9 kB.
   Peggio: **`pnpm verify` non costruisce le app Angular** — `pnpm build` è `pnpm -r`, che
   copre solo i pacchetti del workspace — quindi i budget non li guarda nessuno. Sono
   stretti apposta e sono stati superati per tre commit senza che se ne accorgesse niente.

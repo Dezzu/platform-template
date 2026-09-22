@@ -1,0 +1,74 @@
+<app-admin-nav />
+
+<!-- Left-aligned, not centred: it sits under the administration tabs, and a
+     centred card under a left-aligned tab bar reads as a different page. -->
+<div class="max-w-2xl">
+  <h1 class="mt-4 mb-1 text-2xl font-semibold">{{ 'maintenance.title' | transloco }}</h1>
+  <p class="text-muted-foreground mb-6 text-sm">{{ 'maintenance.description' | transloco }}</p>
+
+  @if (failed()) {
+  <p class="text-destructive text-sm" role="alert">{{ 'errors.INTERNAL_ERROR' | transloco }}</p>
+  } @else if (loading()) {
+  <p class="text-muted-foreground text-sm">{{ 'common.loading' | transloco }}</p>
+  } @else {
+  <section hlmCard>
+    <form hlmCardContent class="space-y-5 pt-6" (submit)="save($event)">
+      <label class="flex items-center justify-between gap-4 text-sm">
+        <span>
+          <span class="font-medium">{{ 'maintenance.enabledLabel' | transloco }}</span>
+          <span class="text-muted-foreground block text-xs"> {{ 'maintenance.enabledHint' | transloco }} </span>
+        </span>
+        <hlm-switch [checked]="enabled()" (checkedChange)="setEnabled($event)" />
+      </label>
+
+      <div>
+        <p class="mb-2 text-sm font-medium">{{ 'maintenance.allowRoles' | transloco }}</p>
+        <p class="text-muted-foreground mb-2 text-xs">{{ 'maintenance.allowRolesHint' | transloco }}</p>
+
+        <div class="flex flex-wrap gap-4">
+          @for (role of selectableRoles(); track role.value) {
+          <label class="flex items-center gap-2 text-sm">
+            <hlm-switch [checked]="isAllowed(role.value)" (checkedChange)="toggleRole(role.value)" />
+            <span>{{ role.label }}</span>
+          </label>
+          }
+        </div>
+      </div>
+
+      @if (wouldLockMeOut()) {
+      <p class="text-destructive text-sm" role="alert">{{ 'maintenance.lockoutWarning' | transloco }}</p>
+      }
+
+      <dui-text-input
+        autocomplete="off"
+        [label]="'maintenance.messageKeyLabel' | transloco"
+        [placeholder]="'maintenance.messageKeyPlaceholder' | transloco"
+        [formField]="notice.messageKey"
+      />
+      <p class="text-muted-foreground -mt-3 text-xs">{{ 'maintenance.messageKeyHint' | transloco }}</p>
+
+      <label class="block text-sm">
+        <span class="mb-1 block font-medium">{{ 'maintenance.untilLabel' | transloco }}</span>
+        <!--
+          Bound by hand rather than through [formField]: a native datetime-local input
+          parses its own value, and handing it a plain string model is how a field
+          starts reporting a parse error for text it just rendered.
+        -->
+        <input
+          type="datetime-local"
+          class="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+          [value]="model().until"
+          (input)="setUntil($event)"
+        />
+        <span class="text-muted-foreground mt-1 block text-xs"> {{ 'maintenance.untilHint' | transloco }} </span>
+      </label>
+
+      <div class="flex items-center gap-3 pt-2">
+        <button hlmBtn type="submit" [disabled]="saving()">
+          {{ (saving() ? 'common.saving' : 'common.save') | transloco }}
+        </button>
+      </div>
+    </form>
+  </section>
+  }
+</div>

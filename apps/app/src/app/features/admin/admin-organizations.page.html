@@ -1,12 +1,4 @@
-<div class="mb-1 flex items-center gap-4">
-  <h1 class="text-2xl font-semibold">{{ 'admin.title' | transloco }}</h1>
-  <nav class="flex gap-3 text-sm">
-    <a routerLink="/admin/users" class="text-muted-foreground underline underline-offset-4">
-      {{ 'admin.users' | transloco }}
-    </a>
-    <span class="font-medium">{{ 'admin.organizations' | transloco }}</span>
-  </nav>
-</div>
+<app-admin-nav />
 <p class="text-muted-foreground mb-6 text-sm">{{ 'admin.organizationsDescription' | transloco }}</p>
 
 @if (failed()) {

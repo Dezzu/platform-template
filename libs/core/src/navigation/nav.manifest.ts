@@ -112,6 +112,27 @@ export const NAV_MANIFEST: readonly NavItem[] = [
     route: '/admin/users',
     platformPermissions: [PLATFORM_PERMISSIONS.USERS_READ],
   },
+  {
+    /**
+     * Its own entry rather than a tab inside the administration area: a support admin
+     * holds `platform.users.read` and none of this, and an entry they can see but not
+     * open is worse than no entry at all.
+     */
+    id: 'admin-flags',
+    section: 'platform',
+    labelKey: 'nav.flags',
+    icon: 'lucideFlag',
+    route: '/admin/flags',
+    platformPermissions: [PLATFORM_PERMISSIONS.FLAGS_MANAGE],
+  },
+  {
+    id: 'admin-maintenance',
+    section: 'platform',
+    labelKey: 'nav.maintenance',
+    icon: 'lucideHardHat',
+    route: '/admin/maintenance',
+    platformPermissions: [PLATFORM_PERMISSIONS.MAINTENANCE_MANAGE],
+  },
 ];
 
 /** Looks up an entry by id, including nested children. */

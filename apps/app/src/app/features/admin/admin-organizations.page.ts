@@ -1,5 +1,5 @@
 import { Component, computed, inject, resource, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { firstValueFrom, merge } from 'rxjs';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
@@ -11,6 +11,7 @@ import { TemplateDirective } from '@app/ui/mix';
 import type { DuiTablelazyLoadEvent, TableAction, TableColumn } from '@app/ui/mix';
 import { PermissionsService } from '@app/core';
 import { AdminApi } from './admin.api';
+import { AdminNavComponent } from './admin-nav.component';
 
 /** What the table last asked the server for. */
 interface Query {
@@ -34,7 +35,7 @@ interface Query {
  */
 @Component({
   selector: 'app-admin-organizations-page',
-  imports: [TranslocoPipe, RouterLink, TableComponent, TemplateDirective],
+  imports: [TranslocoPipe, TableComponent, TemplateDirective, AdminNavComponent],
   providers: [provideIcons({ lucideUsers })],
   templateUrl: './admin-organizations.page.html',
 })

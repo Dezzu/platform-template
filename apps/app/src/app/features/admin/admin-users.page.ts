@@ -1,5 +1,5 @@
 import { Component, computed, DOCUMENT, inject, resource, signal } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs/operators';
 import { firstValueFrom, merge } from 'rxjs';
@@ -29,6 +29,7 @@ import { TemplateDirective } from '@app/ui/mix';
 import type { DuiTablelazyLoadEvent, TableAction, TableColumn } from '@app/ui/mix';
 import { AuthService, PermissionsService, ToastService } from '@app/core';
 import { AdminApi } from './admin.api';
+import { AdminNavComponent } from './admin-nav.component';
 
 /** What the table last asked the server for. */
 interface Query {
@@ -59,7 +60,7 @@ const NO_ORGANIZATION = '';
  */
 @Component({
   selector: 'app-admin-users-page',
-  imports: [TranslocoPipe, RouterLink, NgIcon, TableComponent, TemplateDirective],
+  imports: [TranslocoPipe, NgIcon, TableComponent, TemplateDirective, AdminNavComponent],
   providers: [
     provideIcons({
       lucideShield,

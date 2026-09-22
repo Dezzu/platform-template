@@ -17,6 +17,8 @@ import { CurrentOrgOptional, type OrgContext } from '../../auth/org-context';
 import { OrgOptional } from '../../auth/permissions.decorator';
 import { MeService } from './me.service';
 import { SubscriptionService } from '../billing/subscription.service';
+import { FlagsService } from '../flags/flags.service';
+import { MaintenanceModeService } from '../maintenance/maintenance-mode.service';
 
 /**
  * Whether this session belongs to somebody being impersonated.
@@ -42,6 +44,8 @@ export class MeController {
   constructor(
     private readonly me: MeService,
     private readonly subscriptions: SubscriptionService,
+    private readonly flags: FlagsService,
+    private readonly maintenance: MaintenanceModeService,
     @Inject(appConfig.KEY) private readonly app: ConfigType<typeof appConfig>,
   ) {}
 
@@ -63,6 +67,18 @@ export class MeController {
   ): Promise<Me> {
     const reference = org ? this.subscriptions.referenceFor(org.organizationId, org.userId) : null;
     const entitling = reference ? await this.subscriptions.findEntitling(reference) : null;
+
+    const flags = await this.flags.resolve({
+      userId: session.user.id,
+      organizationId: org?.organizationId ?? null,
+    });
+
+    /**
+     * Only ever non-null for somebody the guard let through — everybody else was
+     * answered 503 before reaching this handler. So it means "you are inside a shop
+     * whose door says closed", and the shell says so permanently.
+     */
+    const maintenance = await this.maintenance.get();
 
     return {
       user: {
@@ -87,6 +103,8 @@ export class MeController {
       ],
       mode: this.app.mode,
       impersonating: isImpersonating(session.session),
+      flags,
+      maintenance: maintenance.enabled ? maintenance : null,
       subscription: entitling
         ? {
             plan: entitling.plan,

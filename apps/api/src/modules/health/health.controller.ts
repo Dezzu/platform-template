@@ -6,6 +6,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { AllowAnonymous } from '@thallesp/nestjs-better-auth';
+import { AllowDuringMaintenance } from '../maintenance/maintenance.decorator';
 import type { Pool } from 'pg';
 import { PG_POOL } from '../../database/database.module';
 import { env, redactedConfig } from '../../config/validate-env';
@@ -19,6 +20,12 @@ import { env, redactedConfig } from '../../config/validate-env';
  *   /health/ready — the process can actually serve traffic: database reachable.
  *                   A failure here means "stop sending me requests", not "restart me".
  */
+/**
+ * Exempt from maintenance mode: an orchestrator reads 503 as "this container is
+ * broken" and starts restarting it, so a probe that went down with the product would
+ * turn a planned pause into a restart loop.
+ */
+@AllowDuringMaintenance()
 @Controller('health')
 export class HealthController {
   constructor(@Inject(PG_POOL) private readonly pool: Pool) {}

@@ -38,6 +38,16 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/sign-up.page').then((m) => m.SignUpPage),
   },
   {
+    /**
+     * Outside the shell, and behind no guard at all: this is where apiInterceptor
+     * sends anybody the API answered 503 to, and every call the shell makes on boot
+     * would answer 503 to them too.
+     */
+    path: 'maintenance',
+    loadComponent: () =>
+      import('./features/maintenance/maintenance.page').then((m) => m.MaintenancePage),
+  },
+  {
     path: '',
     canMatch: [authGuard],
     loadComponent: () => import('./layout/shell.page').then((m) => m.ShellPage),
@@ -113,6 +123,32 @@ export const routes: Routes = [
         canMatch: [navGuard('admin')],
         loadComponent: () =>
           import('./features/admin/admin-users.page').then((m) => m.AdminUsersPage),
+      },
+      {
+        path: 'admin/flags',
+        canMatch: [navGuard('admin-flags')],
+        loadComponent: () =>
+          import('./features/admin/admin-flags.page').then((m) => m.AdminFlagsPage),
+      },
+      {
+        // Before ':key', or 'new' would be read as a flag key — the router matches in
+        // declaration order.
+        path: 'admin/flags/new',
+        canMatch: [requireAnyPlatformPermission(PLATFORM_PERMISSIONS.FLAGS_MANAGE)],
+        loadComponent: () =>
+          import('./features/admin/admin-flag-form.page').then((m) => m.AdminFlagFormPage),
+      },
+      {
+        path: 'admin/flags/:key',
+        canMatch: [requireAnyPlatformPermission(PLATFORM_PERMISSIONS.FLAGS_MANAGE)],
+        loadComponent: () =>
+          import('./features/admin/admin-flag-form.page').then((m) => m.AdminFlagFormPage),
+      },
+      {
+        path: 'admin/maintenance',
+        canMatch: [navGuard('admin-maintenance')],
+        loadComponent: () =>
+          import('./features/admin/admin-maintenance.page').then((m) => m.AdminMaintenancePage),
       },
       {
         path: 'admin/organizations',

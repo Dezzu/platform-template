@@ -5,8 +5,9 @@ import { firstValueFrom } from 'rxjs';
 // path, so importing a function from the barrel drags Zod into the initial bundle.
 // It did, and the build budget caught it.
 import { billsThePerson, DEFAULT_APP_MODE, type AppMode } from '@app/contracts/app-mode';
-import type { Me, Permission, PlatformPermission } from '@app/contracts';
+import type { MaintenanceMode, Me, Permission, PlatformPermission } from '@app/contracts';
 import { MeApi } from '../api/me.api';
+import { FeatureFlagsService } from '../features/feature-flags.service';
 
 /**
  * The effective permissions of the signed-in user, as signals.
@@ -18,6 +19,12 @@ import { MeApi } from '../api/me.api';
 @Service()
 export class PermissionsService {
   private readonly api = inject(MeApi);
+  /**
+   * Fed from here because /me answers all of it in one call. The flags live in their
+   * own service because they are not permissions and nothing should have to inject a
+   * service named for authorization in order to ask whether a feature exists.
+   */
+  private readonly flags = inject(FeatureFlagsService);
 
   private readonly state = signal<{
     permissions: ReadonlySet<string>;
@@ -26,6 +33,7 @@ export class PermissionsService {
     organizationId: string | null;
     mode: AppMode;
     impersonating: boolean;
+    maintenance: MaintenanceMode | null;
     subscribed: boolean;
   }>({
     permissions: new Set(),
@@ -34,6 +42,7 @@ export class PermissionsService {
     organizationId: null,
     mode: DEFAULT_APP_MODE,
     impersonating: false,
+    maintenance: null,
     subscribed: false,
   });
 
@@ -44,6 +53,15 @@ export class PermissionsService {
   readonly mode = computed(() => this.state().mode);
   /** True while a platform administrator is using the application as this account. */
   readonly impersonating = computed(() => this.state().impersonating);
+  /**
+   * The notice in force, when the product is closed and this account is one of the few
+   * still let in. Null for everybody else — they never got an answer to say so.
+   *
+   * Here rather than in a service of its own for the same reason `impersonating` is:
+   * it arrives with the session, and it is a fact about this session rather than a
+   * separate thing to fetch.
+   */
+  readonly maintenance = computed(() => this.state().maintenance);
   /** Derived, never configured separately — see app-mode.ts. */
   readonly personalBilling = computed(() => billsThePerson(this.state().mode));
   /**
@@ -58,6 +76,7 @@ export class PermissionsService {
   async refresh(): Promise<Me | null> {
     try {
       const me = await firstValueFrom(this.api.get());
+      this.flags.set(me.flags);
       this.state.set({
         permissions: new Set(me.permissions),
         platform: new Set(me.platformPermissions),
@@ -65,6 +84,7 @@ export class PermissionsService {
         organizationId: me.activeOrganizationId,
         mode: me.mode,
         impersonating: me.impersonating,
+        maintenance: me.maintenance,
         subscribed: me.subscription !== null,
       });
       return me;
@@ -75,6 +95,7 @@ export class PermissionsService {
   }
 
   clear(): void {
+    this.flags.clear();
     this.state.set({
       permissions: new Set(),
       platform: new Set(),
@@ -82,6 +103,7 @@ export class PermissionsService {
       organizationId: null,
       mode: DEFAULT_APP_MODE,
       impersonating: false,
+      maintenance: null,
       subscribed: false,
     });
   }

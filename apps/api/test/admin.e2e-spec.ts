@@ -360,14 +360,25 @@ describe('platform administration (e2e)', () => {
     });
 
     it('records both people, on the way in and on the way out', async () => {
+      /**
+       * Scoped to this run's accounts, not to the action alone.
+       *
+       * Without the second predicate the query returns every impersonation ever
+       * recorded in the development database — including one an actual person
+       * performed from the interface — and `find` then answers with whichever came
+       * first. That failed exactly that way, and the row it found was real.
+       */
       const entries = await db
         .select()
         .from(auditLog)
         .where(
-          inArray(auditLog.action, [
-            'platform.user.impersonated',
-            'platform.user.impersonation_stopped',
-          ]),
+          and(
+            inArray(auditLog.action, [
+              'platform.user.impersonated',
+              'platform.user.impersonation_stopped',
+            ]),
+            inArray(auditLog.actorUserId, [superadmin.id, victim.id]),
+          ),
         );
 
       const entered = entries.find((e) => e.action === 'platform.user.impersonated');

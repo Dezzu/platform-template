@@ -4,6 +4,7 @@ import type { Permission, PlatformPermission } from '@app/contracts';
 import { CORE_CONFIG } from '../config/core.config';
 import { AuthService } from '../auth/auth.service';
 import { findNavItem } from '../navigation/nav.manifest';
+import { FeatureFlagsService } from '../features/feature-flags.service';
 import { PermissionsService } from './permissions.service';
 
 /** Sends an unauthenticated visitor to the login page. */
@@ -43,6 +44,17 @@ export function requireAnyPlatformPermission(
 }
 
 /**
+ * Keeps a route unreachable while its feature flag is off.
+ *
+ * Hiding the menu entry is not enough on its own: a bookmark, a link in a chat, or the
+ * address bar all still reach the screen. The API refuses too — this only decides
+ * whether the router bothers loading the chunk.
+ */
+export function requireFeature(key: string): CanMatchFn {
+  return () => inject(FeatureFlagsService).enabled(key);
+}
+
+/**
  * Guards a route with the permissions its menu entry declares.
  *
  * Prefer this over spelling the permissions out again in the route: `navGuard('projects')`
@@ -65,6 +77,10 @@ export function navGuard(id: string): CanMatchFn {
     // route refuses it too, or a bookmark would still reach it.
     const modes = item.modes;
     if (modes && !modes.includes(service.mode())) return false;
+
+    // Same reasoning for a feature that has not been switched on for this user.
+    const flag = item.featureFlag;
+    if (flag && !inject(FeatureFlagsService).enabled(flag)) return false;
 
     const platform = item.platformPermissions ?? [];
     if (platform.length > 0 && !service.anyOfPlatform(...platform)) return false;
