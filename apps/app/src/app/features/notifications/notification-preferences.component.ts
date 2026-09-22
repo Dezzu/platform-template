@@ -88,6 +88,12 @@ export class NotificationPreferencesComponent {
         }),
       );
       this.preferences.set(updated);
+      /**
+       * Confirms the save, not the state: the switch has already moved on screen, so
+       * what the reader cannot see is whether the round trip landed. Without it, a
+       * change that silently failed and a change that worked look identical.
+       */
+      this.toasts.success('notifications.preferences.saved');
     } catch (error: unknown) {
       // Reload rather than trust the switch: it has already moved on screen, and the
       // server may have refused.

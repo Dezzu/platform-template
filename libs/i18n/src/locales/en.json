@@ -370,6 +370,7 @@
     "preferences": {
       "always": "always",
       "description": "Where you want to be reached. This is about you, not about an organization: if you belong to several, the choice is made once.",
+      "saved": "Preference updated.",
       "title": "Notification preferences",
       "type": "Notification"
     },
