@@ -93,7 +93,44 @@ describe('notifications (e2e)', () => {
       expect(res.body.data.meta.total).toBe(1);
     });
 
+    it('filters to the unread ones when asked, which is what the bell panel shows', async () => {
+      const read = await give(owner, orgId);
+      await request(app.getHttpServer())
+        .post(`/api/notifications/${read}/read`)
+        .set(as(owner))
+        .expect(200);
+
+      const all = await request(app.getHttpServer())
+        .get('/api/notifications')
+        .set(as(owner))
+        .expect(200);
+      expect(all.body.data.meta.total).toBe(2);
+
+      /**
+       * `unread` arrives as the string "true" in a query string and is coerced by the
+       * contract. If that coercion ever stops working the endpoint does not fail — it
+       * quietly returns everything, and the panel silently becomes a list of things
+       * already dealt with. Which is precisely how it behaved.
+       */
+      const unread = await request(app.getHttpServer())
+        .get('/api/notifications?unread=true')
+        .set(as(owner))
+        .expect(200);
+
+      expect(unread.body.data.meta.total).toBe(1);
+      expect((unread.body.data.items as { id: string }[])[0]?.id).not.toBe(read);
+    });
+
     it('does not cross the tenant boundary', async () => {
+      // Measured as a difference rather than against a fixed number: these cases run
+      // in order and share a database, and a test that hard-codes a total breaks the
+      // moment somebody adds a case above it. One did.
+      const countMine = async () =>
+        (await request(app.getHttpServer()).get('/api/notifications').set(as(owner)).expect(200))
+          .body.data.meta.total as number;
+
+      const before = await countMine();
+
       // The same account, a notification in an organization it does not belong to.
       await db.insert(notification).values({
         organizationId: otherOrgId,
@@ -103,13 +140,8 @@ describe('notifications (e2e)', () => {
         bodyKey: 'y',
       });
 
-      const res = await request(app.getHttpServer())
-        .get('/api/notifications')
-        .set(as(owner))
-        .expect(200);
-
-      // Still one: the row in the other organization is invisible from inside this one.
-      expect(res.body.data.meta.total).toBe(1);
+      // Unchanged: the row in the other organization is invisible from inside this one.
+      expect(await countMine()).toBe(before);
     });
 
     it('refuses to mark somebody else’s as read, as a 404 rather than a 403', async () => {

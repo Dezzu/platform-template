@@ -468,7 +468,7 @@ Poi 10 osservabilità · 11 Docker+CI · 12 Terraform.
 
 Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-snail.md`.
 
-**335 test.** `pnpm verify` verde.
+**336 test.** `pnpm verify` verde.
 
 ### Cosa ha aggiunto la 9c
 

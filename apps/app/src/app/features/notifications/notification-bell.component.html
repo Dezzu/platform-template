@@ -81,7 +81,12 @@
 
     <hlm-dropdown-menu-separator />
 
-    <a hlmDropdownMenuItem routerLink="/notifications" class="justify-center text-sm font-medium">
+    <!--
+      A real button, always here and always enabled — including when there is nothing
+      left to read, which is exactly when somebody goes looking for the archive. As a
+      discreet menu row it read as decoration rather than as the way through.
+    -->
+    <a hlmBtn variant="outline" size="sm" routerLink="/notifications" class="w-full">
       {{ 'notifications.seeAll' | transloco }}
     </a>
   </hlm-dropdown-menu>
