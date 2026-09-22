@@ -82,11 +82,18 @@
     <hlm-dropdown-menu-separator />
 
     <!--
-      A real button, always here and always enabled — including when there is nothing
-      left to read, which is exactly when somebody goes looking for the archive. As a
-      discreet menu row it read as decoration rather than as the way through.
+      Always here, always enabled, and styled as a button — including when there is
+      nothing left to read, which is exactly when somebody goes looking for the
+      archive. As a discreet menu row it read as decoration rather than as the way
+      through.
+      
+      It keeps `hlmDropdownMenuItem`, and that is not decoration either: with an empty
+      list this is the only menu item the panel has, and a CDK menu with none at all is
+      a state nothing else here produces. The button look comes from utility classes
+      rather than from stacking `hlmBtn` on top, since both directives write the class
+      attribute and the last one to run would win.
     -->
-    <a hlmBtn variant="outline" size="sm" routerLink="/notifications" class="w-full">
+    <a hlmDropdownMenuItem routerLink="/notifications" class="border-input justify-center border text-sm font-medium">
       {{ 'notifications.seeAll' | transloco }}
     </a>
   </hlm-dropdown-menu>
