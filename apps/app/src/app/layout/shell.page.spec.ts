@@ -7,7 +7,7 @@ import type { ShellNavSection } from '@app/ui/layout';
 import { provideI18n } from '@app/i18n';
 import { ShellPage } from './shell.page';
 
-function setup(permissions: string[] = [], platform: string[] = []) {
+function setup(permissions: string[] = [], platform: string[] = [], mode = 'b2b') {
   TestBed.configureTestingModule({
     providers: [
       provideZonelessChangeDetection(),
@@ -28,6 +28,7 @@ function setup(permissions: string[] = [], platform: string[] = []) {
           anyOf: (...required: string[]) => required.some((p) => permissions.includes(p)),
           allOf: (...required: string[]) => required.every((p) => permissions.includes(p)),
           anyOfPlatform: (...required: string[]) => required.some((p) => platform.includes(p)),
+          mode: () => mode,
         },
       },
     ],
@@ -89,6 +90,20 @@ describe('ShellPage menu grouping', () => {
     // above a gap, which is what filtering items without filtering headings produces.
     expect(sections.map((section) => section.id)).toEqual(['main', 'workspace']);
     expect(sections.find((section) => section.id === 'platform')).toBeUndefined();
+  });
+
+  it('drops the entries that do not belong to this kind of product', () => {
+    const b2b = sectionsOf(setup(['members.read', 'billing.read'], [], 'b2b'));
+    const organizationInB2b = b2b.find((section) => section.id === 'organization');
+    expect(organizationInB2b?.items.map((item) => item.id)).toEqual(['members', 'billing']);
+
+    TestBed.resetTestingModule();
+
+    // In a personal product there is nobody to invite: the organization exists to
+    // isolate data, and its membership is plumbing the user never sees.
+    const b2c = sectionsOf(setup(['members.read', 'billing.read'], [], 'b2c'));
+    const organizationInB2c = b2c.find((section) => section.id === 'organization');
+    expect(organizationInB2c?.items.map((item) => item.id)).toEqual(['billing']);
   });
 
   it('keeps each entry under the section its manifest entry declares', () => {

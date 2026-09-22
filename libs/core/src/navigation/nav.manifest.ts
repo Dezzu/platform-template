@@ -69,8 +69,14 @@ export const NAV_MANIFEST: readonly NavItem[] = [
 
   // ── The tenant itself: who is in it, and what it costs ──────────────────────
   {
+    /**
+     * B2B only. In a personal product there is nobody to invite: the organization
+     * exists to isolate data, and showing its membership would expose the plumbing.
+     * The permission and the API stay — turning the screen back on is this one line.
+     */
     id: 'members',
     section: 'organization',
+    modes: ['b2b'],
     labelKey: 'nav.members',
     icon: 'lucideUsers',
     route: '/members',

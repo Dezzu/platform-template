@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { APP_MODES } from '../../common/app-mode';
 import { ORG_ROLES } from '../../common/permissions';
 
 export const UserProfileSchema = z.object({
@@ -38,13 +39,14 @@ export const MeSchema = z.object({
   permissions: z.array(z.string()),
   platformPermissions: z.array(z.string()),
   /**
-   * Whether a subscription belongs to the organization or to the person.
+   * What kind of product this deployment is.
    *
    * Reported by the server rather than compiled into the bundle: it is a server
    * setting, and a copy in environment.ts would be a second place to change that
-   * nothing keeps in step.
+   * nothing keeps in step. The client derives from it — who the subscription belongs
+   * to, which menu entries make sense — instead of being told each answer separately.
    */
-  billingScope: z.enum(['organization', 'user']),
+  mode: z.enum(APP_MODES),
   /**
    * The subscription that entitles the caller to paid features, or null.
    *

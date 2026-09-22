@@ -1,5 +1,10 @@
 import { computed, inject, Service, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+// Deep import for the VALUES: the '@app/contracts' barrel re-exports Zod schemas built
+// at module top level, which the bundler cannot remove — and this file is on the eager
+// path, so importing a function from the barrel drags Zod into the initial bundle.
+// It did, and the build budget caught it.
+import { billsThePerson, DEFAULT_APP_MODE, type AppMode } from '@app/contracts/app-mode';
 import type { Me, Permission, PlatformPermission } from '@app/contracts';
 import { MeApi } from '../api/me.api';
 
@@ -19,22 +24,24 @@ export class PermissionsService {
     platform: ReadonlySet<string>;
     role: string | null;
     organizationId: string | null;
-    billingScope: 'organization' | 'user';
+    mode: AppMode;
     subscribed: boolean;
   }>({
     permissions: new Set(),
     platform: new Set(),
     role: null,
     organizationId: null,
-    billingScope: 'organization',
+    mode: DEFAULT_APP_MODE,
     subscribed: false,
   });
 
   readonly role = computed(() => this.state().role);
   readonly organizationId = computed(() => this.state().organizationId);
   readonly permissions = computed(() => this.state().permissions);
-  /** Server-reported: whether a subscription belongs to the organization or the user. */
-  readonly billingScope = computed(() => this.state().billingScope);
+  /** Server-reported: what kind of product this deployment is. */
+  readonly mode = computed(() => this.state().mode);
+  /** Derived, never configured separately — see app-mode.ts. */
+  readonly personalBilling = computed(() => billsThePerson(this.state().mode));
   /**
    * Whether the reference has a subscription that entitles it to paid features.
    *
@@ -52,7 +59,7 @@ export class PermissionsService {
         platform: new Set(me.platformPermissions),
         role: me.role,
         organizationId: me.activeOrganizationId,
-        billingScope: me.billingScope,
+        mode: me.mode,
         subscribed: me.subscription !== null,
       });
       return me;
@@ -68,7 +75,7 @@ export class PermissionsService {
       platform: new Set(),
       role: null,
       organizationId: null,
-      billingScope: 'organization',
+      mode: DEFAULT_APP_MODE,
       subscribed: false,
     });
   }

@@ -20,7 +20,7 @@ export interface OrgSubscription {
 /**
  * Subscriptions, always scoped to an organization.
  *
- * `referenceId` is whatever BILLING_SCOPE says pays: the organization, so the plan
+ * `referenceId` is whatever APP_MODE says pays: the organization, so the plan
  * survives whoever set it up leaving, or the user, for a B2C portal. The server
  * re-checks both the scope and the caller's right to that reference through
  * `authorizeReference` — this class decides nothing.

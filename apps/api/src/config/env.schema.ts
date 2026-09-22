@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ORG_ROLES } from '@app/contracts';
+import { APP_MODES, ORG_ROLES } from '@app/contracts';
 
 const bool = (def: boolean) =>
   z
@@ -37,6 +37,17 @@ const baseEnvSchema = z.object({
   WEB_URL: z.url().default('http://localhost:4200'),
   DASHBOARD_URL: z.url().default('http://localhost:4300'),
   LOG_LEVEL: z.enum(LOG_LEVELS).default('info'),
+  /**
+   * What kind of product this deployment is — see the contract in
+   * packages/contracts/src/common/app-mode.ts and
+   * docs/modalita-utente-e-organizzazione.md.
+   *
+   * One variable rather than three switches: whether the person or the tenant pays,
+   * whether an organization is created silently at signup, and whether the members
+   * screen exists are one decision, and a deployment that answered them differently
+   * would be a product that cannot explain itself.
+   */
+  APP_MODE: z.enum(APP_MODES).default('b2c'),
   DEFAULT_LOCALE: z.enum(['it', 'en']).default('it'),
   SUPPORTED_LOCALES: csv.pipe(z.array(z.string()).min(1)).or(z.array(z.string())),
 
@@ -103,20 +114,6 @@ const baseEnvSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().default(''),
 
   // ── Stripe (phase 7) ──────────────────────────────────────────────────────
-  /**
-   * What a subscription hangs off.
-   *
-   * 'organization' — the tenant pays. Someone leaving does not take the plan with
-   *   them, and a colleague can take over billing. The B2B default.
-   * 'user' — the person pays, and Stripe invoices them directly. For a B2C portal
-   *   where organizations exist only to keep data isolated and are never shown.
-   *
-   * It is enforced server-side in `canActOnSubscription`, not merely used by the UI:
-   * in 'user' mode an organization reference is refused outright, so a stale client
-   * cannot create subscriptions the application will never look at.
-   */
-  BILLING_SCOPE: z.enum(['organization', 'user']).default('organization'),
-
   STRIPE_SECRET_KEY: z.string().default(''),
   STRIPE_WEBHOOK_SECRET: z.string().default(''),
   STRIPE_PUBLISHABLE_KEY: z.string().default(''),

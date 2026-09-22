@@ -4,6 +4,7 @@ import { admin, organization, twoFactor } from 'better-auth/plugins';
 import { adminAc, defaultAc, defaultStatements, userAc } from 'better-auth/plugins/admin/access';
 import { createStripePlugin } from '../modules/billing/stripe-plugin';
 import { authMailer } from '../modules/mail/mail.bridge';
+import { ensurePersonalOrganization } from './personal-organization';
 import * as schema from '@app/db';
 import { db } from '../database/db';
 
@@ -90,6 +91,24 @@ export const auth = betterAuth({
     provider: 'pg',
     schema,
   }),
+
+  /**
+   * In `b2c`, every new account gets the organization its data lives in, without ever
+   * being asked about it — see personal-organization.ts. In `b2b` the hook is a no-op
+   * and the user creates one explicitly.
+   *
+   * On `create.after` rather than `before`: the user row has to exist before a member
+   * row can reference it.
+   */
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          await ensurePersonalOrganization(user);
+        },
+      },
+    },
+  },
 
   emailAndPassword: {
     enabled: true,

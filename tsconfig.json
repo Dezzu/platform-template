@@ -21,6 +21,7 @@
       "@app/i18n": ["./libs/i18n/src/index.ts"],
       "@app/contracts": ["./packages/contracts/src/index.ts"],
       "@app/contracts/permissions": ["./packages/contracts/src/common/permissions.ts"],
+      "@app/contracts/app-mode": ["./packages/contracts/src/common/app-mode.ts"],
       "@app/contracts/errors": ["./packages/contracts/src/common/error-codes.ts"]
     }
   },

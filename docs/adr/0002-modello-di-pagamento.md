@@ -54,7 +54,7 @@ Regole non negoziabili al momento in cui si farà (dalla guida Stripe):
 
 ### Dove si appende l'abbonamento
 
-`BILLING_SCOPE` sceglie fra `organization` (il tenant paga — default B2B) e `user`
+`APP_MODE` sceglie fra `b2b` (il tenant paga) e `b2c` (default: paga la persona)
 (paga la persona — portale B2C). È applicato lato server: in modalità `user` un
 riferimento a un'organizzazione viene rifiutato, così un client vecchio non può
 creare abbonamenti che l'applicazione non leggerà mai.

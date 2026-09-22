@@ -181,9 +181,9 @@ export class AdminOrganizationsService {
   }
 
   /**
-   * `referenceId` is the organization id when BILLING_SCOPE is 'organization'; in
-   * 'user' mode it holds a user id and simply will not match, which is why this returns
-   * a map rather than assuming a row exists.
+   * `referenceId` is the organization id in `b2b`; in `b2c` it holds a user id and
+   * simply will not match, which is why this returns a map rather than assuming a row
+   * exists.
    */
   private async plansFor(organizationIds: string[]): Promise<Map<string, PlanSnapshot>> {
     if (organizationIds.length === 0) return new Map();

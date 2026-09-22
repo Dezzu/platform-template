@@ -20,6 +20,8 @@ export const appConfig = registerAs('app', () => {
     webUrl: e.WEB_URL,
     dashboardUrl: e.DASHBOARD_URL,
     logLevel: e.LOG_LEVEL,
+    /** What kind of product this is. The single switch — see app-mode.ts. */
+    mode: e.APP_MODE,
     defaultLocale: e.DEFAULT_LOCALE,
     supportedLocales: e.SUPPORTED_LOCALES,
   };
@@ -66,7 +68,6 @@ export const authConfig = registerAs('auth', () => {
 export const stripeConfig = registerAs('stripe', () => {
   const e = env();
   return {
-    scope: e.BILLING_SCOPE,
     secretKey: e.STRIPE_SECRET_KEY,
     webhookSecret: e.STRIPE_WEBHOOK_SECRET,
     publishableKey: e.STRIPE_PUBLISHABLE_KEY,

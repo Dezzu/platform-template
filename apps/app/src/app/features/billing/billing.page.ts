@@ -44,12 +44,12 @@ export class BillingPage {
   protected readonly permissionKeys = PERMISSIONS;
 
   /**
-   * What the subscription hangs off, decided by the server through BILLING_SCOPE:
-   * the organization that pays, or the person who pays. The server refuses the other
-   * kind of reference outright, so this is not merely a display choice.
+   * What the subscription hangs off, decided by the server through APP_MODE: the
+   * person who pays in `b2c`, the tenant that pays in `b2b`. The server refuses the
+   * other kind of reference outright, so this is not merely a display choice.
    */
   protected readonly reference = computed(() =>
-    this.permissions.billingScope() === 'user'
+    this.permissions.personalBilling()
       ? (this.auth.user()?.id ?? null)
       : this.permissions.organizationId(),
   );

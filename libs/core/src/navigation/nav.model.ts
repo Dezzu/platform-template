@@ -1,4 +1,4 @@
-import type { Permission, PlatformPermission } from '@app/contracts';
+import type { AppMode, Permission, PlatformPermission } from '@app/contracts';
 
 /**
  * One entry of the application menu.
@@ -25,6 +25,15 @@ export interface NavItem {
   route: string;
   /** Permissions required to see and to enter. Empty means "any signed-in user". */
   permissions?: readonly Permission[];
+  /**
+   * The product modes this entry belongs to. Absent means every mode.
+   *
+   * Some screens only make sense in one kind of product: inviting colleagues is the
+   * point of a B2B tool and noise in a personal one, where the organization is
+   * plumbing the user never sees.
+   */
+  modes?: readonly AppMode[];
+
   /**
    * Platform permissions required instead.
    *

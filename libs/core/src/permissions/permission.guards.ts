@@ -61,6 +61,11 @@ export function navGuard(id: string): CanMatchFn {
 
     const service = inject(PermissionsService);
 
+    // A screen that does not belong to this kind of product is not merely hidden: the
+    // route refuses it too, or a bookmark would still reach it.
+    const modes = item.modes;
+    if (modes && !modes.includes(service.mode())) return false;
+
     const platform = item.platformPermissions ?? [];
     if (platform.length > 0 && !service.anyOfPlatform(...platform)) return false;
 

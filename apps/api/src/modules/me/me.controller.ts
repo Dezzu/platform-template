@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Patch } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Patch } from '@nestjs/common';
+import type { ConfigType } from '@nestjs/config';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import {
@@ -11,6 +12,7 @@ import {
   type UserProfile,
 } from '@app/contracts';
 import { ApiEnvelope, ApiStandardErrors } from '../../common';
+import { appConfig } from '../../config/namespaces';
 import { CurrentOrgOptional, type OrgContext } from '../../auth/org-context';
 import { OrgOptional } from '../../auth/permissions.decorator';
 import { MeService } from './me.service';
@@ -28,6 +30,7 @@ export class MeController {
   constructor(
     private readonly me: MeService,
     private readonly subscriptions: SubscriptionService,
+    @Inject(appConfig.KEY) private readonly app: ConfigType<typeof appConfig>,
   ) {}
 
   /**
@@ -70,7 +73,7 @@ export class MeController {
       platformPermissions: [
         ...platformPermissionsForRole((session.user as { role?: string | null }).role),
       ],
-      billingScope: (process.env['BILLING_SCOPE'] ?? 'organization') as 'organization' | 'user',
+      mode: this.app.mode,
       subscription: entitling
         ? {
             plan: entitling.plan,

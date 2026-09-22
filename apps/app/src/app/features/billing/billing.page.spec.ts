@@ -75,7 +75,8 @@ function setup(subscriptions: OrgSubscription[], plans: unknown[] = [PLAN]) {
         provide: PermissionsService,
         useValue: {
           organizationId: () => 'org-1',
-          billingScope: () => 'organization' as const,
+          personalBilling: () => false,
+          mode: () => 'b2b' as const,
           anyOf: () => true,
           allOf: () => true,
         },

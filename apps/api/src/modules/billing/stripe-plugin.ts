@@ -2,8 +2,9 @@ import { and, eq } from 'drizzle-orm';
 import Stripe from 'stripe';
 import { stripe as stripePlugin } from '@better-auth/stripe';
 import { member, plan as planTable, stripeEvent } from '@app/db';
-import { PERMISSIONS, permissionsForRole, type OrgRole } from '@app/contracts';
+import { billsThePerson, PERMISSIONS, permissionsForRole, type OrgRole } from '@app/contracts';
 import { Logger } from '@nestjs/common';
+import { appMode } from '../../config/app-mode';
 import { db } from '../../database/db';
 
 /**
@@ -62,7 +63,7 @@ export async function recordStripeEvent(event: {
 /**
  * Decides whether a user may act on a subscription reference.
  *
- * What the reference means depends on BILLING_SCOPE: the organization that pays, or
+ * What the reference means depends on APP_MODE: the organization that pays, or
  * the person who pays.
  *
  * Reading is separated from managing on purpose: a plain member may see which plan the
@@ -77,10 +78,10 @@ export async function canActOnSubscription(
   referenceId: string,
   action: string,
 ): Promise<boolean> {
-  // In user-scoped billing the only legitimate reference is the caller themselves.
+  // When the person pays, the only legitimate reference is the caller themselves.
   // Refusing organization references outright means a stale client cannot create
   // subscriptions this application would never read.
-  if ((process.env['BILLING_SCOPE'] ?? 'organization') === 'user') {
+  if (billsThePerson(appMode())) {
     return referenceId === userId;
   }
 

@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, inArray } from 'drizzle-orm';
+import { billsThePerson } from '@app/contracts';
 import { subscription, type Database } from '@app/db';
+import { appMode } from '../../config/app-mode';
 import { DRIZZLE } from '../../database/database.module';
 
 /** The states in which a subscription actually entitles someone to the paid product. */
@@ -29,11 +31,11 @@ export class SubscriptionService {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
   /**
-   * The reference a subscription hangs off, per BILLING_SCOPE: the organization that
-   * pays, or the person who pays.
+   * The reference a subscription hangs off, per APP_MODE: the person who pays in
+   * `b2c`, the tenant that pays in `b2b`.
    */
   referenceFor(organizationId: string | null, userId: string): string | null {
-    return (process.env['BILLING_SCOPE'] ?? 'organization') === 'user' ? userId : organizationId;
+    return billsThePerson(appMode()) ? userId : organizationId;
   }
 
   /**

@@ -168,9 +168,9 @@ describe('billing (e2e)', () => {
       expect(await canActOnSubscription(plain.id, orgId, 'cancel-subscription')).toBe(false);
     });
 
-    it('honours BILLING_SCOPE=user: the reference is the person, not the tenant', async () => {
-      const previous = process.env['BILLING_SCOPE'];
-      process.env['BILLING_SCOPE'] = 'user';
+    it('honours APP_MODE=b2c: the reference is the person, not the tenant', async () => {
+      const previous = process.env['APP_MODE'];
+      process.env['APP_MODE'] = 'b2c';
 
       try {
         // In a B2C portal the subscription hangs off the person who pays.
@@ -184,8 +184,8 @@ describe('billing (e2e)', () => {
         // Nobody manages anybody else's.
         expect(await canActOnSubscription(plain.id, owner.id, 'list-subscription')).toBe(false);
       } finally {
-        if (previous === undefined) delete process.env['BILLING_SCOPE'];
-        else process.env['BILLING_SCOPE'] = previous;
+        if (previous === undefined) delete process.env['APP_MODE'];
+        else process.env['APP_MODE'] = previous;
       }
     });
 

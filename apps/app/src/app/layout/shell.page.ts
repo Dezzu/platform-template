@@ -61,6 +61,9 @@ export class ShellPage {
 
   private readonly visibleItems = computed<(ShellNavItem & { section?: string })[]>(() =>
     NAV_MANIFEST.filter((item) => {
+      const modes = item.modes;
+      if (modes && !modes.includes(this.permissions.mode())) return false;
+
       const platform = item.platformPermissions ?? [];
       if (platform.length > 0 && !this.permissions.anyOfPlatform(...platform)) return false;
 
