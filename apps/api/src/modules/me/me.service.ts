@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { type Database, user } from '@app/db';
+import { organization, type Database, user } from '@app/db';
 import { type UpdateProfile, type UserProfile } from '@app/contracts';
 import { eq } from 'drizzle-orm';
 import { DRIZZLE } from '../../database/database.module';
@@ -8,6 +8,16 @@ import { AppException } from '../../common';
 @Injectable()
 export class MeService {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
+
+  /** The active organization's display name, for the interface to show. */
+  async organizationName(organizationId: string): Promise<string | null> {
+    const [row] = await this.db
+      .select({ name: organization.name })
+      .from(organization)
+      .where(eq(organization.id, organizationId))
+      .limit(1);
+    return row?.name ?? null;
+  }
 
   async updateProfile(userId: string, input: UpdateProfile): Promise<UserProfile> {
     const [row] = await this.db

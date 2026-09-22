@@ -422,7 +422,11 @@
   },
   "profile": {
     "account": "Your account",
+    "accountHint": "How the people you work with see you.",
+    "emailFixed": "The address cannot be changed here: it would have to be verified again.",
     "menuFor": "{{name}} menu",
+    "organization": "Organization",
+    "organizationHint": "Where you are working right now, and as what.",
     "saved": "Changes saved.",
     "title": "Profile"
   },

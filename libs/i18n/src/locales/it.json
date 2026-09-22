@@ -422,7 +422,11 @@
   },
   "profile": {
     "account": "Il tuo account",
+    "accountHint": "Come ti vede chi lavora con te.",
+    "emailFixed": "L'indirizzo non si cambia da qui: servirebbe verificarlo di nuovo.",
     "menuFor": "Menu di {{name}}",
+    "organization": "Organizzazione",
+    "organizationHint": "Dove stai lavorando adesso, e con quale ruolo.",
     "saved": "Modifiche salvate.",
     "title": "Profilo"
   },

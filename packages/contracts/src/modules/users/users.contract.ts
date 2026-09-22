@@ -29,6 +29,14 @@ export type UpdateProfile = z.infer<typeof UpdateProfileSchema>;
 export const MeSchema = z.object({
   user: UserProfileSchema,
   activeOrganizationId: z.string().nullable(),
+  /**
+   * The active organization's display name, or null when there is none.
+   *
+   * Sent with the rest of the session rather than fetched by whoever needs it: the
+   * name is what a person recognises, the id is what the API needs, and a screen that
+   * had to ask for the name separately would show an id for a moment first.
+   */
+  organizationName: z.string().nullable(),
   /** Role inside the active organization; null when there is no active one. */
   role: z.enum(ORG_ROLES).nullable(),
   /**

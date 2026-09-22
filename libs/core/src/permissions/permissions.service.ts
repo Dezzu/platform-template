@@ -31,6 +31,7 @@ export class PermissionsService {
     platform: ReadonlySet<string>;
     role: string | null;
     organizationId: string | null;
+    organizationName: string | null;
     mode: AppMode;
     impersonating: boolean;
     maintenance: MaintenanceMode | null;
@@ -40,6 +41,7 @@ export class PermissionsService {
     platform: new Set(),
     role: null,
     organizationId: null,
+    organizationName: null,
     mode: DEFAULT_APP_MODE,
     impersonating: false,
     maintenance: null,
@@ -48,6 +50,8 @@ export class PermissionsService {
 
   readonly role = computed(() => this.state().role);
   readonly organizationId = computed(() => this.state().organizationId);
+  /** What a person recognises the tenant by. Null when there is no active one. */
+  readonly organizationName = computed(() => this.state().organizationName);
   readonly permissions = computed(() => this.state().permissions);
   /** Server-reported: what kind of product this deployment is. */
   readonly mode = computed(() => this.state().mode);
@@ -82,6 +86,7 @@ export class PermissionsService {
         platform: new Set(me.platformPermissions),
         role: me.role,
         organizationId: me.activeOrganizationId,
+        organizationName: me.organizationName,
         mode: me.mode,
         impersonating: me.impersonating,
         maintenance: me.maintenance,
@@ -101,6 +106,7 @@ export class PermissionsService {
       platform: new Set(),
       role: null,
       organizationId: null,
+      organizationName: null,
       mode: DEFAULT_APP_MODE,
       impersonating: false,
       maintenance: null,

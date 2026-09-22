@@ -1,25 +1,87 @@
-<h1 class="mb-4 text-2xl font-semibold">{{ 'profile.title' | transloco }}</h1>
+<div class="max-w-2xl">
+  <h1 class="mb-6 text-2xl font-semibold">{{ 'profile.title' | transloco }}</h1>
 
-<section hlmCard class="max-w-md">
-  <div hlmCardHeader>
-    <h2 hlmCardTitle>{{ 'profile.account' | transloco }}</h2>
-    <p hlmCardDescription>{{ user()?.email }}</p>
-  </div>
-
-  <form hlmCardContent class="space-y-4" (submit)="save($event)">
-    <div class="space-y-2">
-      <label hlmLabel for="name">{{ 'auth.name' | transloco }}</label>
-      <input hlmInput id="name" autocomplete="name" class="w-full" [formField]="profile.name" />
+  <section hlmCard>
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'profile.account' | transloco }}</h2>
+      <p hlmCardDescription>{{ 'profile.accountHint' | transloco }}</p>
     </div>
 
-    @if (errorKey(); as key) {
-    <p class="text-destructive text-sm" role="alert">{{ key | transloco }}</p>
-    } @if (savedAt()) {
-    <p class="text-sm text-green-600 dark:text-green-500" role="status">{{ 'profile.saved' | transloco }}</p>
-    }
+    <form hlmCardContent class="space-y-4" (submit)="save($event)">
+      <dui-text-input autocomplete="on" [label]="'auth.name' | transloco" [formField]="profile.name" />
 
-    <button hlmBtn type="submit" [disabled]="saving()">{{ 'common.save' | transloco }}</button>
-  </form>
-</section>
+      <!--
+        The address is shown, not editable: changing it has to re-verify, and a field
+        that silently does nothing is worse than a line of text that explains itself.
+      -->
+      <div>
+        <p class="text-muted-foreground text-xs">{{ 'auth.email' | transloco }}</p>
+        <p class="flex flex-wrap items-center gap-2 text-sm">
+          <span>{{ user()?.email }}</span>
+          <span
+            class="rounded-full px-2 py-0.5 text-xs font-medium"
+            [class]="
+              emailVerified()
+                ? 'bg-green-100 text-green-900 dark:bg-green-900/40 dark:text-green-100'
+                : 'bg-muted text-muted-foreground'
+            "
+          >
+            {{ (emailVerified() ? 'admin.verified' : 'admin.unverified') | transloco }}
+          </span>
+        </p>
+        <p class="text-muted-foreground mt-1 text-xs">{{ 'profile.emailFixed' | transloco }}</p>
+      </div>
 
-<app-notification-preferences class="mt-6 block max-w-2xl" />
+      @if (errorKey(); as key) {
+      <p class="text-destructive text-sm" role="alert">{{ key | transloco }}</p>
+      } @if (savedAt()) {
+      <p class="text-sm text-green-600 dark:text-green-500" role="status">{{ 'profile.saved' | transloco }}</p>
+      }
+
+      <button hlmBtn type="submit" [disabled]="saving()">
+        {{ (saving() ? 'common.saving' : 'common.save') | transloco }}
+      </button>
+    </form>
+  </section>
+
+  <!--
+    Absent in b2c, where the organization is plumbing the person never chose — see the
+    component. Where it exists, it answers "which one am I in, and as what", and sends
+    you to the screens that can actually change something.
+  -->
+  @if (organization(); as org) {
+  <section hlmCard class="mt-6">
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'profile.organization' | transloco }}</h2>
+      <p hlmCardDescription>{{ 'profile.organizationHint' | transloco }}</p>
+    </div>
+
+    <div hlmCardContent class="space-y-4">
+      <dl class="grid gap-3 sm:grid-cols-2">
+        <div>
+          <dt class="text-muted-foreground text-xs">{{ 'admin.columns.organization' | transloco }}</dt>
+          <dd class="text-sm font-medium">{{ org.name }}</dd>
+        </div>
+
+        @if (org.role; as role) {
+        <div>
+          <dt class="text-muted-foreground text-xs">{{ 'members.role' | transloco }}</dt>
+          <dd class="text-sm font-medium">{{ 'members.roles.' + role | transloco }}</dd>
+        </div>
+        }
+      </dl>
+
+      <div class="flex flex-wrap gap-3">
+        <a hlmBtn variant="outline" size="sm" routerLink="/members" *appCan="[permissionKeys.MEMBERS_READ]">
+          {{ 'nav.members' | transloco }}
+        </a>
+        <a hlmBtn variant="outline" size="sm" routerLink="/billing" *appCan="[permissionKeys.BILLING_READ]">
+          {{ 'nav.billing' | transloco }}
+        </a>
+      </div>
+    </div>
+  </section>
+  }
+
+  <app-notification-preferences class="mt-6 block" />
+</div>

@@ -80,6 +80,8 @@ export class MeController {
      */
     const maintenance = await this.maintenance.get();
 
+    const organizationName = org ? await this.me.organizationName(org.organizationId) : null;
+
     return {
       user: {
         id: session.user.id,
@@ -91,6 +93,7 @@ export class MeController {
           (session.user as { twoFactorEnabled?: boolean | null }).twoFactorEnabled ?? false,
       },
       activeOrganizationId: org?.organizationId ?? null,
+      organizationName,
       role: org?.role ?? null,
       // Resolved server-side: the role-to-permission mapping has one owner. The client
       // uses this to decide what to show, never to decide what is allowed.
