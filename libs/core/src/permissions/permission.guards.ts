@@ -4,16 +4,35 @@ import type { Permission, PlatformPermission } from '@app/contracts';
 import { CORE_CONFIG } from '../config/core.config';
 import { AuthService } from '../auth/auth.service';
 import { findNavItem } from '../navigation/nav.manifest';
+import { RETURN_URL_PARAM, safeReturnUrl } from '../navigation/return-url';
 import { FeatureFlagsService } from '../features/feature-flags.service';
 import { PermissionsService } from './permissions.service';
 
-/** Sends an unauthenticated visitor to the login page. */
+/**
+ * Sends an unauthenticated visitor to the login page, remembering where they were
+ * going.
+ *
+ * The return URL is read from the navigation rather than from this guard's `segments`
+ * argument, and that is the whole point: CanMatch is handed path segments with the
+ * query string already stripped, so a link like `/accept-invitation?id=…` would arrive
+ * here as `/accept-invitation` and the invitation id — the only part that matters —
+ * would be gone. An invited person would sign in and land on an empty dashboard,
+ * wondering what happened to the email they just clicked.
+ */
 export const authGuard: CanMatchFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
   const config = inject(CORE_CONFIG);
 
-  return auth.authenticated() ? true : router.createUrlTree([config.loginRoute]);
+  if (auth.authenticated()) return true;
+
+  const attempted = router.getCurrentNavigation()?.extractedUrl.toString();
+  const returnUrl = safeReturnUrl(attempted);
+
+  return router.createUrlTree(
+    [config.loginRoute],
+    returnUrl ? { queryParams: { [RETURN_URL_PARAM]: returnUrl } } : {},
+  );
 };
 
 /** Keeps a signed-in user out of the login and sign-up pages. */

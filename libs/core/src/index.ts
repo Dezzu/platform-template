@@ -28,4 +28,5 @@ export * from './notifications/toast.service';
 export * from './notifications/notification-center.service';
 
 export * from './navigation/nav.model';
+export * from './navigation/return-url';
 export * from './navigation/nav.manifest';

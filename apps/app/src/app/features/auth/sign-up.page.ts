@@ -1,11 +1,11 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { email, form, FormField, minLength, required, validate } from '@angular/forms/signals';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { TextInputComponent, PasswordInputComponent } from '@app/ui/input';
-import { AuthService, PermissionsService } from '@app/core';
+import { AuthService, PermissionsService, RETURN_URL_PARAM, safeReturnUrl } from '@app/core';
 import { environment } from '../../../environments/environment';
 
 /**
@@ -40,8 +40,27 @@ export class SignUpPage {
   private readonly auth = inject(AuthService);
   private readonly permissions = inject(PermissionsService);
   private readonly router = inject(Router);
+  /**
+   * Where to go once the session exists.
+   *
+   * An invitation link lands behind the auth guard, which bounces the visitor here
+   * with the URL it could not open — including its query string, which for an
+   * invitation is the only part that identifies it. Without honouring it, clicking an
+   * invitation email and signing in drops you on an empty dashboard.
+   */
+  private readonly returnUrl =
+    safeReturnUrl(inject(ActivatedRoute).snapshot.queryParamMap.get(RETURN_URL_PARAM)) ??
+    '/dashboard';
 
   protected readonly appName = environment.appName;
+
+  /**
+   * Carried on the link to the other authentication page: somebody invited who has no
+   * account yet arrives here, clicks through to sign up, and must not lose the
+   * invitation on the way.
+   */
+  protected readonly returnParams: Record<string, string> =
+    this.returnUrl === '/dashboard' ? {} : { [RETURN_URL_PARAM]: this.returnUrl };
 
   private readonly model = signal({ name: '', email: '', password: '', confirmPassword: '' });
 
@@ -95,11 +114,11 @@ export class SignUpPage {
     }
 
     await this.permissions.refresh();
-    await this.router.navigateByUrl('/dashboard');
+    await this.router.navigateByUrl(this.returnUrl);
   }
 
   protected signUpWithGoogle(): void {
     // Same endpoint as signing in: with an OAuth provider the two are one flow.
-    void this.auth.signInWithGoogle();
+    void this.auth.signInWithGoogle(this.returnUrl);
   }
 }

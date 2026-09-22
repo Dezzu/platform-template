@@ -50,7 +50,11 @@
 
     <p class="text-muted-foreground text-sm">
       {{ 'auth.haveAccount' | transloco }}
-      <a routerLink="/sign-in" class="text-foreground font-medium underline underline-offset-4">
+      <a
+        routerLink="/sign-in"
+        [queryParams]="returnParams"
+        class="text-foreground font-medium underline underline-offset-4"
+      >
         {{ 'auth.signIn' | transloco }}
       </a>
     </p>

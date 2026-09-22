@@ -368,6 +368,21 @@ trovato questo. `'boundaries/debug': { enabled: true }` stampa cosa il plugin ha
 di una dipendenza. Da non usare: `boundaries/alias`, che è deprecato e, attivandolo,
 zittisce anche le regole che funzionavano.
 
+**Una CanMatch non vede la query string.** Riceve i segmenti di path, già ripuliti:
+una guard che ricostruisce da lì l'URL tentato perde `?id=…`, cioè l'unica parte che
+identifica un invito. Chi cliccava l'email finiva sul login e poi su una dashboard
+vuota. `authGuard` legge quindi `router.getCurrentNavigation()?.extractedUrl`, e il
+parametro `redirect` viaggia fino a sign-in **e** sign-up, perché un invitato senza
+account passa di lì. La validazione (`safeReturnUrl`) accetta solo path della stessa
+applicazione: quel valore arriva da una query string, cioè da chi ha scritto il link.
+
+**Un form ripulito dopo un salvataggio riuscito si dipinge di rosso.** Il modello torna
+vuoto ma i campi restano `touched`, quindi `required` scatta subito e la schermata
+sembra segnalare un errore nel momento esatto in cui l'operazione è andata a buon fine.
+Dopo un successo serve `form().reset()`, che azzera anche touched e dirty — non basta
+rimettere a posto il valore. È già successo due volte: nel form delle eccezioni dei
+feature flag e in quello degli inviti.
+
 **I test non chiamano Stripe, ed è imposto — non promesso.** `createCustomerOnSignUp`
 scatta a ogni `signUp`, e la suite ne fa decine per esecuzione: **18 chiamate solo dai
 tre account di `billing.e2e-spec`** (misurate rimettendo il flag a `true`). Su una
@@ -437,7 +452,7 @@ Poi 10 osservabilità · 11 Docker+CI · 12 Terraform.
 
 Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-snail.md`.
 
-**329 test.** `pnpm verify` verde.
+**332 test.** `pnpm verify` verde.
 
 ### Cosa ha aggiunto la 9c
 

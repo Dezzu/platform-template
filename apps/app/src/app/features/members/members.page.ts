@@ -195,6 +195,13 @@ export class MembersPage {
       const email = this.model().email;
       await firstValueFrom(this.api.invite(this.model()));
       this.model.set({ email: '', role: 'member' });
+      /**
+       * Clears touched and dirty along with the value. Without it the emptied address
+       * field is still "touched", so `required` and `email` fire immediately and the
+       * form paints itself red the moment the invitation succeeds — which reads as the
+       * send having failed.
+       */
+      this.invitation().reset();
       this.invitations.reload();
       this.toasts.success('members.invitationSent', { email });
     });
