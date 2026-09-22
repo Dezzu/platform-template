@@ -373,6 +373,7 @@
       "title": "Preferenze di notifica",
       "type": "Notifica"
     },
+    "seeAll": "Vedi tutte",
     "showAll": "Mostra tutte",
     "showUnread": "Solo da leggere",
     "title": "Notifiche",
@@ -427,8 +428,10 @@
     "menuFor": "Menu di {{name}}",
     "organization": "Organizzazione",
     "organizationHint": "Dove stai lavorando adesso, e con quale ruolo.",
+    "resendVerification": "Invia di nuovo l'email di verifica",
     "saved": "Modifiche salvate.",
-    "title": "Profilo"
+    "title": "Profilo",
+    "verificationSent": "Email di verifica inviata a {{email}}."
   },
   "projects": {
     "backToList": "Torna ai progetti",

@@ -7,7 +7,14 @@ import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { PERMISSIONS } from '@app/contracts/permissions';
 import { TextInputComponent } from '@app/ui/input';
-import { AppError, AuthService, CanDirective, MeApi, PermissionsService } from '@app/core';
+import {
+  AppError,
+  AuthService,
+  CanDirective,
+  MeApi,
+  PermissionsService,
+  ToastService,
+} from '@app/core';
 import { NotificationPreferencesComponent } from '../notifications/notification-preferences.component';
 
 /**
@@ -38,6 +45,7 @@ export class ProfilePage {
   private readonly api = inject(MeApi);
   private readonly auth = inject(AuthService);
   private readonly permissions = inject(PermissionsService);
+  private readonly toasts = inject(ToastService);
 
   protected readonly user = this.auth.user;
   protected readonly permissionKeys = PERMISSIONS;
@@ -74,6 +82,34 @@ export class ProfilePage {
   protected readonly saving = signal(false);
   protected readonly savedAt = signal<number | null>(null);
   protected readonly errorKey = signal<string | null>(null);
+
+  protected readonly resending = signal(false);
+  /**
+   * Set once the link has gone out, and never reset.
+   *
+   * The button disappears rather than staying clickable: the server sends one email
+   * per press, and a button that looks unchanged after a successful send is a button
+   * people press three more times. Reloading the page brings it back, which is the
+   * right amount of friction for the case where the mail genuinely did not arrive.
+   */
+  protected readonly resent = signal(false);
+
+  /** Asks for the confirmation email again. Only offered while unverified. */
+  protected async resendVerification(): Promise<void> {
+    if (this.resending() || this.resent()) return;
+    this.resending.set(true);
+
+    const { error } = await this.auth.resendVerificationEmail('/dashboard');
+    this.resending.set(false);
+
+    if (error) {
+      this.toasts.error(`errors.${error}`);
+      return;
+    }
+
+    this.resent.set(true);
+    this.toasts.success('profile.verificationSent', { email: this.user()?.email ?? '' });
+  }
 
   protected async save(event: Event): Promise<void> {
     // See sign-in.page.ts: (ngSubmit) does nothing without FormsModule, and the

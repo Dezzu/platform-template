@@ -373,6 +373,7 @@
       "title": "Notification preferences",
       "type": "Notification"
     },
+    "seeAll": "See all",
     "showAll": "Show all",
     "showUnread": "Unread only",
     "title": "Notifications",
@@ -427,8 +428,10 @@
     "menuFor": "{{name}} menu",
     "organization": "Organization",
     "organizationHint": "Where you are working right now, and as what.",
+    "resendVerification": "Send the verification email again",
     "saved": "Changes saved.",
-    "title": "Profile"
+    "title": "Profile",
+    "verificationSent": "Verification email sent to {{email}}."
   },
   "projects": {
     "backToList": "Back to projects",

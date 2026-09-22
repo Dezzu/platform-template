@@ -30,6 +30,25 @@
           </span>
         </p>
         <p class="text-muted-foreground mt-1 text-xs">{{ 'profile.emailFixed' | transloco }}</p>
+
+        @if (!emailVerified() && !resent()) {
+        <!--
+          Offered only while it is unverified, and it goes away once sent: the server
+          sends one email per press, and a button that looks unchanged after a
+          successful send is a button people press three more times.
+        -->
+        <button
+          hlmBtn
+          variant="outline"
+          size="sm"
+          type="button"
+          class="mt-2"
+          [disabled]="resending()"
+          (click)="resendVerification()"
+        >
+          {{ (resending() ? 'auth.sending' : 'profile.resendVerification') | transloco }}
+        </button>
+        }
       </div>
 
       @if (errorKey(); as key) {

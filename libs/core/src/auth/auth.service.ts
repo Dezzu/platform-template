@@ -104,6 +104,24 @@ export class AuthService {
     return error ? { error: error.code ?? 'UNKNOWN' } : {};
   }
 
+  /**
+   * Asks for the address confirmation email again.
+   *
+   * Goes through the same Better Auth endpoint the signup uses, so the message is the
+   * templated one and lands in `email_message` like every other: a second path that
+   * sent its own email would be a second thing to keep in step.
+   *
+   * The caller is responsible for not offering the button again immediately — the
+   * server will happily send as many as it is asked for.
+   */
+  async resendVerificationEmail(callbackURL = this.config.homeRoute): Promise<{ error?: string }> {
+    const address = this.user()?.email;
+    if (!address) return { error: 'UNAUTHENTICATED' };
+
+    const { error } = await this.client.sendVerificationEmail({ email: address, callbackURL });
+    return error ? { error: error.code ?? 'UNKNOWN' } : {};
+  }
+
   async signOut(): Promise<void> {
     await this.client.signOut();
     this.state.set({ user: null, activeOrganizationId: null });

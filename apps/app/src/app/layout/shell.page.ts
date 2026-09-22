@@ -1,7 +1,5 @@
 import { Component, computed, DOCUMENT, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
-import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideBell } from '@ng-icons/lucide';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import {
@@ -14,6 +12,7 @@ import {
   PermissionsService,
   ToastService,
 } from '@app/core';
+import { NotificationBellComponent } from '../features/notifications/notification-bell.component';
 import {
   AppShellComponent,
   ProfileMenuComponent,
@@ -39,34 +38,13 @@ import { environment } from '../../environments/environment';
     AppShellComponent,
     ProfileMenuComponent,
     CanPlatformDirective,
-    NgIcon,
+    NotificationBellComponent,
     TranslocoPipe,
     HlmButtonImports,
   ],
-  providers: [provideIcons({ lucideBell })],
   template: `
     <dui-app-shell [appName]="appName" [sections]="visibleSections()">
-      <!--
-        The bell carries a count and opens the page; it is not a dropdown. What is
-        waiting for you is a list worth paginating and acting on, and burying it in a
-        hover panel makes it something you dismiss rather than read.
-      -->
-      <a
-        shellHeaderEnd
-        routerLink="/notifications"
-        class="hover:bg-muted relative mr-1 inline-flex size-9 items-center justify-center rounded-md"
-        [attr.aria-label]="'notifications.title' | transloco"
-      >
-        <ng-icon name="lucideBell" size="18" />
-        @if (unread() > 0) {
-          <span
-            class="bg-primary text-primary-foreground absolute top-1 right-1 min-w-4 rounded-full px-1 text-[10px] leading-4 font-semibold"
-            role="status"
-          >
-            {{ unread() > 99 ? '99+' : unread() }}
-          </span>
-        }
-      </a>
+      <app-notification-bell shellHeaderEnd />
 
       <dui-profile-menu
         shellHeaderEnd
@@ -145,10 +123,9 @@ export class ShellPage {
 
   protected readonly appName = environment.appName;
   protected readonly user = this.auth.user;
-  /** The number on the bell. Loaded once here — see NotificationCenterService. */
-  protected readonly unread = this.centre.unread;
-
   constructor() {
+    // Primed once here rather than by the bell: the badge has to be right before
+    // anybody presses anything, and the bell only fetches its list when opened.
     void this.centre.refresh();
   }
 

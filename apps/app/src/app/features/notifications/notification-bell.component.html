@@ -1,0 +1,77 @@
+<button
+  hlmBtn
+  variant="ghost"
+  type="button"
+  class="relative size-9 px-0"
+  align="end"
+  [hlmDropdownMenuTrigger]="panel"
+  [attr.aria-label]="'notifications.title' | transloco"
+  (click)="open()"
+>
+  <ng-icon name="lucideBell" size="18" />
+
+  @if (unread() > 0) {
+  <span
+    class="bg-primary text-primary-foreground absolute top-1 right-1 min-w-4 rounded-full px-1 text-[10px] leading-4 font-semibold"
+    role="status"
+  >
+    {{ unread() > 99 ? '99+' : unread() }}
+  </span>
+  }
+</button>
+
+<ng-template #panel>
+  <hlm-dropdown-menu class="w-80">
+    <div hlmDropdownMenuLabel class="flex items-center justify-between gap-2">
+      <span>{{ 'notifications.title' | transloco }}</span>
+      @if (unread() > 0) {
+      <button
+        type="button"
+        class="text-muted-foreground hover:text-foreground text-xs font-normal underline underline-offset-4"
+        (click)="markAllRead()"
+      >
+        {{ 'notifications.markAllRead' | transloco }}
+      </button>
+      }
+    </div>
+
+    <hlm-dropdown-menu-separator />
+
+    @if (loading()) {
+    <p class="text-muted-foreground px-2 py-3 text-sm">{{ 'common.loading' | transloco }}</p>
+    } @else if (failed()) {
+    <p class="text-destructive px-2 py-3 text-sm" role="alert">{{ 'errors.INTERNAL_ERROR' | transloco }}</p>
+    } @else if (empty()) {
+    <p class="text-muted-foreground px-2 py-3 text-sm">{{ 'notifications.empty' | transloco }}</p>
+    } @else {
+    <hlm-dropdown-menu-group>
+      @for (row of rows(); track row.id) {
+      <button hlmDropdownMenuItem type="button" class="items-start gap-2" (click)="openOne(row)">
+        @if (!row.readAt) {
+        <span class="bg-primary mt-1.5 size-2 shrink-0 rounded-full" aria-hidden="true"></span>
+        } @else {
+        <span class="mt-1.5 size-2 shrink-0" aria-hidden="true"></span>
+        }
+
+        <span class="flex min-w-0 flex-col">
+          <!--
+            Truncated to one line: the panel is a glance. The full sentence, and the
+            body under it, are on the page.
+          -->
+          <span class="truncate text-sm" [class.font-medium]="!row.readAt">
+            {{ row.titleKey | transloco: paramsOf(row) }}
+          </span>
+          <span class="text-muted-foreground text-xs">{{ row.createdAt | date: 'short' }}</span>
+        </span>
+      </button>
+      }
+    </hlm-dropdown-menu-group>
+    }
+
+    <hlm-dropdown-menu-separator />
+
+    <a hlmDropdownMenuItem routerLink="/notifications" class="justify-center text-sm font-medium">
+      {{ 'notifications.seeAll' | transloco }}
+    </a>
+  </hlm-dropdown-menu>
+</ng-template>
