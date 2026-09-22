@@ -367,6 +367,7 @@
       "organization": "Organizzazione"
     },
     "markAllRead": "Segna tutte come lette",
+    "markRead": "Segna come letta",
     "preferences": {
       "always": "sempre",
       "description": "Dove vuoi essere raggiunto. Vale per te, non per l'organizzazione: se ne hai più di una, la scelta è unica.",

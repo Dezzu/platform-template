@@ -24,15 +24,19 @@
   <hlm-dropdown-menu class="w-80">
     <div hlmDropdownMenuLabel class="flex items-center justify-between gap-2">
       <span>{{ 'notifications.title' | transloco }}</span>
-      @if (unread() > 0) {
+
+      <!--
+        Always here, disabled when there is nothing to clear. It used to disappear at
+        zero, which reads as a missing feature rather than as nothing to do.
+      -->
       <button
         type="button"
-        class="text-muted-foreground hover:text-foreground text-xs font-normal underline underline-offset-4"
+        class="text-muted-foreground enabled:hover:text-foreground text-xs font-normal underline underline-offset-4 disabled:opacity-50"
+        [disabled]="unread() === 0"
         (click)="markAllRead()"
       >
         {{ 'notifications.markAllRead' | transloco }}
       </button>
-      }
     </div>
 
     <hlm-dropdown-menu-separator />
@@ -42,28 +46,35 @@
     } @else if (failed()) {
     <p class="text-destructive px-2 py-3 text-sm" role="alert">{{ 'errors.INTERNAL_ERROR' | transloco }}</p>
     } @else if (empty()) {
-    <p class="text-muted-foreground px-2 py-3 text-sm">{{ 'notifications.empty' | transloco }}</p>
+    <p class="text-muted-foreground px-2 py-3 text-sm">{{ 'notifications.emptyUnread' | transloco }}</p>
     } @else {
     <hlm-dropdown-menu-group>
       @for (row of rows(); track row.id) {
-      <button hlmDropdownMenuItem type="button" class="items-start gap-2" (click)="openOne(row)">
-        @if (!row.readAt) {
-        <span class="bg-primary mt-1.5 size-2 shrink-0 rounded-full" aria-hidden="true"></span>
-        } @else {
-        <span class="mt-1.5 size-2 shrink-0" aria-hidden="true"></span>
-        }
-
-        <span class="flex min-w-0 flex-col">
-          <!--
-            Truncated to one line: the panel is a glance. The full sentence, and the
-            body under it, are on the page.
-          -->
-          <span class="truncate text-sm" [class.font-medium]="!row.readAt">
-            {{ row.titleKey | transloco: paramsOf(row) }}
+      <!--
+        Two controls side by side, not one inside the other: a button nested in a
+        button is invalid markup. The row opens it, the tick only clears it.
+      -->
+      <div class="flex items-center gap-1">
+        <button hlmDropdownMenuItem type="button" class="min-w-0 flex-1" (click)="openOne(row)">
+          <span class="flex min-w-0 flex-col">
+            <span class="truncate text-sm font-medium"> {{ row.titleKey | transloco: paramsOf(row) }} </span>
+            <span class="text-muted-foreground text-xs">{{ row.createdAt | date: 'short' }}</span>
           </span>
-          <span class="text-muted-foreground text-xs">{{ row.createdAt | date: 'short' }}</span>
-        </span>
-      </button>
+        </button>
+
+        <button
+          hlmBtn
+          variant="ghost"
+          size="sm"
+          type="button"
+          class="size-8 shrink-0 px-0"
+          [attr.aria-label]="'notifications.markRead' | transloco"
+          [attr.title]="'notifications.markRead' | transloco"
+          (click)="markRead(row)"
+        >
+          <ng-icon name="lucideCheck" size="16" />
+        </button>
+      </div>
       }
     </hlm-dropdown-menu-group>
     }

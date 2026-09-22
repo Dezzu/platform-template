@@ -3,6 +3,8 @@ import { Component, computed, inject, resource, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { lucideCheck } from '@ng-icons/lucide';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import type { Notification } from '@app/contracts';
 import { NotificationCenterService, NotificationsApi, ToastService } from '@app/core';
@@ -20,7 +22,8 @@ import { NotificationCenterService, NotificationsApi, ToastService } from '@app/
  */
 @Component({
   selector: 'app-notifications-page',
-  imports: [TranslocoPipe, DatePipe, HlmButtonImports],
+  imports: [TranslocoPipe, DatePipe, NgIcon, HlmButtonImports],
+  providers: [provideIcons({ lucideCheck })],
   templateUrl: './notifications.page.html',
 })
 export class NotificationsPage {
@@ -62,17 +65,26 @@ export class NotificationsPage {
    * notification stays bold after you have read it.
    */
   protected async open(row: Notification): Promise<void> {
-    if (!row.readAt) {
-      try {
-        await firstValueFrom(this.api.markRead(row.id));
-        this.centre.decrement();
-        this.page.reload();
-      } catch (error: unknown) {
-        this.toasts.error(error);
-      }
-    }
-
+    await this.markRead(row);
     if (row.actionUrl) await this.router.navigateByUrl(row.actionUrl);
+  }
+
+  /**
+   * Clears one without going anywhere.
+   *
+   * Plenty of notifications are worth knowing and not worth visiting; without this the
+   * only way to mark one read was to open it, which took you off the page.
+   */
+  protected async markRead(row: Notification): Promise<void> {
+    if (row.readAt) return;
+
+    try {
+      await firstValueFrom(this.api.markRead(row.id));
+      this.centre.decrement();
+      this.page.reload();
+    } catch (error: unknown) {
+      this.toasts.error(error);
+    }
   }
 
   protected async markAllRead(): Promise<void> {
