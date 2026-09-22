@@ -7,6 +7,33 @@ Questo file è il contratto: leggilo prima di toccare il codice.
 
 ---
 
+## 0. Come lavorare qui
+
+Queste regole valgono su tutto il resto del file. Esistono perché una sessione ha un
+costo, e la parte più facile da sprecare è la verifica: controlli ripetuti,
+automatismi, e prove che nessuno ha chiesto.
+
+**Il browser si apre solo se te lo chiedo.** Il plugin Chrome consuma moltissimo:
+niente screenshot, niente navigazione, niente "controllo che la pagina si apra" di
+iniziativa. Quando serve davvero — e a volte serve, vedi §4 — **chiedi** invece di
+farlo. Se non lo chiedo, descrivi cosa andrebbe guardato e lasciamelo aprire.
+
+**I test non sono obbligatori per ogni modifica.** Scrivine dove il guasto costa —
+isolamento fra tenant, regole di permesso e di rango, soldi, cose irreversibili — e
+dove il comportamento non si vede a occhio. Per il resto, dillo e vai avanti: una
+suite che cresce a ogni richiesta è token spesi due volte, quando la scrivo e ogni
+volta che gira.
+
+**`pnpm verify` gira una volta, alla fine.** Non dopo ogni file, non dopo ogni
+correzione. Durante il lavoro bastano lo strumento più stretto che risponde alla
+domanda — `pnpm lint`, un typecheck, un singolo spec — e la suite completa quando la
+feature è finita. Ogni passata è più di un minuto e mezzo di esecuzione.
+
+**Committa in locale, non pushare.** Sempre un commit quando il lavoro è finito e
+verde, nello stile del log esistente. Il `git push` lo faccio io.
+
+---
+
 ## 1. Regole non negoziabili
 
 **Lingua.** Identificatori e commenti **in inglese**. Le stringhe rivolte all'utente
@@ -74,8 +101,7 @@ Nessuna schermata del prodotto può importarne qualcosa — l'unica porta è
 `app.routes.ts`, che deve nominare i chunk da caricare — e `libs/admin` non può
 importare niente di un'applicazione. Era il 42% delle feature della dashboard e la
 parte che quasi nessuno vede: senza una regola, rientra un import comodo alla volta.
-Resta una libreria e non `apps/admin` perché lo split è una decisione di deploy, non di
-codice — vedi §6.
+Resta dentro `apps/app` come libreria, non `apps/admin`: decisione presa, vedi §6.
 
 ---
 
@@ -113,6 +139,11 @@ export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
 Esempio: `projects` — è già implementata, **copiala**.
 
+Questa è la lista per una **feature intera**, non per ogni modifica: il test di
+isolamento cross-org al punto 8 è uno di quelli che la §0 chiama "dove il guasto
+costa", e lì resta obbligatorio. Per una correzione o un ritocco, si prende solo
+quello che serve.
+
 1. `packages/contracts/src/modules/<x>/<x>.contract.ts` — `XxxSchema`,
    `XxxCreateSchema`, `XxxUpdateSchema`, `XxxListQuerySchema` + tipi inferiti.
    **Mai** accettare `organizationId` nel payload: il tenant viene dal contesto.
@@ -145,22 +176,30 @@ api client ✅ UI ✅ rotta+guard ✅ menu ✅ icona ✅ i18n it+en ✅ test cro
 
 ## 4. Come si verifica il lavoro
 
-Questa sezione esiste perché in questo progetto **sette difetti su sette** sono stati
-trovati aprendo l'applicazione, zero scrivendo test.
+Questa sezione dice **cosa** trova i difetti. Quanto spesso farlo lo decide la §0, che
+vince su tutto quello che segue.
 
-1. **Apri la pagina.** Compilare e chiamare l'API non basta: il login mandava la
-   password nell'URL, la sidebar non aveva icone, la pagina mostrava `plans.pro.name`.
-   Tutto compilava, tutto passava i test.
+1. **Aprire la pagina è ciò che trova i difetti** — in questo progetto dieci su dieci
+   sono usciti così, zero scrivendo test: la password nell'URL, la sidebar senza
+   icone, `plans.pro.name` a schermo, il tema chiaro fuori dalla shell, un form
+   italiano che rispondeva "Invalid format". Tutto compilava, tutto passava i test.
+   **Ma il browser lo apro io**: quando una modifica è di quelle che si giudicano
+   solo guardandole, dillo e chiedimelo, invece di aprirlo per conto tuo.
 2. **Guarda i log del dev server.** `Missing translation` e `Failed to resolve
-dependency: zod` erano lì ore prima che diventassero bug visibili.
+dependency: zod` erano lì ore prima che diventassero bug visibili. Costano una riga
+   di output, non una sessione di browser.
 3. **Dopo ogni modifica scriptata, verifica con un grep che sia andata a segno.**
-   Tre modifiche in questa sessione sono fallite in silenzio perché Prettier aveva
-   riformattato il testo cercato.
+   Tre modifiche sono fallite in silenzio perché Prettier aveva riformattato il testo
+   cercato.
 4. **`pnpm verify` va letto dal suo exit code**, non filtrando l'output con un grep:
    un filtro che non intercetta la riga giusta nasconde un fallimento e lascia
-   committare codice rotto. È già successo qui.
-5. **Un test nuovo va provato rompendo il codice.** Se non fallisce, non protegge
-   nulla. Un test che passa per il motivo sbagliato è peggio di nessun test.
+   committare codice rotto. È già successo qui. Una volta sola, alla fine — §0.
+5. **Un test _che scrivi_ va provato rompendo il codice.** Se non fallisce, non
+   protegge nulla, e un test che passa per il motivo sbagliato è peggio di nessun
+   test. Vale per quelli che decidi di scrivere: la §0 dice che non sono obbligatori.
+   Questa regola ha già salvato due asserzioni inutili — una sulla risoluzione dei
+   flag, una che "verificava" che i test non chiamassero Stripe e sarebbe passata
+   comunque.
 
 ---
 
@@ -414,7 +453,15 @@ Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-sna
 - **L'area di amministrazione ha quattro schede**, ora in un componente solo
   (`admin-nav.component`), ognuna dietro il permesso della propria schermata.
 
-### Il back office: confine ora, decisione di deploy dopo
+### Il back office: una sola applicazione, con un confine
+
+**Decisione presa: resta dentro `apps/app`.** Niente `apps/admin`, e non è un rinvio —
+è che non serve. Quello che serviva era impedire all'area di amministrazione di
+rientrare nel prodotto del cliente, e lo fa `libs/admin` con la regola di §1. Se un
+giorno il back office dovrà stare dietro VPN o allowlist, lo split sarà spostare una
+cartella e aggiungere un target di build; è per quello che il confine esiste adesso.
+
+Sotto, il perché — utile solo se qualcuno riapre la questione.
 
 L'area di amministrazione era il **42% del codice feature** della dashboard (1841 righe
 su 4390) e la parte che quasi nessuno vede. Non conteneva però logiche custom: 214
@@ -432,9 +479,7 @@ aree** (`/admin/users` → cookie sostituito → `/dashboard` → e il ritorno r
 indietro) e vive su una sessione same-origin. Due hostname significano cookie sul
 dominio padre configurato a mano, o la funzionalità si rompe.
 
-Da farsi alla fase 11, con Docker e CI sul tavolo: è lì che una terza app costa
-davvero o rende davvero. Con il confine già in piedi, lo split è spostare una cartella
-e aggiungere un target di build.
+Non è un lavoro per la fase 11 finché quella risposta non cambia.
 
 ### Consolidamento fatto dopo la 9b, fuori piano
 
@@ -499,6 +544,10 @@ una schermata nuova:
 
 ### Decisioni prese (non ri-discutere senza motivo)
 
+- **Il back office sta nella stessa applicazione**, isolato in `libs/admin` da un
+  confine imposto dal linter. Un'app separata non serve finché il back office può
+  stare sulla rete pubblica — vedi §6 per cosa costerebbe (l'impersonation attraversa
+  le due aree e vive su una sessione same-origin).
 - Organizzazioni dal giorno uno. **`APP_MODE`** (`b2c` default, `b2b`) è l'unica
   variabile che sceglie il tipo di prodotto: chi paga, se l'organizzazione viene creata
   da sola alla registrazione, e se la schermata Membri esiste. I dati restano org-scoped
