@@ -50,6 +50,19 @@ export class App {
   constructor() {
     effect(() => {
       this.translations();
+
+      /**
+       * Nothing to translate with yet, on the very first emission.
+       *
+       * Without this guard `translate()` runs before the catalogue has loaded, returns
+       * the key itself, and logs "Missing translation for 'form.required'" for every
+       * validator — seven red lines on every boot, in a console where a real missing
+       * key would then be indistinguishable from the noise. The effect re-runs when the
+       * catalogue arrives, which is when the values are actually there.
+       */
+      const active = this.transloco.getActiveLang();
+      if (Object.keys(this.transloco.getTranslation(active) ?? {}).length === 0) return;
+
       this.forms.loadErrors(
         Object.fromEntries(
           Object.entries(FORM_ERROR_KEYS).map(([error, key]) => [
