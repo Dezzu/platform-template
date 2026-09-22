@@ -309,13 +309,13 @@ root del progetto: da qui il progetto `libs` separato in `angular.json`.
 5 tenancy/permessi/audit · 6 frontend · 7 billing Stripe · 8 code+email+storage ·
 9a membri+inviti+pagine auth · 9b area di amministrazione.
 
-**Da fare (fase 9, nell'ordine deciso):** audit UI + impersonation · feature flag +
-maintenance · notifiche + preferenze · GDPR + cookie banner. Poi 10 osservabilità ·
-11 Docker+CI · 12 Terraform.
+**Da fare (fase 9, nell'ordine deciso):** feature flag + maintenance · notifiche +
+preferenze · GDPR + cookie banner. Poi 10 osservabilità · 11 Docker+CI · 12 Terraform.
+(Audit UI e impersonation: fatti.)
 
 Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-snail.md`.
 
-**236 test.** `pnpm verify` verde.
+**260 test.** `pnpm verify` verde.
 
 ### Consolidamento fatto dopo la 9b, fuori piano
 
@@ -357,8 +357,9 @@ una schermata nuova:
   commento in `admin-organizations.service.ts`.
 - Non esiste un modo dall'interfaccia per creare il primo superadmin — è voluto. Si fa
   una volta con una `UPDATE`, e da lì la schermata amministra se stessa.
-- L'audit log si riempie dalla fase 5 e **nessuno può leggerlo**: esiste solo
-  `AuditService`, che scrive. Contratto, controller e pagina sono il prossimo punto.
+- Il registro attività è **per tenant**. Le azioni di piattaforma hanno
+  `organization_id` nullo e quindi non compaiono in nessuna schermata: serve una vista
+  nell'area di amministrazione, che non c'è ancora.
 
 ### Ambiente locale già configurato
 

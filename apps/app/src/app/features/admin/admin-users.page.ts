@@ -1,4 +1,4 @@
-import { Component, computed, inject, resource, signal } from '@angular/core';
+import { Component, computed, DOCUMENT, inject, resource, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs/operators';
@@ -13,6 +13,7 @@ import {
   lucideLogOut,
   lucideMailCheck,
   lucideShield,
+  lucideUserRoundCheck,
   lucideUsers,
 } from '@ng-icons/lucide';
 import {
@@ -65,6 +66,7 @@ const NO_ORGANIZATION = '';
       lucideUsers,
       lucideKeyRound,
       lucideMailCheck,
+      lucideUserRoundCheck,
       lucideLogOut,
       lucideBan,
       lucideCircleCheck,
@@ -80,6 +82,7 @@ export class AdminUsersPage {
   private readonly transloco = inject(TranslocoService);
   private readonly permissions = inject(PermissionsService);
   private readonly toasts = inject(ToastService);
+  private readonly document = inject(DOCUMENT);
 
   /**
    * Re-translates the action labels when the translations change under them.
@@ -276,6 +279,21 @@ export class AdminUsersPage {
         command: (row) => this.sendVerificationEmail(row),
       },
       {
+        icon: 'lucideUserRoundCheck',
+        group: this.translate('admin.groups.account'),
+        label: this.translate('admin.impersonate'),
+        /**
+         * Superadmin only — `platform.impersonate` is deliberately absent from the
+         * support `admin` role. Becoming somebody else is the one action whose blast
+         * radius is that person's entire account.
+         */
+        visible: (row) =>
+          this.permissions.anyOfPlatform('platform.impersonate') &&
+          this.canActOn(row) &&
+          !this.isSelf(row),
+        command: (row) => this.impersonate(row),
+      },
+      {
         icon: 'lucideKeyRound',
         group: this.translate('admin.groups.account'),
         label: this.translate('admin.sendReset'),
@@ -388,6 +406,21 @@ export class AdminUsersPage {
     void this.run(async () => {
       await firstValueFrom(this.api.unban(account.id));
       this.page.reload();
+    });
+  }
+
+  /**
+   * Becomes the account, then reloads the whole application.
+   *
+   * A full reload rather than a router navigation: the session cookie has just been
+   * replaced, and every signal in memory — permissions, organization, menu — belongs
+   * to the previous person. Refreshing them one by one would leave whichever one was
+   * forgotten describing somebody who is no longer signed in.
+   */
+  private impersonate(account: AdminUser): void {
+    void this.run(async () => {
+      await firstValueFrom(this.api.impersonate(account.id));
+      this.document.location.href = '/dashboard';
     });
   }
 

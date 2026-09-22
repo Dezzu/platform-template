@@ -48,6 +48,14 @@ export const MeSchema = z.object({
    */
   mode: z.enum(APP_MODES),
   /**
+   * True when a platform administrator is using the application as this account.
+   *
+   * Reported so the interface can say so permanently and offer the way out. An
+   * administrator who forgets they are somebody else does damage in that person's
+   * name — and every audit entry written meanwhile already records both of them.
+   */
+  impersonating: z.boolean(),
+  /**
    * The subscription that entitles the caller to paid features, or null.
    *
    * Sent so the interface can show a paywall instead of a broken screen. It decides

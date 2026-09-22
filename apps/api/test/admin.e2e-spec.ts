@@ -4,7 +4,7 @@ import { and, eq, inArray } from 'drizzle-orm';
 import { auditLog, emailMessage, member, organization, session, user } from '@app/db';
 import { db } from '../src/database/db';
 import { createTestApp } from './app.factory';
-import { createOrganization, ORIGIN, signUp, type TestUser } from './helpers/auth';
+import { createOrganization, ORIGIN, signUp, toCookieHeader, type TestUser } from './helpers/auth';
 
 /**
  * The platform administration area — the one part of the API that crosses the tenancy
@@ -306,6 +306,97 @@ describe('platform administration (e2e)', () => {
         .set(as(plain))
         .send({ role: 'member' })
         .expect(403);
+    });
+  });
+
+  describe('impersonation', () => {
+    it('refuses an admin: becoming somebody else is a superadmin power', async () => {
+      // `platform.impersonate` is deliberately absent from the support role. Its blast
+      // radius is that person's entire account, not one setting of theirs.
+      await request(app.getHttpServer())
+        .post(`/api/admin/users/${victim.id}/impersonate`)
+        .set(as(admin))
+        .expect(403);
+    });
+
+    it('hands the browser a session for the other account, and lets it back out', async () => {
+      const entered = await request(app.getHttpServer())
+        .post(`/api/admin/users/${victim.id}/impersonate`)
+        .set(as(superadmin))
+        .expect(204);
+
+      // Without the cookie the call succeeds server-side and the browser stays itself.
+      const cookie = toCookieHeader(entered.headers['set-cookie'] as unknown as string[]);
+      expect(cookie).not.toBe('');
+
+      const who = await request(app.getHttpServer())
+        .get('/api/me')
+        .set('Cookie', cookie)
+        .set('Origin', ORIGIN)
+        .expect(200);
+
+      expect(who.body.data.user.email).toBe(victim.email);
+      // Reported so the interface can say so permanently and offer the way out.
+      expect(who.body.data.impersonating).toBe(true);
+
+      // The exit asks for no permission of ours: this session belongs to somebody who
+      // does not hold `platform.impersonate`, and requiring it would lock the
+      // administrator inside the account they stepped into.
+      const left = await request(app.getHttpServer())
+        .post('/api/admin/stop-impersonating')
+        .set('Cookie', cookie)
+        .set('Origin', ORIGIN)
+        .expect(204);
+
+      const back = toCookieHeader(left.headers['set-cookie'] as unknown as string[]);
+      const again = await request(app.getHttpServer())
+        .get('/api/me')
+        .set('Cookie', back)
+        .set('Origin', ORIGIN)
+        .expect(200);
+
+      expect(again.body.data.user.email).toBe(superadmin.email);
+      expect(again.body.data.impersonating).toBe(false);
+    });
+
+    it('records both people, on the way in and on the way out', async () => {
+      const entries = await db
+        .select()
+        .from(auditLog)
+        .where(
+          inArray(auditLog.action, [
+            'platform.user.impersonated',
+            'platform.user.impersonation_stopped',
+          ]),
+        );
+
+      const entered = entries.find((e) => e.action === 'platform.user.impersonated');
+      expect(entered?.actorUserId).toBe(superadmin.id);
+      expect(entered?.resourceId).toBe(victim.id);
+
+      // On the way out the actor is whoever the session belonged to, with the
+      // impersonator named alongside — exactly as in every entry written meanwhile.
+      const stopped = entries.find((e) => e.action === 'platform.user.impersonation_stopped');
+      expect(stopped?.actorUserId).toBe(victim.id);
+      expect(stopped?.impersonatorUserId).toBe(superadmin.id);
+    });
+
+    it('refuses to stop what is not an impersonation', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/admin/stop-impersonating')
+        .set(as(superadmin))
+        .expect(409);
+
+      expect(res.body.messageCode).toBe('CONFLICT');
+    });
+
+    it('refuses impersonating yourself', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/api/admin/users/${superadmin.id}/impersonate`)
+        .set(as(superadmin))
+        .expect(409);
+
+      expect(res.body.messageCode).toBe('CANNOT_MODIFY_SELF');
     });
   });
 

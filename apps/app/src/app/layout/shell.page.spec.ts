@@ -2,12 +2,25 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { AuthService, NAV_SECTIONS, PermissionsService, provideCore } from '@app/core';
+import { of } from 'rxjs';
+import {
+  AuthService,
+  NAV_SECTIONS,
+  PermissionsService,
+  ToastService,
+  provideCore,
+} from '@app/core';
+import { AdminApi } from '../features/admin/admin.api';
 import type { ShellNavSection } from '@app/ui/layout';
 import { provideI18n } from '@app/i18n';
 import { ShellPage } from './shell.page';
 
-function setup(permissions: string[] = [], platform: string[] = [], mode = 'b2b') {
+function setup(
+  permissions: string[] = [],
+  platform: string[] = [],
+  mode = 'b2b',
+  impersonating = false,
+) {
   TestBed.configureTestingModule({
     providers: [
       provideZonelessChangeDetection(),
@@ -21,7 +34,12 @@ function setup(permissions: string[] = [], platform: string[] = [], mode = 'b2b'
         defaultLocale: 'it',
         supportedLocales: ['it', 'en'],
       }),
-      { provide: AuthService, useValue: { user: () => ({ id: 'u1', name: 'Fabio' }) } },
+      {
+        provide: AuthService,
+        useValue: { user: () => ({ id: 'u1', name: 'Fabio', email: 'fabio@demo.it' }) },
+      },
+      { provide: AdminApi, useValue: { stopImpersonating: () => of(undefined) } },
+      ToastService,
       {
         provide: PermissionsService,
         useValue: {
@@ -29,6 +47,7 @@ function setup(permissions: string[] = [], platform: string[] = [], mode = 'b2b'
           allOf: (...required: string[]) => required.every((p) => permissions.includes(p)),
           anyOfPlatform: (...required: string[]) => required.some((p) => platform.includes(p)),
           mode: () => mode,
+          impersonating: () => impersonating,
         },
       },
     ],
@@ -90,6 +109,26 @@ describe('ShellPage menu grouping', () => {
     // above a gap, which is what filtering items without filtering headings produces.
     expect(sections.map((section) => section.id)).toEqual(['main', 'workspace']);
     expect(sections.find((section) => section.id === 'platform')).toBeUndefined();
+  });
+
+  it('says nothing about impersonation when nobody is impersonating', async () => {
+    const fixture = setup();
+    await fixture.whenStable();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain(
+      'Stai usando l’applicazione come',
+    );
+  });
+
+  it('warns permanently while impersonating, and offers the way out', async () => {
+    const fixture = setup([], [], 'b2b', true);
+    await fixture.whenStable();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    // Not dismissible, and it names who you currently are: an administrator who
+    // forgets does damage in that person's name.
+    expect(text).toContain('fabio@demo.it');
+    expect(text).toContain('Torna al tuo account');
   });
 
   it('drops the entries that do not belong to this kind of product', () => {

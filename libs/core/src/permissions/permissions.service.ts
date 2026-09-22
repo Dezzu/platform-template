@@ -25,6 +25,7 @@ export class PermissionsService {
     role: string | null;
     organizationId: string | null;
     mode: AppMode;
+    impersonating: boolean;
     subscribed: boolean;
   }>({
     permissions: new Set(),
@@ -32,6 +33,7 @@ export class PermissionsService {
     role: null,
     organizationId: null,
     mode: DEFAULT_APP_MODE,
+    impersonating: false,
     subscribed: false,
   });
 
@@ -40,6 +42,8 @@ export class PermissionsService {
   readonly permissions = computed(() => this.state().permissions);
   /** Server-reported: what kind of product this deployment is. */
   readonly mode = computed(() => this.state().mode);
+  /** True while a platform administrator is using the application as this account. */
+  readonly impersonating = computed(() => this.state().impersonating);
   /** Derived, never configured separately — see app-mode.ts. */
   readonly personalBilling = computed(() => billsThePerson(this.state().mode));
   /**
@@ -60,6 +64,7 @@ export class PermissionsService {
         role: me.role,
         organizationId: me.activeOrganizationId,
         mode: me.mode,
+        impersonating: me.impersonating,
         subscribed: me.subscription !== null,
       });
       return me;
@@ -76,6 +81,7 @@ export class PermissionsService {
       role: null,
       organizationId: null,
       mode: DEFAULT_APP_MODE,
+      impersonating: false,
       subscribed: false,
     });
   }

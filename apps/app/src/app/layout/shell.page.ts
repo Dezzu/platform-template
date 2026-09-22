@@ -1,6 +1,16 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, DOCUMENT, inject, signal } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
-import { AuthService, NAV_MANIFEST, NAV_SECTIONS, PermissionsService } from '@app/core';
+import { firstValueFrom } from 'rxjs';
+import { TranslocoPipe } from '@jsverse/transloco';
+import { HlmButtonImports } from '@spartan-ng/helm/button';
+import {
+  AuthService,
+  NAV_MANIFEST,
+  NAV_SECTIONS,
+  PermissionsService,
+  ToastService,
+} from '@app/core';
+import { AdminApi } from '../features/admin/admin.api';
 import {
   AppShellComponent,
   ProfileMenuComponent,
@@ -20,7 +30,7 @@ import { environment } from '../../environments/environment';
  */
 @Component({
   selector: 'app-shell-page',
-  imports: [RouterOutlet, AppShellComponent, ProfileMenuComponent],
+  imports: [RouterOutlet, AppShellComponent, ProfileMenuComponent, TranslocoPipe, HlmButtonImports],
   template: `
     <dui-app-shell [appName]="appName" [sections]="visibleSections()">
       <dui-profile-menu
@@ -32,12 +42,39 @@ import { environment } from '../../environments/environment';
         (signOut)="signOut()"
       />
 
+      <!--
+        Permanent, and above everything: an administrator who forgets they are somebody
+        else does damage in that person's name. It is not dismissible for the same
+        reason — the way out is the button, not hiding the warning.
+      -->
+      @if (impersonating()) {
+        <div
+          class="bg-destructive text-destructive-foreground mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md px-4 py-2 text-sm"
+          role="status"
+        >
+          <span>{{ 'admin.impersonatingNotice' | transloco: { who: user()?.email ?? '' } }}</span>
+          <button
+            hlmBtn
+            size="sm"
+            variant="secondary"
+            type="button"
+            [disabled]="leaving()"
+            (click)="stopImpersonating()"
+          >
+            {{ (leaving() ? 'admin.leavingImpersonation' : 'admin.stopImpersonating') | transloco }}
+          </button>
+        </div>
+      }
+
       <router-outlet />
     </dui-app-shell>
   `,
 })
 export class ShellPage {
   private readonly permissions = inject(PermissionsService);
+  private readonly adminApi = inject(AdminApi);
+  private readonly toasts = inject(ToastService);
+  private readonly document = inject(DOCUMENT);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
@@ -97,6 +134,29 @@ export class ShellPage {
 
     return sections;
   });
+
+  /** True while a platform administrator is using the application as this account. */
+  protected readonly impersonating = computed(() => this.permissions.impersonating());
+  protected readonly leaving = signal(false);
+
+  /**
+   * Hands the administrator their own session back, then reloads.
+   *
+   * A full reload for the same reason entering did one: the cookie has been replaced,
+   * and every signal in memory still describes the person who was being impersonated.
+   */
+  protected async stopImpersonating(): Promise<void> {
+    if (this.leaving()) return;
+    this.leaving.set(true);
+
+    try {
+      await firstValueFrom(this.adminApi.stopImpersonating());
+      this.document.location.href = '/admin/users';
+    } catch (error: unknown) {
+      this.leaving.set(false);
+      this.toasts.error(error);
+    }
+  }
 
   protected signOut(): void {
     void this.auth.signOut();

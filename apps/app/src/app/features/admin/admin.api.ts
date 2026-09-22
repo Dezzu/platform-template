@@ -53,6 +53,14 @@ export class AdminApi {
     return this.http.post<void>(`${this.base}/users/${userId}/revoke-sessions`, {});
   }
 
+  impersonate(userId: string): Observable<void> {
+    return this.http.post<void>(`${this.base}/users/${userId}/impersonate`, {});
+  }
+
+  stopImpersonating(): Observable<void> {
+    return this.http.post<void>(`${this.base}/stop-impersonating`, {});
+  }
+
   sendVerificationEmail(userId: string): Observable<void> {
     return this.http.post<void>(`${this.base}/users/${userId}/verification-email`, {});
   }

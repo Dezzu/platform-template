@@ -15,10 +15,32 @@ const PASSWORD = 'a-sufficiently-long-password';
  */
 export function toCookieHeader(setCookie: string[] | string | undefined): string {
   const values = Array.isArray(setCookie) ? setCookie : setCookie ? [setCookie] : [];
-  return values
-    .map((c) => c.split(';')[0]?.trim())
-    .filter((c): c is string => Boolean(c))
-    .join('; ');
+
+  /**
+   * Last one wins, and an empty value clears the cookie — which is what a browser
+   * does, and what a naive join does not.
+   *
+   * It matters as soon as one response both clears and sets the same cookie, as
+   * impersonation does: Better Auth expires `session_token` and then issues a new one
+   * in the same response. Concatenating them sends `session_token=` first, the server
+   * reads that, and a perfectly good login looks like a 401.
+   */
+  const jar = new Map<string, string>();
+  for (const raw of values) {
+    const pair = raw.split(';')[0]?.trim();
+    if (!pair) continue;
+
+    const separator = pair.indexOf('=');
+    if (separator < 0) continue;
+
+    const name = pair.slice(0, separator);
+    const value = pair.slice(separator + 1);
+
+    if (value === '') jar.delete(name);
+    else jar.set(name, value);
+  }
+
+  return [...jar].map(([name, value]) => `${name}=${value}`).join('; ');
 }
 
 export interface TestUser {

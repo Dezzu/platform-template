@@ -19,6 +19,18 @@ import { MeService } from './me.service';
 import { SubscriptionService } from '../billing/subscription.service';
 
 /**
+ * Whether this session belongs to somebody being impersonated.
+ *
+ * Read through a narrow cast: `impersonatedBy` is added by the Better Auth admin
+ * plugin and does not appear on the inferred session type here, the same reason
+ * PermissionsGuard declares its own shape for it.
+ */
+function isImpersonating(session: unknown): boolean {
+  const impersonatedBy = (session as { impersonatedBy?: string | null } | null)?.impersonatedBy;
+  return typeof impersonatedBy === 'string' && impersonatedBy.length > 0;
+}
+
+/**
  * Deliberately carries no @AllowAnonymous(): it demonstrates the default. The global
  * AuthGuard registered by AuthModule protects every route unless it explicitly opts
  * out, so forgetting a decorator yields a 401 rather than an open endpoint.
@@ -74,6 +86,7 @@ export class MeController {
         ...platformPermissionsForRole((session.user as { role?: string | null }).role),
       ],
       mode: this.app.mode,
+      impersonating: isImpersonating(session.session),
       subscription: entitling
         ? {
             plan: entitling.plan,

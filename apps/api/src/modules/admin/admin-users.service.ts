@@ -281,6 +281,89 @@ export class AdminUsersService {
     });
   }
 
+  /**
+   * Becomes somebody else, for support.
+   *
+   * Returns Better Auth's response headers because the whole point is the session
+   * cookie it issues: without forwarding it the call succeeds server-side and the
+   * browser stays exactly who it was.
+   *
+   * Every mutation made while impersonating carries `impersonatorUserId` in its audit
+   * entry — the guard reads `session.impersonatedBy` and `AuditService` records it —
+   * so nothing done this way can later read as the customer's own doing.
+   */
+  async impersonate(actor: PlatformActor, userId: string): Promise<Headers> {
+    const target = await this.load(userId);
+
+    if (userId === actor.userId) {
+      throw new AppException(
+        ERROR_CODES.CANNOT_MODIFY_SELF,
+        HttpStatus.CONFLICT,
+        'You are already yourself',
+      );
+    }
+    this.assertMayActOn(actor, target);
+
+    const { headers } = await callAuthApi(() =>
+      auth.api.impersonateUser({
+        body: { userId },
+        headers: actor.headers,
+        returnHeaders: true,
+      }),
+    );
+
+    await this.audit.record({
+      organizationId: null,
+      actorUserId: actor.userId,
+      action: 'platform.user.impersonated',
+      resourceType: 'user',
+      resourceId: userId,
+      after: { email: target.email },
+    });
+
+    return headers;
+  }
+
+  /**
+   * Gives the administrator their own session back.
+   *
+   * Deliberately asks for no permission of ours. While impersonating, the session
+   * belongs to the person being impersonated, and they almost never hold
+   * `platform.impersonate` — requiring it would lock the administrator inside the
+   * account they stepped into. The session itself is the authorisation: there is
+   * nothing to stop unless it is already an impersonation.
+   */
+  async stopImpersonating(session: {
+    userId: string;
+    impersonatedBy: string | null;
+    headers: Headers;
+  }): Promise<Headers> {
+    if (!session.impersonatedBy) {
+      throw new AppException(
+        ERROR_CODES.CONFLICT,
+        HttpStatus.CONFLICT,
+        'This session is not an impersonation',
+      );
+    }
+
+    const { headers } = await callAuthApi(() =>
+      auth.api.stopImpersonating({ headers: session.headers, returnHeaders: true }),
+    );
+
+    await this.audit.record({
+      organizationId: null,
+      // The actor is whoever the session belonged to; the impersonator is named
+      // alongside, exactly as in every entry written while it lasted.
+      actorUserId: session.userId,
+      impersonatorUserId: session.impersonatedBy,
+      action: 'platform.user.impersonation_stopped',
+      resourceType: 'user',
+      resourceId: session.userId,
+    });
+
+    return headers;
+  }
+
   async ban(actor: PlatformActor, userId: string, input: AdminBan): Promise<void> {
     const target = await this.load(userId);
 

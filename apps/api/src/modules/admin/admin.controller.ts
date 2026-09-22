@@ -9,6 +9,7 @@ import {
   Post,
   Query,
   Req,
+  Res,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { ConfigType } from '@nestjs/config';
@@ -45,7 +46,27 @@ import { AdminUsersService, type PlatformActor } from './admin-users.service';
 
 interface RequestWithSession {
   headers: Record<string, string | string[] | undefined>;
-  session?: { user?: { id: string; role?: string | null } };
+  session?: {
+    user?: { id: string; role?: string | null };
+    session?: { impersonatedBy?: string | null };
+  };
+}
+
+/** Just enough of Express's response to hand the browser a new session cookie. */
+interface ResponseWithHeaders {
+  append(name: string, value: string | string[]): unknown;
+}
+
+/**
+ * Copies Better Auth's Set-Cookie onto the outgoing response.
+ *
+ * Impersonating means being issued a different session, and the session lives in a
+ * cookie. Without this the call succeeds on the server and the browser stays exactly
+ * who it was — which looks like the feature silently doing nothing.
+ */
+function forwardCookies(from: Headers, to: ResponseWithHeaders): void {
+  const cookies = from.getSetCookie();
+  if (cookies.length > 0) to.append('Set-Cookie', cookies);
 }
 
 /**
@@ -131,6 +152,38 @@ export class AdminController {
       id,
       `${this.app.dashboardUrl}/dashboard`,
     );
+  }
+
+  @Post('users/:id/impersonate')
+  @RequirePlatformPermission(PLATFORM_PERMISSIONS.IMPERSONATE)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Continue as this account, for support' })
+  async impersonate(
+    @Req() request: RequestWithSession,
+    @Res({ passthrough: true }) response: ResponseWithHeaders,
+    @Param('id') id: string,
+  ): Promise<void> {
+    forwardCookies(await this.users.impersonate(this.actor(request), id), response);
+  }
+
+  /**
+   * The way back, and it asks for no permission of ours on purpose — see the service.
+   * While impersonating, the session belongs to somebody who almost certainly does not
+   * hold `platform.impersonate`, and requiring it would lock the administrator in.
+   */
+  @Post('stop-impersonating')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Go back to your own account' })
+  async stopImpersonating(
+    @Req() request: RequestWithSession,
+    @Res({ passthrough: true }) response: ResponseWithHeaders,
+  ): Promise<void> {
+    const headers = await this.users.stopImpersonating({
+      userId: request.session?.user?.id ?? '',
+      impersonatedBy: request.session?.session?.impersonatedBy ?? null,
+      headers: authHeaders(request),
+    });
+    forwardCookies(headers, response);
   }
 
   @Post('users/:id/ban')
