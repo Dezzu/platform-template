@@ -56,7 +56,9 @@ export class NotificationBellComponent {
   private readonly latest = resource({
     params: () => this.openedAt(),
     loader: ({ params }) =>
-      params === 0 ? Promise.resolve(null) : firstValueFrom(this.api.list({ size: PREVIEW_SIZE })),
+      params === 0
+        ? Promise.resolve(null)
+        : firstValueFrom(this.api.list({ size: PREVIEW_SIZE, unread: true })),
   });
 
   protected readonly rows = computed<Notification[]>(() =>

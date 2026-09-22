@@ -188,9 +188,15 @@ vince su tutto quello che segue.
 2. **Guarda i log del dev server.** `Missing translation` e `Failed to resolve
 dependency: zod` erano lì ore prima che diventassero bug visibili. Costano una riga
    di output, non una sessione di browser.
-3. **Dopo ogni modifica scriptata, verifica con un grep che sia andata a segno.**
-   Tre modifiche sono fallite in silenzio perché Prettier aveva riformattato il testo
-   cercato.
+3. **Dopo ogni modifica scriptata, verifica con un grep _sulla stringa che hai
+   inserito_.** Prettier riformatta, e un `replace` che non trova nulla non si lamenta:
+   quattro modifiche sono fallite così. Due regole imparate a caro prezzo:
+   - **metti sempre un `assert` sul testo cercato**, non solo sul risultato;
+   - **il grep deve cercare la stringa nuova, da sola.** Un grep con più alternative
+     restituisce righe, e vedere righe non vuol dire che ci sia _quella_ riga. È
+     esattamente così che un `unread: true` mai applicato è sopravvissuto a un
+     controllo, a una suite verde e a due commit — fino a quando il pannello delle
+     notifiche ha continuato a mostrare quelle già lette.
 4. **`pnpm verify` va letto dal suo exit code**, non filtrando l'output con un grep:
    un filtro che non intercetta la riga giusta nasconde un fallimento e lascia
    committare codice rotto. È già successo qui. Una volta sola, alla fine — §0.
