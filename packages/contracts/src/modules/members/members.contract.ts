@@ -63,6 +63,19 @@ export type InvitationCreate = z.infer<typeof InvitationCreateSchema>;
  * Readable without being a member — that is the whole point, since the recipient is
  * not one yet — so it carries only what an invitation email already told them.
  */
+/**
+ * What an invitation says, answered to whoever holds the link — signed in or not.
+ *
+ * Public because the person it is for usually has no account yet: the whole purpose of
+ * the link is to let them make one. Requiring a session first is how an invitation
+ * turns into a login form that cannot be satisfied.
+ *
+ * The invited address is included because the account has to be created for exactly
+ * that address and the form must not let anyone type a different one. Holding the link
+ * already implies having read the mailbox it was sent to — and what stops a forwarded
+ * link from adding the wrong person is not this endpoint but the accept, which refuses
+ * unless the session's address is the invited one.
+ */
 export const InvitationPreviewSchema = z.object({
   id: z.string().min(1),
   email: z.email(),
@@ -71,5 +84,14 @@ export const InvitationPreviewSchema = z.object({
   organizationName: z.string(),
   inviterName: z.string(),
   expiresAt: z.iso.datetime(),
+  /**
+   * Whether that address already has an account, so the page can offer the right of
+   * two doors instead of asking the reader to remember.
+   *
+   * A small disclosure to somebody already holding a secret token tied to that
+   * address, in exchange for not making a new colleague guess whether they have signed
+   * up here before.
+   */
+  accountExists: z.boolean(),
 });
 export type InvitationPreview = z.infer<typeof InvitationPreviewSchema>;

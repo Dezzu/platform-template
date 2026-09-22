@@ -303,11 +303,21 @@
       "name": "Nome",
       "role": "Ruolo"
     },
+    "createAccountAndJoin": "Crea l'account ed entra",
     "description": "Chi fa parte di questa organizzazione e chi è stato invitato.",
+    "invitationCreateAccount": "Imposta una password per {{email}} e sei dentro. L'indirizzo è quello a cui è arrivato l'invito e non si cambia.",
+    "invitationFrom": "Invito di {{inviter}}, come {{role}}.",
+    "invitationHaveAccount": "Hai già un account?",
     "invitationLinkMissing": "Link incompleto. Apri il link dall’email così com’è.",
+    "invitationNotFoundHint": "Il link potrebbe essere incompleto o l'invito è stato annullato. Chiedi che te ne mandino uno nuovo.",
+    "invitationReady": "Sei già dentro con l'indirizzo giusto: manca solo confermare.",
     "invitationSent": "Invito inviato a {{email}}.",
     "invitationSentTo": "Invito inviato a {{email}}.",
+    "invitationSignIn": "Hai già un account con {{email}}. Accedi per accettare.",
+    "invitationTitle": "Ti hanno invitato in {{organization}}",
     "invitationUnavailable": "Questo invito non è disponibile: potrebbe essere scaduto, annullato, o destinato a un altro indirizzo.",
+    "invitationUnusable": "Questo invito non è più valido: è già stato usato, è stato annullato o è scaduto.",
+    "invitationWrongAccount": "Sei collegato con un altro account. Questo invito è per {{invited}}: esci e riprova.",
     "invite": "Invita",
     "inviteEmail": "Indirizzo email",
     "invitedAs": "Sei stato invitato come {{role}}.",
@@ -323,6 +333,7 @@
       "owner": "Owner"
     },
     "title": "Membri",
+    "verifyThenReturn": "Account creato. Conferma l'indirizzo {{email}} dalla mail che ti abbiamo mandato, poi riapri questo link.",
     "you": "tu"
   },
   "nav": {

@@ -1,37 +1,82 @@
 <section hlmCard class="w-full max-w-md">
-  @if (!invitationId) {
-  <div hlmCardContent class="pt-6">
-    <p class="text-destructive text-sm" role="alert">{{ 'members.invitationLinkMissing' | transloco }}</p>
-  </div>
-  } @else if (invitation.isLoading()) {
+  @if (loading()) {
   <div hlmCardContent class="pt-6">
     <p class="text-muted-foreground text-sm">{{ 'common.loading' | transloco }}</p>
   </div>
-  } @else if (invitation.error()) {
+  } @else if (!invitationId) {
   <div hlmCardContent class="pt-6">
-    <p class="text-destructive text-sm" role="alert">{{ 'members.invitationUnavailable' | transloco }}</p>
+    <p class="text-sm" role="alert">{{ 'members.invitationLinkMissing' | transloco }}</p>
   </div>
-  } @else { @let details = invitation.value(); @if (details) {
+  } @else if (failed() || !details()) {
+  <div hlmCardContent class="space-y-3 pt-6">
+    <p class="text-sm" role="alert">{{ 'members.invitationUnavailable' | transloco }}</p>
+    <p class="text-muted-foreground text-sm">{{ 'members.invitationNotFoundHint' | transloco }}</p>
+  </div>
+  } @else { @let invite = details()!;
+
   <div hlmCardHeader>
-    <h1 hlmCardTitle>{{ details.organizationName }}</h1>
+    <h1 hlmCardTitle>{{ 'members.invitationTitle' | transloco: { organization: invite.organizationName } }}</h1>
     <p hlmCardDescription>
-      {{ 'members.invitedAs' | transloco: { role: ('members.roles.' + details.role | transloco) } }}
+      {{ 'members.invitationFrom' | transloco: { inviter: invite.inviterName, role: ('members.roles.' + invite.role |
+      transloco) } }}
     </p>
   </div>
 
-  <div hlmCardContent class="space-y-3">
-    <p class="text-muted-foreground text-sm">{{ 'members.invitationSentTo' | transloco: { email: details.email } }}</p>
+  <div hlmCardContent class="space-y-4">
+    @if (unusable()) {
+    <p class="text-muted-foreground text-sm">{{ 'members.invitationUnusable' | transloco }}</p>
+    <a hlmBtn variant="outline" routerLink="/sign-in">{{ 'auth.signIn' | transloco }}</a>
+    } @else if (signedIn() && wrongAccount()) {
+    <!--
+      A shared computer, almost always. Said plainly, with the way out attached: a
+      refusal from the server would be a puzzle.
+    -->
+    <p class="text-sm" role="alert">{{ 'members.invitationWrongAccount' | transloco: { invited: invite.email } }}</p>
+    <button hlmBtn variant="outline" type="button" (click)="signOut()">{{ 'auth.signOut' | transloco }}</button>
+    } @else if (signedIn()) {
+    <p class="text-muted-foreground text-sm">{{ 'members.invitationReady' | transloco }}</p>
+    <div class="flex gap-3">
+      <button hlmBtn type="button" [disabled]="busy()" (click)="accept()">
+        {{ 'members.acceptInvitation' | transloco }}
+      </button>
+      <button hlmBtn variant="outline" type="button" (click)="decline()">{{ 'common.cancel' | transloco }}</button>
+    </div>
+    } @else if (invite.accountExists) {
+    <p class="text-muted-foreground text-sm">{{ 'members.invitationSignIn' | transloco: { email: invite.email } }}</p>
+    <a hlmBtn routerLink="/sign-in" [queryParams]="signInParams()"> {{ 'auth.signIn' | transloco }} </a>
+    } @else {
+    <!--
+      The point of the whole page: somebody who has never been here sets a password
+      and is in. The address is shown, not typed — the account being created is the
+      one that was invited.
+    -->
+    <p class="text-muted-foreground text-sm">
+      {{ 'members.invitationCreateAccount' | transloco: { email: invite.email } }}
+    </p>
 
-    @if (errorKey(); as key) {
+    <form class="space-y-4" (submit)="register($event)">
+      <dui-text-input [label]="'auth.name' | transloco" [formField]="registration.name" />
+
+      <dui-password-input [label]="'auth.password' | transloco" [formField]="registration.password" />
+
+      <button hlmBtn class="w-full" type="submit" [disabled]="busy()">
+        {{ (busy() ? 'common.saving' : 'members.createAccountAndJoin') | transloco }}
+      </button>
+    </form>
+
+    <p class="text-muted-foreground text-center text-sm">
+      {{ 'members.invitationHaveAccount' | transloco }}
+      <a
+        routerLink="/sign-in"
+        [queryParams]="signInParams()"
+        class="text-foreground font-medium underline underline-offset-4"
+      >
+        {{ 'auth.signIn' | transloco }}
+      </a>
+    </p>
+    } @if (errorKey(); as key) {
     <p class="text-destructive text-sm" role="alert">{{ key | transloco }}</p>
     }
   </div>
-
-  <div hlmCardFooter class="gap-3">
-    <button hlmBtn [disabled]="accepting()" (click)="accept()">
-      {{ (accepting() ? 'members.joining' : 'members.acceptInvitation') | transloco }}
-    </button>
-    <button hlmBtn variant="outline" type="button" (click)="decline()">{{ 'common.cancel' | transloco }}</button>
-  </div>
-  } }
+  }
 </section>

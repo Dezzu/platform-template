@@ -1,7 +1,7 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { eq } from 'drizzle-orm';
-import { user, type Database } from '@app/db';
+import { invitation, organization, user, type Database } from '@app/db';
 import {
   ERROR_CODES,
   outranksOrEquals,
@@ -210,19 +210,55 @@ export class MembersService {
    * checks that the signed-in address matches the invited one, which is what keeps this
    * from being a way to read any invitation by guessing its id.
    */
-  async preview(headers: Headers, invitationId: string): Promise<InvitationPreview> {
-    const invitation = await callAuthApi(() =>
-      auth.api.getInvitation({ headers, query: { id: invitationId } }),
-    );
+  /**
+   * What an invitation says, for whoever holds the link — with no session required.
+   *
+   * Read straight from the tables rather than through `auth.api.getInvitation`,
+   * because that call refuses anyone who is not signed in as the invited address —
+   * which is precisely the person this has to serve: somebody who has no account yet
+   * and is about to create one.
+   *
+   * Safe because the id is a long random token that was emailed to that address, and
+   * because nothing here grants anything: joining still goes through `accept`, which
+   * checks that the session's address is the invited one.
+   */
+  async preview(invitationId: string): Promise<InvitationPreview> {
+    const [row] = await this.db
+      .select({
+        id: invitation.id,
+        email: invitation.email,
+        role: invitation.role,
+        status: invitation.status,
+        expiresAt: invitation.expiresAt,
+        organizationName: organization.name,
+        inviterName: user.name,
+        inviterEmail: user.email,
+      })
+      .from(invitation)
+      .innerJoin(organization, eq(organization.id, invitation.organizationId))
+      .innerJoin(user, eq(user.id, invitation.inviterId))
+      .where(eq(invitation.id, invitationId))
+      .limit(1);
+
+    if (!row) throw AppException.notFound('Invitation', ERROR_CODES.INVITATION_NOT_FOUND);
+
+    const [existing] = await this.db
+      .select({ id: user.id })
+      .from(user)
+      .where(eq(user.email, row.email))
+      .limit(1);
 
     return {
-      id: invitation.id,
-      email: invitation.email,
-      role: normaliseRole(invitation.role),
-      status: invitation.status as InvitationPreview['status'],
-      organizationName: invitation.organizationName,
-      inviterName: invitation.inviterEmail,
-      expiresAt: new Date(invitation.expiresAt).toISOString(),
+      id: row.id,
+      email: row.email,
+      // The column is nullable in Better Auth's schema; an invitation without a role
+      // is a member invitation.
+      role: normaliseRole(row.role ?? 'member'),
+      status: row.status as InvitationPreview['status'],
+      organizationName: row.organizationName,
+      inviterName: row.inviterName?.trim() || row.inviterEmail,
+      expiresAt: row.expiresAt.toISOString(),
+      accountExists: Boolean(existing),
     };
   }
 

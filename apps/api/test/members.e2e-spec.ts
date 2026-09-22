@@ -254,9 +254,21 @@ describe('members and invitations (e2e)', () => {
       expect(preview.body.data.organizationName).toBe('MembersA');
       expect(preview.body.data.email).toBe(newcomer.email);
 
-      // …but nobody else can, however well they guess the id.
+      /**
+       * Reading it needs no session at all, and that is deliberate: the person an
+       * invitation is for usually has no account yet, and a preview behind a login is
+       * a login form they cannot satisfy. The id is a long random token that was
+       * emailed to the invited address, and reading grants nothing.
+       */
       await request(app.getHttpServer())
         .get(`/api/invitations/${invitationId}`)
+        .set('Origin', ORIGIN)
+        .expect(200);
+
+      // What protects it is the accept, not the preview: a forwarded link must not add
+      // whoever it was forwarded to.
+      await request(app.getHttpServer())
+        .post(`/api/invitations/${invitationId}/accept`)
         .set(as(outsider))
         .expect((res) => {
           expect(res.status).toBeGreaterThanOrEqual(400);

@@ -368,6 +368,22 @@ trovato questo. `'boundaries/debug': { enabled: true }` stampa cosa il plugin ha
 di una dipendenza. Da non usare: `boundaries/alias`, che è deprecato e, attivandolo,
 zittisce anche le regole che funzionavano.
 
+**La pagina di un invito è pubblica, e deve esserlo.** Chi riceve un invito di norma
+**non ha un account**: il link esiste per fargliene creare uno. Dietro `authGuard`
+diventava un form di login impossibile da soddisfare — si arrivava, si veniva
+rimbalzati, e non c'era modo di impostare una password. Quindi `/accept-invitation` è
+una rotta pubblica fuori dalla shell, e `GET /invitations/:id` è `@AllowAnonymous`,
+letto dalle tabelle invece che da `auth.api.getInvitation` (che rifiuta chi non è già
+autenticato come l'invitato — cioè esattamente la persona da servire).
+
+Ciò che protegge non è la preview ma **l'accept**, che rifiuta se l'indirizzo della
+sessione non è quello invitato: un link inoltrato non aggiunge chi l'ha ricevuto. La
+preview espone l'indirizzo invitato perché l'account va creato per _quello_ e il form
+non deve permettere di digitarne un altro; chi ha il link ha già letto quella casella.
+L'assunzione portante è che in produzione la verifica email sia accesa — senza, un link
+inoltrato permetterebbe di creare un account con l'indirizzo altrui. È già obbligatoria
+(`crossFieldIssues`), ed è qui che serve.
+
 **Una CanMatch non vede la query string.** Riceve i segmenti di path, già ripuliti:
 una guard che ricostruisce da lì l'URL tentato perde `?id=…`, cioè l'unica parte che
 identifica un invito. Chi cliccava l'email finiva sul login e poi su una dashboard
@@ -452,7 +468,7 @@ Poi 10 osservabilità · 11 Docker+CI · 12 Terraform.
 
 Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-snail.md`.
 
-**332 test.** `pnpm verify` verde.
+**335 test.** `pnpm verify` verde.
 
 ### Cosa ha aggiunto la 9c
 

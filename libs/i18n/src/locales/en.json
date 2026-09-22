@@ -303,11 +303,21 @@
       "name": "Name",
       "role": "Role"
     },
+    "createAccountAndJoin": "Create the account and join",
     "description": "Who belongs to this organization, and who has been invited.",
+    "invitationCreateAccount": "Set a password for {{email}} and you are in. That is the address the invitation was sent to, and it cannot be changed.",
+    "invitationFrom": "Invited by {{inviter}}, as {{role}}.",
+    "invitationHaveAccount": "Already have an account?",
     "invitationLinkMissing": "Incomplete link. Open the link from the email exactly as it is.",
+    "invitationNotFoundHint": "The link may be incomplete, or the invitation was cancelled. Ask for a new one.",
+    "invitationReady": "You are already signed in with the right address — just confirm.",
     "invitationSent": "Invitation sent to {{email}}.",
     "invitationSentTo": "Invitation sent to {{email}}.",
+    "invitationSignIn": "You already have an account for {{email}}. Sign in to accept.",
+    "invitationTitle": "You have been invited to {{organization}}",
     "invitationUnavailable": "This invitation is unavailable: it may have expired, been cancelled, or been meant for a different address.",
+    "invitationUnusable": "This invitation is no longer valid: it has been used, cancelled, or it expired.",
+    "invitationWrongAccount": "You are signed in as somebody else. This invitation is for {{invited}}: sign out and try again.",
     "invite": "Invite",
     "inviteEmail": "Email address",
     "invitedAs": "You have been invited as {{role}}.",
@@ -323,6 +333,7 @@
       "owner": "Owner"
     },
     "title": "Members",
+    "verifyThenReturn": "Account created. Confirm {{email}} from the email we just sent, then open this link again.",
     "you": "you"
   },
   "nav": {

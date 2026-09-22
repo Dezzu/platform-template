@@ -39,6 +39,20 @@ export const routes: Routes = [
   },
   {
     /**
+     * Public, and outside the shell — both deliberate.
+     *
+     * The person an invitation is for usually has no account: the link exists to let
+     * them make one. Behind the auth guard it became a login form they could not
+     * satisfy, which is exactly how it behaved until somebody tried it. Nothing is
+     * joined without an explicit click, and the accept still refuses unless the
+     * session's address is the invited one.
+     */
+    path: 'accept-invitation',
+    loadComponent: () =>
+      import('./features/members/accept-invitation.page').then((m) => m.AcceptInvitationPage),
+  },
+  {
+    /**
      * Outside the shell, and behind no guard at all: this is where apiInterceptor
      * sends anybody the API answered 503 to, and every call the shell makes on boot
      * would answer 503 to them too.
@@ -83,14 +97,6 @@ export const routes: Routes = [
         path: 'members',
         canMatch: [navGuard('members')],
         loadComponent: () => import('./features/members/members.page').then((m) => m.MembersPage),
-      },
-      {
-        // Reached from an invitation email, so it is deliberately absent from
-        // NAV_MANIFEST — and guarded by authGuard alone, since the visitor is not a
-        // member of anything yet.
-        path: 'accept-invitation',
-        loadComponent: () =>
-          import('./features/members/accept-invitation.page').then((m) => m.AcceptInvitationPage),
       },
       {
         path: 'audit',
