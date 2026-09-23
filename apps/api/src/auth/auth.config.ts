@@ -4,6 +4,7 @@ import { admin, organization, twoFactor } from 'better-auth/plugins';
 import { adminAc, defaultAc, defaultStatements, userAc } from 'better-auth/plugins/admin/access';
 import { createStripePlugin } from '../modules/billing/stripe-plugin';
 import { authMailer } from '../modules/mail/mail.bridge';
+import { recordSignup } from '../observability/metrics';
 import { ensurePersonalOrganization } from './personal-organization';
 import * as schema from '@app/db';
 import { db } from '../database/db';
@@ -104,6 +105,9 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (user) => {
+          // Counted here rather than in the controller: this hook fires for every way
+          // an account can come into existence — the form, Google, an invitation.
+          recordSignup();
           await ensurePersonalOrganization(user);
         },
       },

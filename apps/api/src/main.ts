@@ -1,7 +1,11 @@
 import 'reflect-metadata';
 import { Logger, StandardSchemaValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import type { ConfigType } from '@nestjs/config';
 import { AppModule } from './app.module';
+import { appConfig } from './config/namespaces';
+import { createLogger, PinoLoggerService } from './observability/logger';
+import { TelemetryInterceptor } from './observability/telemetry.interceptor';
 import {
   AppException,
   AppExceptionFilter,
@@ -21,7 +25,32 @@ async function bootstrap(): Promise<void> {
      * that look like CORS or cookie problems rather than body-parsing problems.
      */
     bodyParser: false,
+
+    /**
+     * Held, not dropped. Nest logs the modules it initialises and the routes it maps
+     * before there is any chance to install a logger, and those lines are the ones you
+     * want when a boot goes wrong. Buffered, they are replayed through pino below —
+     * structured, and carrying the trace ids like everything else.
+     */
+    bufferLogs: true,
   });
+
+  /**
+   * The real logger, built from validated configuration rather than from `process.env`.
+   *
+   * It can only happen here: the configuration does not exist until the container is
+   * up, and the logger has to exist before the buffered lines are flushed.
+   */
+  const config = app.get<ConfigType<typeof appConfig>>(appConfig.KEY);
+  app.useLogger(
+    new PinoLoggerService(
+      createLogger({
+        level: config.logLevel,
+        pretty: config.logFormat === 'pretty',
+        serviceName: config.name,
+      }),
+    ),
+  );
 
   /**
    * Every controller lives under /api, which is what the frontends and the nginx
@@ -82,7 +111,13 @@ async function bootstrap(): Promise<void> {
   // the envelope, every failure becomes an envelope with a translatable messageCode
   // while keeping its real HTTP status.
   // Order matters: the request context must be open before anything else runs.
-  app.useGlobalInterceptors(new RequestContextInterceptor(), new ResponseEnvelopeInterceptor());
+  app.useGlobalInterceptors(
+    new RequestContextInterceptor(),
+    // After the request context, because it reads the request id from it; before the
+    // envelope, which only shapes what comes back.
+    new TelemetryInterceptor(),
+    new ResponseEnvelopeInterceptor(),
+  );
   app.useGlobalFilters(new AppExceptionFilter(process.env['NODE_ENV'] === 'production'));
 
   setupOpenApi(app);

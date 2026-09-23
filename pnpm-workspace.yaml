@@ -39,6 +39,9 @@ minimumReleaseAge: 0
 #   @parcel/watcher, lmdb, msgpackr-extract — native modules behind the Angular CLI's
 #                   file watching and persistent build cache; without them builds
 #                   still work but lose incremental caching
+#   protobufjs    — arrives under the OTLP exporters. Its postinstall only prints a
+#                   warning about a dependent's version scheme and produces nothing, so
+#                   there is nothing to gain by running it
 #   nx            — the schematics engine behind @spartan-ng/cli (dev only); its
 #                   postinstall resolves the platform-native binary
 allowBuilds:
@@ -50,6 +53,7 @@ allowBuilds:
   msgpackr-extract: true
   nx: true
   unrs-resolver: true
+  protobufjs: false
 
 strictPeerDependencies: false
 autoInstallPeers: true

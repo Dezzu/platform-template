@@ -8,6 +8,7 @@ import { emailMessage, type Database } from '@app/db';
 import { mailConfig, queueConfig } from '../../config/namespaces';
 import { DRIZZLE } from '../../database/database.module';
 import { QUEUES } from '../../queue/queue.constants';
+import { recordEmail } from '../../observability/metrics';
 import { QueueWorkerHost } from '../../queue/queue-worker.host';
 import { EmailJobSchema } from './mail.job';
 import { MailService } from './mail.service';
@@ -69,6 +70,7 @@ export class MailProcessor extends QueueWorkerHost {
         })
         .where(eq(emailMessage.id, payload.messageId));
 
+      recordEmail(payload.template, 'sent');
       this.logger.log(`sent "${payload.template}" to ${payload.to} via ${this.transport.name}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -86,6 +88,10 @@ export class MailProcessor extends QueueWorkerHost {
           updatedAt: new Date(),
         })
         .where(eq(emailMessage.id, payload.messageId));
+
+      // Counted only once the retries are spent: every attempt would make a flaky
+      // provider look like a broken one, and the rate is what anybody alerts on.
+      if (exhausted) recordEmail(payload.template, 'failed');
 
       this.logger.warn(
         `attempt ${attempt} to send "${payload.template}" to ${payload.to} failed: ${message}`,

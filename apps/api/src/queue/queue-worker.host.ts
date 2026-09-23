@@ -2,6 +2,7 @@ import { Logger, type OnApplicationBootstrap } from '@nestjs/common';
 import { WorkerHost } from '@nestjs/bullmq';
 import { UnrecoverableError } from 'bullmq';
 import type { z } from 'zod';
+import { recordJob } from '../observability/metrics';
 
 /**
  * Base class for every processor.
@@ -39,6 +40,22 @@ export abstract class QueueWorkerHost extends WorkerHost implements OnApplicatio
     // Set here rather than in the decorator: the decorator's options are evaluated at
     // import time, before the configuration has been validated.
     this.worker.concurrency = this.options.concurrency;
+
+    /**
+     * Timing taken from the worker's own events rather than by wrapping `process`.
+     *
+     * `process` is abstract and every subclass implements it, so a wrapper here would
+     * mean either renaming the method each of them overrides or trusting each of them
+     * to call a timer — and the one that forgets is the one whose queue is slow. BullMQ
+     * already records when a job started and finished; these two lines read it.
+     */
+    this.worker.on('completed', (job) => {
+      recordJob(this.queueName, job.name, 'completed', elapsedSeconds(job));
+    });
+    this.worker.on('failed', (job) => {
+      if (job) recordJob(this.queueName, job.name, 'failed', elapsedSeconds(job));
+    });
+
     if (!this.worker.isRunning()) void this.worker.run();
     this.logger.log(
       `consuming queue "${this.queueName}" with concurrency ${this.options.concurrency}`,
@@ -58,4 +75,15 @@ export abstract class QueueWorkerHost extends WorkerHost implements OnApplicatio
 
     return result.data;
   }
+}
+
+/** Zero rather than a negative or a NaN when BullMQ has not filled both timestamps. */
+function elapsedSeconds(job: {
+  processedOn?: number | undefined;
+  finishedOn?: number | undefined;
+}): number {
+  const started = job.processedOn;
+  const finished = job.finishedOn;
+  if (!started || !finished) return 0;
+  return Math.max(0, (finished - started) / 1_000);
 }

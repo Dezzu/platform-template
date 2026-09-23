@@ -7,6 +7,7 @@ import { Logger } from '@nestjs/common';
 import { appMode } from '../../config/app-mode';
 import { db } from '../../database/db';
 import { webhookNotifier } from '../notifications/notifications.bridge';
+import { recordStripeWebhook } from '../../observability/metrics';
 
 /**
  * Builds the Better Auth Stripe plugin, or returns null when Stripe is not configured.
@@ -185,30 +186,44 @@ export function createStripePlugin(): ReturnType<typeof stripePlugin> | null {
      */
     onEvent: async (event) => {
       const isNew = await recordStripeEvent(event);
-      // Already seen: stop rather than replay whatever side effect it describes.
-      if (!isNew) return;
-
-      /**
-       * The plugin already turns customer.subscription.* into rows in `subscription`.
-       * What it does not cover is the invoice lifecycle, and a failed renewal arrives
-       * as `invoice.payment_failed`: an integration that only watches subscription
-       * events sees a plan that is still 'active' while the card has stopped working.
-       *
-       * Logged for now — the notification and dunning flow belongs with the email
-       * module. The important part is that the event is recorded rather than dropped.
-       */
-      if (event.type === 'invoice.payment_failed' || event.type === 'invoice.paid') {
-        logger.log(`stripe: ${event.type} (${event.id})`);
+      if (!isNew) {
+        // Already seen: stop rather than replay whatever side effect it describes.
+        // Counted, not ignored — a steady trickle here is the idempotency guard doing
+        // its job, and the same trickle under `failed` would be money going unrecorded.
+        recordStripeWebhook(event.type, 'duplicate');
+        return;
       }
 
-      if (event.type === 'invoice.payment_failed') {
-        await announcePaymentFailure(event);
-      }
+      try {
+        /**
+         * The plugin already turns customer.subscription.* into rows in `subscription`.
+         * What it does not cover is the invoice lifecycle, and a failed renewal arrives
+         * as `invoice.payment_failed`: an integration that only watches subscription
+         * events sees a plan that is still 'active' while the card has stopped working.
+         *
+         * Logged for now — the notification and dunning flow belongs with the email
+         * module. The important part is that the event is recorded rather than dropped.
+         */
+        if (event.type === 'invoice.payment_failed' || event.type === 'invoice.paid') {
+          logger.log(`stripe: ${event.type} (${event.id})`);
+        }
 
-      await db
-        .update(stripeEvent)
-        .set({ processedAt: new Date() })
-        .where(eq(stripeEvent.id, event.id));
+        if (event.type === 'invoice.payment_failed') {
+          await announcePaymentFailure(event);
+        }
+
+        await db
+          .update(stripeEvent)
+          .set({ processedAt: new Date() })
+          .where(eq(stripeEvent.id, event.id));
+
+        recordStripeWebhook(event.type, 'processed');
+      } catch (error) {
+        recordStripeWebhook(event.type, 'failed');
+        // Rethrown: an unacknowledged webhook is what makes Stripe retry, and this
+        // counter exists to describe what happened, not to swallow it.
+        throw error;
+      }
     },
   });
 }

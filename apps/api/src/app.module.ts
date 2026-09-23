@@ -7,6 +7,7 @@ import { auth } from './auth/auth.config';
 import { configNamespaces } from './config/namespaces';
 import { validateEnv } from './config/validate-env';
 import { DatabaseModule } from './database/database.module';
+import { ObservabilityModule } from './observability/observability.module';
 import { QueueModule } from './queue/queue.module';
 import { StorageModule } from './storage/storage.module';
 import { HealthModule } from './modules/health/health.module';
@@ -44,6 +45,7 @@ import { PermissionsGuard } from './auth/permissions.guard';
     DatabaseModule,
     QueueModule,
     StorageModule,
+    ObservabilityModule,
 
     /**
      * Before AuthModule on purpose. Better Auth's hooks send verification, reset and

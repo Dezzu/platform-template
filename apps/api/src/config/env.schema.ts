@@ -19,6 +19,14 @@ const csv = z
 
 export const NODE_ENVS = ['development', 'test', 'production'] as const;
 export const LOG_LEVELS = ['trace', 'debug', 'info', 'warn', 'error', 'fatal'] as const;
+/**
+ * How the lines are shaped: JSON for a collector, `pretty` for a person.
+ *
+ * Production must be `json` — `pretty` routes every line through a worker thread and
+ * produces something Loki cannot parse into fields, so the trace correlation that is
+ * the whole point of structured logging is lost.
+ */
+export const LOG_FORMATS = ['json', 'pretty'] as const;
 export const MAIL_DRIVERS = ['smtp', 'ses'] as const;
 
 /**
@@ -37,6 +45,7 @@ const baseEnvSchema = z.object({
   WEB_URL: z.url().default('http://localhost:4200'),
   DASHBOARD_URL: z.url().default('http://localhost:4300'),
   LOG_LEVEL: z.enum(LOG_LEVELS).default('info'),
+  LOG_FORMAT: z.enum(LOG_FORMATS).default('json'),
   /**
    * What kind of product this deployment is — see the contract in
    * packages/contracts/src/common/app-mode.ts and

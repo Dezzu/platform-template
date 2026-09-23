@@ -84,6 +84,11 @@ Mai `any`. Mai `@ts-ignore` senza una riga che spieghi perché.
   ticket → PUT presigned dal browser → `POST /files/:id/commit`, che rilegge l'oggetto
   con una HEAD. Solo il commit si fida dello storage: quello che ha dichiarato il
   client (dimensione, content type) non è mai un fatto.
+- **`instrumentation.ts` si carica con `--require`, mai con un import.** L'ordine è ciò
+  che fa funzionare l'auto-instrumentation: rattoppa i moduli mentre vengono richiesti,
+  quindi deve girare prima del primo `require` di `http`, `pg`, `ioredis`. Importata da
+  `main.ts` il processo parte pulito, si dichiara strumentato e non produce uno span.
+  Vedi [docs/osservabilita.md](./docs/osservabilita.md).
 - **Mai inviare email dentro un handler HTTP.** Si passa sempre da `MailService.send`,
   che renderizza, scrive la riga `email_message` e accoda: un invito spedito inline è
   un membro non aggiunto perché SES ha avuto un brutto secondo.
@@ -132,6 +137,7 @@ Resta dentro `apps/app` come libreria, non `apps/admin`: decisione presa, vedi �
 | `pnpm stripe:listen`                   | inoltra i webhook su localhost                                                            |
 | `pnpm ng test libs` / `test app`       | test frontend                                                                             |
 | `pnpm node:check`                      | verifica la versione di Node — è il primo passo di `verify`                               |
+| `OTEL_ENABLED=true pnpm start:api`     | avvia l'api esportando trace e metriche via OTLP                                          |
 | <http://localhost:8025>                | Mailpit: le email inviate in locale                                                       |
 | <http://localhost:9001>                | console MinIO (`minioadmin` / `minioadmin`)                                               |
 
@@ -477,6 +483,15 @@ amministrazione.
 per sola `action` e trovava un'impersonation reale fatta dall'interfaccia giorni prima:
 il test falliva sul dato di qualcun altro. Filtra sempre anche per `actorUserId`.
 
+**Un peer opzionale nuovo può sdoppiare una dipendenza condivisa.** `drizzle-orm` dichiara
+`@opentelemetry/api` come peer opzionale: nel momento in cui `apps/api` l'ha aggiunto fra le
+sue dipendenze dirette, pnpm ha creato una **seconda** istanza di drizzle per quel contesto,
+mentre `packages/db` è rimasto sulla prima. Il sintomo non parla di pnpm — è `tsc` che dice
+che `SQL<unknown>` non è assegnabile a `SQL<unknown>` e che due proprietà private omonime
+sono dichiarate separatamente. Dichiarare il peer anche nell'altro pacchetto **non basta**:
+il lockfile non viene ri-risolto perché nessuno specifier è cambiato. Serve `pnpm dedupe`,
+che riallinea entrambi sulla stessa istanza.
+
 **`count(*)` grezzo in un `sql` torna una stringa, e `'0' === 0` è falso.** Il driver `pg`
 restituisce i bigint come stringhe: l'helper `count()` di Drizzle lo sa e converte, un
 frammento `sql` scritto a mano no. Una guardia del tipo `(row.owners ?? 0) === 0` non
@@ -513,9 +528,11 @@ cancellare gli archivi produce esattamente la spazzatura che lo sweep esiste per
 **Fatte:** 0 tooling · 1 database · 2 auth · 3 config/envelope · 4 contratti+OpenAPI ·
 5 tenancy/permessi/audit · 6 frontend · 7 billing Stripe · 8 code+email+storage ·
 9a membri+inviti+pagine auth · 9b area di amministrazione · 9c feature flag + maintenance ·
-9d notifiche + preferenze · 9e GDPR + cookie banner + pagine legali · 9f notifiche live (SSE).
+9d notifiche + preferenze · 9e GDPR + cookie banner + pagine legali · 9f notifiche live (SSE) ·
+10a strumentazione OTel + log strutturati + metriche custom.
 
-**Da fare:** 10 osservabilità · 11 Docker+CI · 12 Terraform.
+**Da fare:** 10b infrastruttura osservabilità (`infra/observability/`, `infra/backup/`) ·
+10c dashboard metriche di business in `/admin/metrics` · 11 Docker+CI · 12 Terraform.
 (Audit UI e impersonation: fatti. La fase 9 è chiusa.)
 
 Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-snail.md`.
@@ -641,6 +658,30 @@ scrive il resto.
 - **`@RawResponse()`** toglie l'envelope a un handler. Serve solo agli stream: un SSE
   incartato perderebbe il `type` che dice a `EventSource` a quale listener appartiene
   ogni messaggio.
+
+### Cosa ha aggiunto la 10a
+
+Il dettaglio sta in [docs/osservabilita.md](./docs/osservabilita.md); qui ciò che cambia
+come si scrive il resto.
+
+- **Tre segnali, due trasporti.** Trace e metriche escono via OTLP verso Alloy; i log
+  restano su **stdout** in JSON. Il pipeline log di OTLP è spento di proposito
+  (`logRecordProcessors: []`): lo stack esistente raccoglie già lo stdout dal socket
+  docker, e lasciarlo acceso metterebbe ogni riga in Loki due volte.
+- **Dal log si salta alla trace.** Ogni riga porta `trace_id`/`span_id` presi dal contesto
+  ambientale, non da un argomento. Anche `audit_log.trace_id` ora è riempita: era una
+  colonna sempre nulla.
+- **Lo span sa per chi è la richiesta.** `user.id`, `org.id`, `org.role`, `request.id` e
+  `user.impersonator_id` — quest'ultimo separato, o le azioni di un admin sotto
+  impersonation risulterebbero del cliente.
+- **Le metriche passano dal meter globale, non dalla DI.** I posti che vale la pena
+  contare non sono tutti nel container: gli hook di Better Auth, la base astratta dei
+  worker, la callback del webhook Stripe. Con la telemetria spenta il meter è no-op,
+  quindi nessun call site ha una guardia.
+- **`pnpm dedupe` dopo aver aggiunto `@opentelemetry/api`.** Drizzle ce l'ha come peer
+  opzionale, quindi `apps/api` e `packages/db` si sono ritrovati su due istanze diverse di
+  `drizzle-orm` e i tipi hanno smesso di combaciare attraverso il confine fra i due
+  pacchetti. Vedi §5.
 
 ### Il back office: una sola applicazione, con un confine
 

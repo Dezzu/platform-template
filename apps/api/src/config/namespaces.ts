@@ -20,6 +20,7 @@ export const appConfig = registerAs('app', () => {
     webUrl: e.WEB_URL,
     dashboardUrl: e.DASHBOARD_URL,
     logLevel: e.LOG_LEVEL,
+    logFormat: e.LOG_FORMAT,
     /** What kind of product this is. The single switch — see app-mode.ts. */
     mode: e.APP_MODE,
     defaultLocale: e.DEFAULT_LOCALE,
