@@ -563,7 +563,7 @@ cancellare gli archivi produce esattamente la spazzatura che lo sweep esiste per
 
 Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-snail.md`.
 
-**373 test.** `pnpm verify` verde.
+**376 test.** `pnpm verify` verde.
 
 ### Cosa ha aggiunto la 9c
 
@@ -669,10 +669,16 @@ scrive il resto.
   finirebbe sul processo giusto circa una volta su due, e il badge si muoverebbe per
   alcuni e non per altri senza una riga nei log. Il pub/sub di Valkey lo manda a tutti,
   e ognuno tiene ciò che le sue connessioni hanno chiesto.
-- **Sul canale viaggia una spinta, non la notifica.** L'evento porta destinatari, tenant
-  e tipo; il browser poi richiede il conteggio. Così il numero resta autorevole — viene
-  dalla stessa query della pagina — e lo stream non diventa un secondo read model che
-  può dissentire dal primo.
+- **Sul canale viaggia il minimo che serve per agire**: destinatari, tenant, tipo, e la
+  chiave i18n con i suoi parametri — abbastanza per alzare un toast nell'istante in cui
+  l'evento arriva. Il **conteggio no**: quello il browser lo richiede, così il numero
+  resta autorevole (viene dalla stessa query della pagina) e lo stream non diventa un
+  secondo read model che può dissentire dal primo. Chiavi, mai frasi: il lettore può
+  cambiare lingua.
+- **All'arrivo scatta un toast, oltre al badge.** Sono due cose diverse: il badge è un
+  numero piccolo in un angolo e chi sta compilando un form non lo vede cambiare, quindi
+  è il toast a far _notare_ la notifica — ed è il badge a farla sopravvivere all'essere
+  stata persa.
 - **Il filtro del destinatario è il confine di sicurezza.** Ogni processo riceve ogni
   evento, quindi ciò che impedisce a un browser di vedere la posta di un altro è
   `userIds.includes` dentro `streamFor`, e nient'altro: sotto non c'è una query con un

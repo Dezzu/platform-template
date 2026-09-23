@@ -52,6 +52,8 @@ describe('NotificationsService.streamFor', () => {
           userIds: [ME],
           organizationId: MY_ORG,
           type: 'member.joined',
+          titleKey: 'notifications.types.member.joined.title',
+          params: null,
           raisedAt: new Date().toISOString(),
           ...event,
         }),
@@ -94,12 +96,24 @@ describe('NotificationsService.streamFor', () => {
     expect(received).toHaveLength(1);
   });
 
-  it('carries no notification body — the browser refetches', () => {
+  it('carries the key and its parameters, so a toast can be raised at once', () => {
     const { publish, received } = listen();
-    publish({ type: 'gdpr.export_ready' });
+    publish({
+      type: 'gdpr.export_ready',
+      titleKey: 'notifications.types.gdpr.export_ready.title',
+      params: { scope: 'user' },
+    });
 
-    // Only the type travels. Putting the contents on a channel every process listens
-    // to would be a second read model to keep in step with the first.
-    expect(received[0]?.data).toEqual({ type: 'gdpr.export_ready' });
+    /**
+     * The key, never a sentence — the reader can change language, and text frozen at
+     * publish time would stay in whichever one was active then. And nothing more than
+     * this: the body and the count are still refetched, so the stream cannot drift
+     * into a second read model.
+     */
+    expect(received[0]?.data).toEqual({
+      type: 'gdpr.export_ready',
+      titleKey: 'notifications.types.gdpr.export_ready.title',
+      params: { scope: 'user' },
+    });
   });
 });

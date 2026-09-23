@@ -14,16 +14,30 @@ import { queueConfig, redisConfig } from '../../config/namespaces';
 /**
  * What one raised notification looks like on the wire between API processes.
  *
- * Deliberately thin. It carries who it is for and enough to decide whether a given
- * connection cares — never the body, never the parameters. The browser refetches what
- * it needs, which keeps this message safe to put on a channel every API process is
- * listening to and keeps one shape from having to match the read model forever.
+ * Deliberately thin: who it is for, enough to decide whether a given connection cares,
+ * and the one line needed to tell them. Never the body, never the action URL — the
+ * browser refetches anything more, which keeps one shape from having to match the read
+ * model forever.
  */
 export const NotificationEventSchema = z.object({
   userIds: z.array(z.string()).min(1),
   /** Null when the notification is about the person rather than about a tenant. */
   organizationId: z.string().nullable(),
   type: z.string(),
+  /**
+   * The i18n key and its placeholders — never a rendered sentence.
+   *
+   * They are here so the browser can raise a toast the moment the event lands. The
+   * alternative was a nudge plus a second request to find out what to say, which is
+   * both slower and one more thing that can fail: a badge that moves with no
+   * explanation is worse than no badge moving.
+   *
+   * Keys and parameters, not text, for the same reason the row stores them that way:
+   * the reader can change language, and a sentence frozen at publish time would stay
+   * in whichever one was active when the event happened.
+   */
+  titleKey: z.string(),
+  params: z.record(z.string(), z.unknown()).nullable(),
   raisedAt: z.iso.datetime(),
 });
 export type NotificationEvent = z.infer<typeof NotificationEventSchema>;

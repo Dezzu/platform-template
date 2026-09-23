@@ -3,6 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { CORE_CONFIG } from '../config/core.config';
 import { NotificationsApi } from '../api/notifications.api';
+import { ToastService } from './toast.service';
 
 /** How long to wait before reconnecting, and how far that backs off. */
 const RETRY_BASE_MS = 2_000;
@@ -23,10 +24,11 @@ const RETRY_MAX_MS = 60_000;
  * number.
  *
  * Now the server pushes. `connect()` opens an `EventSource` against
- * `/notifications/stream`, and each event is a **nudge**: the count is refetched
- * rather than carried in the message. That keeps the number authoritative — it comes
- * from the same query the page would run — and keeps the stream from quietly becoming
- * a second read model that can disagree with the first.
+ * `/notifications/stream`. Each event carries the i18n key of what happened — enough
+ * to raise a toast the instant it lands — and the count is still **refetched** rather
+ * than carried, so the number stays authoritative (it comes from the same query the
+ * page would run) and the stream never becomes a second read model that can disagree
+ * with the first.
  *
  * Still no polling. The one timer here is the reconnect backoff, and it only runs
  * while the connection is actually down.
@@ -34,6 +36,7 @@ const RETRY_MAX_MS = 60_000;
 @Service()
 export class NotificationCenterService {
   private readonly api = inject(NotificationsApi);
+  private readonly toasts = inject(ToastService);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   private readonly apiUrl = inject(CORE_CONFIG).apiUrl;
 
@@ -103,9 +106,10 @@ export class NotificationCenterService {
       void this.refresh();
     });
 
-    source.addEventListener('notification', () => {
+    source.addEventListener('notification', (event) => {
       this.arrivals.update((value) => value + 1);
       void this.refresh();
+      this.announce(event);
     });
 
     /**
@@ -118,6 +122,38 @@ export class NotificationCenterService {
       this.teardown();
       this.scheduleReconnect();
     });
+  }
+
+  /**
+   * Raises a toast for what just arrived.
+   *
+   * The badge alone is not enough: it is a small number in a corner, and somebody
+   * reading a form does not see it change. The toast is what makes a notification
+   * *noticed* — the badge is what makes it survive being missed.
+   *
+   * The key comes over the wire and is translated by the toaster when it renders, so a
+   * language switch re-renders a toast that is still on screen. A malformed payload is
+   * dropped rather than shown: the count has already been refreshed by the caller, so
+   * the badge still moves and nothing is lost but the announcement.
+   */
+  private announce(event: Event): void {
+    const raw = (event as MessageEvent<string>).data;
+    if (typeof raw !== 'string') return;
+
+    try {
+      const payload = JSON.parse(raw) as { titleKey?: unknown; params?: unknown };
+      if (typeof payload.titleKey !== 'string') return;
+
+      const params =
+        typeof payload.params === 'object' && payload.params !== null
+          ? (payload.params as Record<string, unknown>)
+          : undefined;
+
+      this.toasts.info(payload.titleKey, params);
+    } catch {
+      // Not JSON, or not the shape this release understands — an older or newer
+      // process on the same channel. The badge moved; that is the part that matters.
+    }
   }
 
   /** Closes the connection. The shell calls it on destroy; signing out calls it too. */

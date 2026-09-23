@@ -132,6 +132,10 @@ export class NotificationsService {
           userIds: wantsInApp,
           organizationId: input.organizationId,
           type: input.type,
+          // The same key the row was written with, not the registry's current one: an
+          // event and the row it announces must say the same thing.
+          titleKey: definition.titleKey,
+          params: input.params ?? null,
           raisedAt: new Date().toISOString(),
         });
       }
@@ -197,16 +201,20 @@ export class NotificationsService {
    * here. The second mirrors what the reader would see if they asked — a notification
    * raised in another tenant must not move a badge that does not count it.
    *
-   * What goes over the wire is a nudge, not the notification: the browser refetches
-   * the count and, if the panel is open, the list. That keeps the number authoritative
-   * — it is a query against the same predicate the page uses — and keeps this stream
-   * from becoming a second, divergent read model.
+   * What goes over the wire is the least that lets the browser act: the type, the i18n
+   * key and its parameters — enough to raise a toast immediately — and nothing else.
+   * The count is still refetched rather than carried, so the number stays a query
+   * against the same predicate the page uses and this stream never becomes a second,
+   * divergent read model.
    */
   streamFor(userId: string, organizationId: string | null): Observable<MessageEvent> {
     const events = this.bus.stream.pipe(
       filter((event) => event.userIds.includes(userId)),
       filter((event) => event.organizationId === null || event.organizationId === organizationId),
-      map((event): MessageEvent => ({ type: 'notification', data: { type: event.type } })),
+      map((event): MessageEvent => ({
+        type: 'notification',
+        data: { type: event.type, titleKey: event.titleKey, params: event.params },
+      })),
     );
 
     /**
