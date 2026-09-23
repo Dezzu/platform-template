@@ -483,6 +483,16 @@ amministrazione.
 per sola `action` e trovava un'impersonation reale fatta dall'interfaccia giorni prima:
 il test falliva sul dato di qualcun altro. Filtra sempre anche per `actorUserId`.
 
+**Un validatore su un campo che non si può modificare rende il form invalido per sempre,
+in silenzio.** Il form dei feature flag validava la chiave anche in modifica, dove la
+chiave è solo testo: `notifications.inApp` non passava il pattern (minuscole-only) e il
+bottone Salva non faceva **niente** — nessuna richiesta, nessun messaggio, perché
+l'errore era su un campo che non viene disegnato. Due correzioni: il pattern ora accetta
+i segmenti camelCase — era più stretto dell'intenzione, visto che il seed e il
+suggerimento della schermata usavano entrambi `notifications.inApp` — e i validatori
+della chiave si applicano solo in creazione. La regola generale: **non validare un campo
+che l'utente non può raggiungere**.
+
 **Un flag seedato che nessuno legge è un interruttore che mente.** `notifications.inApp`
 esisteva nel seed, compariva nella schermata di amministrazione, si poteva spegnere — e
 non era referenziato da nessuna parte tranne un commento di esempio. Spento, le notifiche

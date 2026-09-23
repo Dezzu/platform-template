@@ -17,11 +17,20 @@ import { PageQuerySchema } from '../../common/pagination';
  */
 
 /**
- * `a.b.c`, lowercase. Keys end up in menus, guards and audit entries, so they are
- * constrained here rather than left to whoever types them into the admin screen —
- * a key with a space in it is a key nobody can grep for.
+ * `a.b.c` — dot- or dash-separated segments, starting lowercase.
+ *
+ * Keys end up in menus, guards and audit entries, so they are constrained here rather
+ * than left to whoever types them into the admin screen: a key with a space in it is a
+ * key nobody can grep for.
+ *
+ * Segments may be camelCase, and that is a correction rather than a loosening. The
+ * pattern used to be lowercase-only while the seed shipped `notifications.inApp` and
+ * the form's own hint gave that same key as the example — so the validator rejected the
+ * thing the documentation told you to type, and the one flag with such a key could
+ * never be saved from the edit screen. The intent was clearly camelCase; the regex was
+ * stricter than the intent.
  */
-export const FLAG_KEY_PATTERN = /^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/;
+export const FLAG_KEY_PATTERN = /^[a-z][a-zA-Z0-9]*(?:[.-][a-zA-Z0-9]+)*$/;
 
 export const FeatureFlagSchema = z.object({
   key: z.string().regex(FLAG_KEY_PATTERN),

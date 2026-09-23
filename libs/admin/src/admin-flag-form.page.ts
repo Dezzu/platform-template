@@ -96,11 +96,24 @@ export class AdminFlagFormPage {
   });
 
   protected readonly flag = form(this.model, (path) => {
-    required(path.key);
-    maxLength(path.key, 100);
-    // The same shape the contract enforces. A form that accepts more than the API does
-    // refuses the work only after the user has done it.
-    pattern(path.key, FLAG_KEY_PATTERN);
+    /**
+     * The key is validated only while creating, because that is the only time it can
+     * be typed — and validating a field nobody can reach is how a form ends up
+     * permanently invalid with nothing on screen to explain it.
+     *
+     * That is not hypothetical: `notifications.inApp` failed the old lowercase-only
+     * pattern, so its edit page refused to save and the button simply did nothing. The
+     * pattern has been corrected too, but the structure is what makes it impossible to
+     * happen again for the next key that predates a rule.
+     */
+    if (!this.editing) {
+      required(path.key);
+      maxLength(path.key, 100);
+      // The same shape the contract enforces. A form that accepts more than the API
+      // does refuses the work only after the user has done it.
+      pattern(path.key, FLAG_KEY_PATTERN);
+    }
+
     maxLength(path.description, 500);
   });
 
