@@ -18,6 +18,7 @@ import type {
   AdminUser,
   AdminUserListQuery,
   Paginated,
+  PlatformMetrics,
   PlatformRole,
 } from '@app/contracts';
 import type { Observable } from 'rxjs';
@@ -143,5 +144,21 @@ export class AdminApi {
 
   setMaintenance(payload: MaintenanceModeUpdate): Observable<MaintenanceMode> {
     return this.http.put<MaintenanceMode>(`${this.apiUrl}/maintenance`, payload);
+  }
+
+  // ── Platform metrics ──────────────────────────────────────────────────────
+
+  /**
+   * The business dashboard's single call.
+   *
+   * `refresh` skips the server's five-minute cache. Offered because the alternative is
+   * somebody who has just fixed a subscription staring at an unchanged number with no
+   * way to tell whether the screen is stale or the fix did not work.
+   */
+  metrics(refresh = false): Observable<PlatformMetrics> {
+    return this.http.get<PlatformMetrics>(
+      `${this.base}/metrics`,
+      refresh ? { params: new HttpParams().set('refresh', 'true') } : {},
+    );
   }
 }

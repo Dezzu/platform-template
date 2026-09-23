@@ -161,6 +161,12 @@ export const routes: Routes = [
           import('@app/admin/admin-maintenance.page').then((m) => m.AdminMaintenancePage),
       },
       {
+        path: 'admin/metrics',
+        canMatch: [navGuard('admin-metrics')],
+        loadComponent: () =>
+          import('@app/admin/admin-metrics.page').then((m) => m.AdminMetricsPage),
+      },
+      {
         path: 'admin/organizations',
         canMatch: [requireAnyPlatformPermission(PLATFORM_PERMISSIONS.ORGANIZATIONS_READ)],
         loadComponent: () =>

@@ -17,3 +17,4 @@ export * from './modules/notifications/notifications.contract';
 export * from './modules/flags/flags.contract';
 export * from './modules/maintenance/maintenance.contract';
 export * from './modules/gdpr/gdpr.contract';
+export * from './modules/metrics/metrics.contract';

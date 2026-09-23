@@ -396,6 +396,43 @@
     "verifyThenReturn": "Account creato. Conferma l'indirizzo {{email}} dalla mail che ti abbiamo mandato, poi riapri questo link.",
     "you": "tu"
   },
+  "metrics": {
+    "charts": {
+      "activeUsers": "Utenti attivi al giorno",
+      "activeUsersUnit": "utenti",
+      "last30": "Ultimi 30 giorni",
+      "sessionCaveat": "Ultimi 30 giorni, da quando la sessione è stata usata: la granularità è quella di SESSION_UPDATE_AGE.",
+      "signups": "Iscrizioni al giorno",
+      "signupsUnit": "iscrizioni"
+    },
+    "description": "Come viene usato il prodotto, e quanto rende. I numeri sono una fotografia, non un flusso in tempo reale.",
+    "generatedAt": "Calcolate alle {{time}}",
+    "plans": {
+      "count": "{{count}} abbonamenti",
+      "empty": "Nessun piano attivo.",
+      "title": "MRR per piano"
+    },
+    "refresh": "Ricalcola",
+    "revenue": {
+      "active": "Abbonamenti attivi",
+      "arpa": "Ricavo medio",
+      "arr": "ARR",
+      "cancelling": "In disdetta",
+      "churned30": "Disdette 30 giorni",
+      "mrr": "MRR",
+      "title": "Ricavi"
+    },
+    "title": "Metriche",
+    "usage": {
+      "activeOrganizations": "Organizzazioni attive",
+      "dau": "Attivi oggi",
+      "mau": "Attivi 30 giorni",
+      "signups30": "Iscrizioni 30 giorni",
+      "title": "Utilizzo",
+      "users": "Utenti",
+      "wau": "Attivi 7 giorni"
+    }
+  },
   "nav": {
     "admin": "Amministrazione",
     "audit": "Registro attività",

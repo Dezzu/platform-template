@@ -483,6 +483,11 @@ amministrazione.
 per sola `action` e trovava un'impersonation reale fatta dall'interfaccia giorni prima:
 il test falliva sul dato di qualcun altro. Filtra sempre anche per `actorUserId`.
 
+**Un backtick dentro un template inline di Angular chiude la stringa.** Un commento HTML
+che nominava `non-scaling-stroke` fra backtick ha prodotto `Parsing error: ',' expected`
+su una riga che con l'errore non c'entrava nulla. Nei template inline di `libs/ui` si
+usano le virgolette anche nei commenti.
+
 **Un healthcheck che non può girare è peggio di nessun healthcheck.** L'immagine di Tempo
 è distroless — niente shell, niente wget, niente curl — quindi la `test` HTTP che sembrava
 ovvia falliva con `exec: "/bin/sh": no such file or directory`, il container restava
@@ -538,15 +543,15 @@ cancellare gli archivi produce esattamente la spazzatura che lo sweep esiste per
 5 tenancy/permessi/audit · 6 frontend · 7 billing Stripe · 8 code+email+storage ·
 9a membri+inviti+pagine auth · 9b area di amministrazione · 9c feature flag + maintenance ·
 9d notifiche + preferenze · 9e GDPR + cookie banner + pagine legali · 9f notifiche live (SSE) ·
-10a strumentazione OTel + log strutturati + metriche custom · 10b stack di osservabilità additivo.
+10a strumentazione OTel + log strutturati + metriche custom · 10b stack di osservabilità additivo ·
+10c dashboard metriche di piattaforma.
 
-**Da fare:** 10c `infra/backup/` (dump + restore provato) · 10d dashboard metriche di
-business in `/admin/metrics` · 11 Docker+CI · 12 Terraform.
+**Da fare:** 10d `infra/backup/` (dump + restore provato) · 11 Docker+CI · 12 Terraform.
 (Audit UI e impersonation: fatti. La fase 9 è chiusa.)
 
 Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-snail.md`.
 
-**366 test.** `pnpm verify` verde.
+**373 test.** `pnpm verify` verde.
 
 ### Cosa ha aggiunto la 9c
 
@@ -711,6 +716,38 @@ Loki — ci sono già. Dettagli e passi di verifica nel suo
   Loki per quello inverso, che è quello che serve più spesso.
 - **Le immagini distroless non possono avere un healthcheck HTTP.** Vedi §5.
 
+### Cosa ha aggiunto la 10c
+
+`/admin/metrics`: utilizzo e ricavi di piattaforma, dietro `platform.metrics.read`.
+
+- **Separata da Grafana, e non è duplicazione.** Grafana risponde a "il sistema è
+  sano?" — è ops, vive sulla VPS, chiede un accesso che non tutti hanno. Questa
+  risponde a "il prodotto funziona?", vive dietro l'auth dell'app ed è parte della sua
+  superficie. Due domande, due pubblici.
+- **Utilizzo prima, soldi dopo.** I numeri che si muovono sono quelli sulle persone; il
+  ricavo reagisce molto dopo. Un cruscotto che apre sull'MRR invita a guardare la
+  metrica più lenta.
+- **Cache condivisa su Valkey, 5 minuti.** Le query scansionano `session` e uniscono
+  `subscription` a `plan` sul Postgres condiviso con altri 27 stack. La schermata dice
+  **quando** è stata scattata e offre un bottone per rifarla: un cruscotto che sembra
+  in tempo reale e non lo è fa decidere su numeri vecchi.
+- **Grafici disegnati a mano in SVG, non `ngx-echarts` come diceva il piano.** ECharts è
+  circa un megabyte per una schermata di back office che quasi nessuno apre; il chunk
+  di `/admin/metrics` con tutto dentro è **11 kB**. Quel megabyte comprava zoom,
+  autoscaling e dodici tipi di grafico: qui serve una riga con un tooltip.
+- **L'asse parte da zero, sempre.** Un asse ritagliato sul minimo trasforma una
+  settimana piatta in una catena montuosa, ed è il modo più comune in cui dati veri
+  producono un'immagine falsa. Un test lo sorveglia.
+- **Una serie per grafico, quindi nessuna legenda**; il colore viene dai token
+  `--chart-*` del tema, che ha già una palette scura _scelta_ e non ribaltata. Il testo
+  non indossa mai il colore della serie.
+- **`signupsTrendPercent` è null, non zero, quando la finestra precedente era vuota.**
+  "+100%" contro una base di niente è il numero che fa sembrare crescita la settimana
+  del lancio, per sempre.
+- **DAU/WAU/MAU vengono da `session.updated_at`**, quindi la granularità reale è
+  `SESSION_UPDATE_AGE` e non il minuto. Conta anche chi ha solo letto, cosa che un DAU
+  sul registro attività non farebbe. La schermata lo dice sotto il grafico.
+
 ### Il back office: una sola applicazione, con un confine
 
 **Decisione presa: resta dentro `apps/app`.** Niente `apps/admin`, e non è un rinvio —
@@ -766,8 +803,8 @@ una schermata nuova:
   di proposito in quella modalità, quindi senza quella schermata un account nuovo resta
   bloccato su `ORGANIZATION_REQUIRED`. Vedi
   [docs/modalita-utente-e-organizzazione.md](./docs/modalita-utente-e-organizzazione.md).
-- **I bundle iniziali superano il budget, entrambi.** `app` è a **817 kB** contro 700
-  (avviso; l'errore è a 850, quindi il margine è ~34 kB e la prossima schermata lo
+- **I bundle iniziali superano il budget, entrambi.** `app` è a **820 kB** contro 700
+  (avviso; l'errore è a 850, quindi il margine è ~30 kB e la prossima schermata lo
   consuma). `web` è a **470 kB** contro 400 (errore a 600), ed è nuovo: il sito marketing
   ha preso il runtime Transloco con i due cataloghi quando ha preso il banner cookie.
   Di quei bundle, `it.json`/`en.json` pesano ~40 kB **eager** in tutte e due le app:

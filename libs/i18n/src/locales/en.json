@@ -396,6 +396,43 @@
     "verifyThenReturn": "Account created. Confirm {{email}} from the email we just sent, then open this link again.",
     "you": "you"
   },
+  "metrics": {
+    "charts": {
+      "activeUsers": "Active users per day",
+      "activeUsersUnit": "users",
+      "last30": "Last 30 days",
+      "sessionCaveat": "Last 30 days, from when the session was last used: the granularity is SESSION_UPDATE_AGE.",
+      "signups": "Signups per day",
+      "signupsUnit": "signups"
+    },
+    "description": "How the product is used, and what it earns. These are a snapshot, not a live feed.",
+    "generatedAt": "Computed at {{time}}",
+    "plans": {
+      "count": "{{count}} subscriptions",
+      "empty": "No active plan.",
+      "title": "MRR by plan"
+    },
+    "refresh": "Recompute",
+    "revenue": {
+      "active": "Active subscriptions",
+      "arpa": "Average revenue",
+      "arr": "ARR",
+      "cancelling": "Cancelling",
+      "churned30": "Churned 30 days",
+      "mrr": "MRR",
+      "title": "Revenue"
+    },
+    "title": "Metrics",
+    "usage": {
+      "activeOrganizations": "Active organizations",
+      "dau": "Active today",
+      "mau": "Active 30 days",
+      "signups30": "Signups 30 days",
+      "title": "Usage",
+      "users": "Users",
+      "wau": "Active 7 days"
+    }
+  },
   "nav": {
     "admin": "Administration",
     "audit": "Activity log",

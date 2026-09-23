@@ -114,6 +114,20 @@ export const NAV_MANIFEST: readonly NavItem[] = [
   },
   {
     /**
+     * Its own entry for the same reason as the others here: `platform.metrics.read` is
+     * held by a support admin too, who has neither flags nor maintenance. One "Admin"
+     * link covering five screens would open on whichever one that person happens not
+     * to be allowed to see.
+     */
+    id: 'admin-metrics',
+    section: 'platform',
+    labelKey: 'metrics.title',
+    icon: 'lucideChartLine',
+    route: '/admin/metrics',
+    platformPermissions: [PLATFORM_PERMISSIONS.METRICS_READ],
+  },
+  {
+    /**
      * Its own entry rather than a tab inside the administration area: a support admin
      * holds `platform.users.read` and none of this, and an entry they can see but not
      * open is worse than no entry at all.

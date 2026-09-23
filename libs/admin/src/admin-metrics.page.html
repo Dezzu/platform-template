@@ -1,0 +1,132 @@
+<app-admin-nav />
+
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+  <p class="text-muted-foreground text-sm">{{ 'metrics.description' | transloco }}</p>
+
+  <div class="flex items-center gap-3">
+    @if (data(); as snapshot) {
+    <!--
+      Quando è stata scattata, non quando è stata chiesta: è in cache cinque minuti e
+      un cruscotto che sembra in tempo reale e non lo è fa decidere su numeri vecchi.
+    -->
+    <span class="text-muted-foreground text-xs">
+      {{ 'metrics.generatedAt' | transloco: { time: snapshot.generatedAt | date: 'short' } }}
+    </span>
+    }
+
+    <button hlmBtn size="sm" variant="outline" type="button" [disabled]="loading()" (click)="refresh()">
+      {{ (loading() ? 'common.loading' : 'metrics.refresh') | transloco }}
+    </button>
+  </div>
+</div>
+
+@if (failed()) {
+<p class="text-destructive text-sm" role="alert">{{ 'errors.INTERNAL_ERROR' | transloco }}</p>
+} @else if (!data()) {
+<p class="text-muted-foreground text-sm">{{ 'common.loading' | transloco }}</p>
+} @else { @let snapshot = data()!;
+
+<!-- ── Utilizzo ──────────────────────────────────────────────────────────── -->
+<h2 class="mb-3 text-lg font-medium">{{ 'metrics.usage.title' | transloco }}</h2>
+
+<div class="mb-6 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+  @for (tile of usageTiles(); track tile.labelKey) {
+  <article hlmCard class="p-4">
+    <p class="text-muted-foreground text-xs">{{ tile.labelKey | transloco }}</p>
+    <p class="mt-1 text-2xl font-semibold tabular-nums">{{ tile.value }}</p>
+    @if (tile.hint; as hint) {
+    <p
+      class="mt-0.5 text-xs tabular-nums"
+      [class.text-muted-foreground]="!tile.tone"
+      [class.text-emerald-600]="tile.tone === 'up'"
+      [class.dark:text-emerald-400]="tile.tone === 'up'"
+      [class.text-destructive]="tile.tone === 'down'"
+    >
+      {{ hint }}
+    </p>
+    }
+  </article>
+  }
+</div>
+
+<div class="mb-8 grid gap-4 lg:grid-cols-2">
+  <!--
+    Una serie per grafico, quindi nessuna legenda: il titolo la nomina già, e una
+    legenda per una riga sola è una chiave per una serratura con una chiave.
+  -->
+  <section hlmCard class="p-4">
+    <h3 class="text-sm font-medium">{{ 'metrics.charts.signups' | transloco }}</h3>
+    <p class="text-muted-foreground mb-2 text-xs">{{ 'metrics.charts.last30' | transloco }}</p>
+    <dui-trend-chart
+      [points]="snapshot.signupsPerDay"
+      [label]="'metrics.charts.signups' | transloco"
+      [unit]="'metrics.charts.signupsUnit' | transloco"
+      color="var(--chart-1)"
+    />
+  </section>
+
+  <section hlmCard class="p-4">
+    <h3 class="text-sm font-medium">{{ 'metrics.charts.activeUsers' | transloco }}</h3>
+    <p class="text-muted-foreground mb-2 text-xs">{{ 'metrics.charts.sessionCaveat' | transloco }}</p>
+    <dui-trend-chart
+      [points]="snapshot.activeUsersPerDay"
+      [label]="'metrics.charts.activeUsers' | transloco"
+      [unit]="'metrics.charts.activeUsersUnit' | transloco"
+      color="var(--chart-2)"
+    />
+  </section>
+</div>
+
+<!-- ── Ricavi ────────────────────────────────────────────────────────────── -->
+<h2 class="mb-3 text-lg font-medium">{{ 'metrics.revenue.title' | transloco }}</h2>
+
+<div class="mb-6 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+  @for (tile of revenueTiles(); track tile.labelKey) {
+  <article hlmCard class="p-4">
+    <p class="text-muted-foreground text-xs">{{ tile.labelKey | transloco }}</p>
+    <p class="mt-1 text-2xl font-semibold tabular-nums">{{ tile.value }}</p>
+    @if (tile.hint; as hint) {
+    <p
+      class="mt-0.5 text-xs tabular-nums"
+      [class.text-muted-foreground]="!tile.tone"
+      [class.text-destructive]="tile.tone === 'down'"
+    >
+      {{ hint }}
+    </p>
+    }
+  </article>
+  }
+</div>
+
+<section hlmCard class="p-4">
+  <h3 class="mb-3 text-sm font-medium">{{ 'metrics.plans.title' | transloco }}</h3>
+
+  @if (planBars().length === 0) {
+  <p class="text-muted-foreground text-sm">{{ 'metrics.plans.empty' | transloco }}</p>
+  } @else {
+  <!--
+    Barre e non una torta: confrontare lunghezze è un compito che l'occhio sa fare,
+    confrontare angoli no. Ed è una grandezza, non un'identità, quindi una tinta sola.
+  -->
+  <ul class="flex flex-col gap-3">
+    @for (bar of planBars(); track bar.key) {
+    <li class="grid grid-cols-[8rem_1fr_auto] items-center gap-3">
+      <span class="truncate text-sm">{{ 'plans.' + bar.key + '.name' | transloco }}</span>
+
+      <span class="bg-muted h-2 overflow-hidden rounded-full" role="presentation">
+        <span class="block h-full rounded-full" [style.width.%]="bar.percent" [style.background]="'var(--chart-1)'">
+        </span>
+      </span>
+
+      <span class="text-right text-sm tabular-nums">
+        {{ bar.money }}
+        <span class="text-muted-foreground">
+          · {{ 'metrics.plans.count' | transloco: { count: bar.subscriptions } }}
+        </span>
+      </span>
+    </li>
+    }
+  </ul>
+  }
+</section>
+}

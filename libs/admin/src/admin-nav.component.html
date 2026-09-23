@@ -21,6 +21,15 @@
     </a>
 
     <a
+      routerLink="/admin/metrics"
+      routerLinkActive="font-medium text-foreground"
+      class="text-muted-foreground underline underline-offset-4"
+      *appCanPlatform="['platform.metrics.read']"
+    >
+      {{ 'metrics.title' | transloco }}
+    </a>
+
+    <a
       routerLink="/admin/flags"
       routerLinkActive="font-medium text-foreground"
       class="text-muted-foreground underline underline-offset-4"
