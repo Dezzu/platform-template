@@ -50,6 +50,13 @@
       "when": 1790147585391,
       "tag": "0006_add_gdpr",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790150804342,
+      "tag": "0007_notification_can_be_personal",
+      "breakpoints": true
     }
   ]
 }

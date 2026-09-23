@@ -11,6 +11,7 @@ import type { EmailTemplateId, EmailTemplateParams } from '../mail/templates/reg
 export const EMAIL_FOR_TYPE = {
   'member.joined': 'member-joined',
   'billing.payment_failed': 'payment-failed',
+  'gdpr.export_ready': 'gdpr-export-ready',
 } as const satisfies Partial<Record<NotificationType, EmailTemplateId>>;
 
 /**
@@ -22,4 +23,6 @@ export const EMAIL_FOR_TYPE = {
  * not already check when the email is rendered.
  */
 export type NotificationEmail =
-  EmailTemplateParams<'member-joined'> | EmailTemplateParams<'payment-failed'>;
+  | EmailTemplateParams<'member-joined'>
+  | EmailTemplateParams<'payment-failed'>
+  | EmailTemplateParams<'gdpr-export-ready'>;

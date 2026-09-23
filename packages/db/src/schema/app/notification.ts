@@ -5,10 +5,17 @@ import { timestamps } from '../_helpers';
 /**
  * One thing that happened, addressed to one person inside one organization.
  *
- * Org-scoped like every domain table: a notification is about something that happened
- * in a tenant, and the same account belonging to two organizations must see two
- * separate trails. The preference that decides whether it is ever written is NOT
- * org-scoped — see `notification_preference`.
+ * Org-scoped like every domain table — **except when it is not about a tenant at all**.
+ * `organization_id` is nullable, and that is the fourth documented exception to the
+ * tenancy rule: "la copia dei tuoi dati è pronta" is a fact about a person, and forcing
+ * it into a tenant would mean the same message showing under one organization and not
+ * another, or not showing at all for somebody who belongs to none. A null there means
+ * "addressed to you, wherever you are working".
+ *
+ * What is NOT relaxed is the recipient. Every read path filters on `user_id` as well,
+ * and that — not the tenant column — is what keeps one member out of another's mail.
+ * The preference that decides whether a notification is ever written is user-scoped too
+ * — see `notification_preference`.
  *
  * Nothing here is pre-rendered. `titleKey` and `bodyKey` are i18n keys and `params`
  * are their placeholders, because the reader can change language at any time and a
@@ -22,9 +29,10 @@ export const notification = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
 
-    organizationId: text('organization_id')
-      .notNull()
-      .references(() => organization.id, { onDelete: 'cascade' }),
+    /** Null when the notification is about the person rather than about a tenant. */
+    organizationId: text('organization_id').references(() => organization.id, {
+      onDelete: 'cascade',
+    }),
 
     /** The recipient. Not the actor — who caused it lives in `params` if it matters. */
     userId: text('user_id')
@@ -47,7 +55,13 @@ export const notification = pgTable(
     ...timestamps,
   },
   (t) => [
-    // The only query the centre makes: this person, this tenant, newest first.
+    // The tenant trail: this person, this tenant, newest first.
     index('notification_recipient_idx').on(t.organizationId, t.userId, t.createdAt.desc()),
+    /**
+     * Led by the recipient, because the centre now asks for "mine in this tenant, plus
+     * mine that belong to no tenant" — and an index led by `organization_id` cannot
+     * serve the second half of that.
+     */
+    index('notification_user_idx').on(t.userId, t.createdAt.desc()),
   ],
 );

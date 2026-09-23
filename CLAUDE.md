@@ -65,11 +65,16 @@ Mai `any`. Mai `@ts-ignore` senza una riga che spieghi perché.
 - Ogni tabella di dominio ha `organization_id NOT NULL`. Eccezioni: `user`, `session`,
   `account`, `verification`, `twoFactor`, `notification_preference` (scope utente);
   `plan`, `feature_flag`, `stripe_event`, `app_setting`, `subscription` (globali);
-  `email_message` e `gdpr_export_request`, dove la colonna è **nullable** — verifica
-  email e reset password partono prima che l'organizzazione esista, e chiedere una copia
-  dei propri dati è una domanda su una persona, non su un tenant; `deletion_request`, che
-  la colonna non ce l'ha affatto, perché il soggetto è un account **o** un'organizzazione
-  e `subject_id` lo dice già.
+  `email_message`, `gdpr_export_request` e `notification`, dove la colonna è **nullable**
+  — verifica email e reset password partono prima che l'organizzazione esista, chiedere
+  una copia dei propri dati è una domanda su una persona e non su un tenant, e una
+  notifica con `organization_id` nullo è un fatto della persona («la copia dei tuoi dati
+  è pronta») che deve vedersi da qualunque organizzazione stia usando, o anche da nessuna;
+  `deletion_request`, che la colonna non ce l'ha affatto, perché il soggetto è un account
+  **o** un'organizzazione e `subject_id` lo dice già.
+  Per `notification` ciò che **non** si allenta è il destinatario: ogni lettura passa da
+  `NotificationsRepository.visibleTo`, che mette sempre `user_id` — ed è quello, non la
+  colonna del tenant, a tenere un membro fuori dalla posta di un altro.
 - Le query org-scoped passano da `TenantRepository`, che **pretende** un `OrgScope`.
   Non usare `this.db` direttamente in un repository: renderebbe facile la query non
   scopata, che è esattamente ciò che il meccanismo impedisce.
@@ -515,7 +520,7 @@ cancellare gli archivi produce esattamente la spazzatura che lo sweep esiste per
 
 Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-snail.md`.
 
-**358 test.** `pnpm verify` verde.
+**360 test.** `pnpm verify` verde.
 
 ### Cosa ha aggiunto la 9c
 
@@ -545,10 +550,16 @@ Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-sna
   il tentativo di spegnerlo risponde 403 invece di essere ignorato: un rinnovo fallito
   toglie il prodotto in pochi giorni, e chi vorrebbe zittirlo è chi ne ha più bisogno.
   Da usare con parsimonia — è l'unico oggi.
-- **Le preferenze sono a scope utente, le notifiche a scope organizzazione.** "Non
-  scrivermi per questo" è un'affermazione su una persona; "chi si è unito" è un fatto di
-  un tenant. Per questo `notification_preference` è nell'elenco delle eccezioni a
-  `organization_id` e `notification` no.
+- **Le preferenze sono a scope utente, le notifiche quasi sempre a scope
+  organizzazione.** "Non scrivermi per questo" è un'affermazione su una persona; "chi si
+  è unito" è un fatto di un tenant. Per questo `notification_preference` è
+  nell'elenco delle eccezioni a `organization_id`.
+  `notification` ci è entrato dopo, con la 9e: la colonna è nullable e un valore nullo
+  vuol dire "indirizzata a te, ovunque tu stia lavorando". Serviva per l'export dei dati
+  e servirà per tutto ciò che riguarda l'account e non il tenant. La lettura passa da
+  `NotificationsRepository`, che è l'unico repository a **non** estendere
+  `TenantRepository` — e lo fa perché il predicato che conta lì è il destinatario, non
+  il tenant.
 - **Nessuna coda nuova.** `notify()` inserisce le righe in-app con una sola statement e
   passa le email a `MailService`, che accoda: nessun handler HTTP aspetta un mail
   server, che è la proprietà che contava. Una coda `notifications` servirà quando un

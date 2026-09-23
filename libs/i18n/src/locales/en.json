@@ -424,7 +424,8 @@
     "emptyUnread": "Nothing left to read.",
     "groups": {
       "billing": "Billing",
-      "organization": "Organization"
+      "organization": "Organization",
+      "privacy": "Privacy and data"
     },
     "markAllRead": "Mark all as read",
     "markRead": "Mark as read",
@@ -445,6 +446,13 @@
           "body": "Usually an expired card. The subscription stays active for a few more days.",
           "label": "Payment failed",
           "title": "The renewal for {{organizationName}} did not go through"
+        }
+      },
+      "gdpr": {
+        "export_ready": {
+          "body": "You can download it from the Privacy and data screen until it expires.",
+          "label": "Data export ready",
+          "title": "Your data export is ready"
         }
       },
       "member": {

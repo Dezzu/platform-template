@@ -13,7 +13,21 @@ import { PageQuerySchema } from '../../common/pagination';
 export const NOTIFICATION_CHANNELS = ['in_app', 'email'] as const;
 export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
 
-export const NOTIFICATION_TYPES = ['member.joined', 'billing.payment_failed'] as const;
+/**
+ * How the preferences screen blocks the switches.
+ *
+ * Declared once and used both by the registry's type and by the schema on the wire:
+ * they were two literal lists, and the day a third group arrived the compiler agreed
+ * with the registry while the schema rejected what the API sent.
+ */
+export const NOTIFICATION_GROUPS = ['organization', 'billing', 'privacy'] as const;
+export type NotificationGroup = (typeof NOTIFICATION_GROUPS)[number];
+
+export const NOTIFICATION_TYPES = [
+  'member.joined',
+  'billing.payment_failed',
+  'gdpr.export_ready',
+] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 /**
@@ -35,7 +49,7 @@ export interface NotificationTypeDefinition {
   titleKey: string;
   bodyKey: string;
   /** For the preferences screen, which groups by what the notification is about. */
-  group: 'organization' | 'billing';
+  group: NotificationGroup;
   defaults: Record<NotificationChannel, boolean>;
   mandatory?: readonly NotificationChannel[];
 }
@@ -59,6 +73,21 @@ export const NOTIFICATION_REGISTRY: Record<NotificationType, NotificationTypeDef
     /**
      * Not switchable. A renewal that failed removes the product in a matter of days,
      * and the one person who would turn this off is the one who most needs to see it.
+     */
+    mandatory: ['email'],
+  },
+  'gdpr.export_ready': {
+    type: 'gdpr.export_ready',
+    titleKey: 'notifications.types.gdpr.export_ready.title',
+    bodyKey: 'notifications.types.gdpr.export_ready.body',
+    group: 'privacy',
+    defaults: { in_app: true, email: true },
+    /**
+     * The email is not switchable, and the reason is the archive's own lifetime: it
+     * expires. Somebody who asked for their data, switched the email off months ago and
+     * never opens the notification centre would find out it was ready only after it had
+     * been swept — which reads as a request that was quietly ignored. The in-app half
+     * stays a preference, because that one nobody misses.
      */
     mandatory: ['email'],
   },
@@ -118,7 +147,7 @@ export const NotificationPreferenceSchema = z.object({
    * declares it, and a client that split the string would disagree the first time a
    * type is named something the prefix does not describe.
    */
-  group: z.enum(['organization', 'billing']),
+  group: z.enum(NOTIFICATION_GROUPS),
   /** The effective answer — defaults and mandatory already applied. */
   enabled: z.boolean(),
   /** False when the registry forbids changing it. */

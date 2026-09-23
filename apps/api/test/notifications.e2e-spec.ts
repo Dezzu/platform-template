@@ -144,6 +144,37 @@ describe('notifications (e2e)', () => {
       expect(await countMine()).toBe(before);
     });
 
+    /**
+     * The other half of the same boundary, added when exports started raising these.
+     *
+     * A notification with no organization is a fact about the person — "la copia dei
+     * tuoi dati è pronta" — so it has to be readable from whichever tenant they happen
+     * to be working in. What must NOT relax with it is the recipient: the widened
+     * tenant predicate would be a leak if `user_id` were ever dropped alongside it, so
+     * both directions are asserted here rather than only the convenient one.
+     */
+    it('shows a notification that belongs to no tenant from inside any of them', async () => {
+      const countFor = async (who: TestUser) =>
+        (await request(app.getHttpServer()).get('/api/notifications').set(as(who)).expect(200)).body
+          .data.meta.total as number;
+
+      const mineBefore = await countFor(owner);
+      const theirsBefore = await countFor(colleague);
+
+      await db.insert(notification).values({
+        organizationId: null,
+        userId: owner.id,
+        type: 'gdpr.export_ready',
+        titleKey: 'notifications.types.gdpr.export_ready.title',
+        bodyKey: 'notifications.types.gdpr.export_ready.body',
+      });
+
+      expect(await countFor(owner)).toBe(mineBefore + 1);
+      // And not to a colleague in the same organization: no tenant does not mean
+      // everybody's.
+      expect(await countFor(colleague)).toBe(theirsBefore);
+    });
+
     it('refuses to mark somebody else’s as read, as a 404 rather than a 403', async () => {
       const theirs = await give(colleague, orgId);
 
@@ -159,7 +190,10 @@ describe('notifications (e2e)', () => {
         .get('/api/notifications/unread-count')
         .set(as(owner))
         .expect(200);
-      expect(before.body.data.unread).toBe(1);
+      // Not a fixed number, for the reason the case above already gives: these run in
+      // order against a shared database, and a hard-coded total breaks the moment
+      // somebody adds a case before it. Somebody did, twice.
+      expect(before.body.data.unread).toBeGreaterThan(0);
 
       await request(app.getHttpServer())
         .post('/api/notifications/read-all')
@@ -199,6 +233,21 @@ describe('notifications (e2e)', () => {
         (r) => r.type === 'billing.payment_failed' && r.channel === 'email',
       );
       expect(billingEmail).toMatchObject({ enabled: true, editable: false });
+
+      /**
+       * The export announcement: in-app is a preference, email is not.
+       *
+       * An archive expires. Somebody who muted the email months ago and does not open
+       * the notification centre would learn their export was ready only after it had
+       * been swept — which is a request quietly ignored rather than served.
+       */
+      const exportEmail = rows.find((r) => r.type === 'gdpr.export_ready' && r.channel === 'email');
+      expect(exportEmail).toMatchObject({ enabled: true, editable: false });
+
+      const exportInApp = rows.find(
+        (r) => r.type === 'gdpr.export_ready' && r.channel === 'in_app',
+      );
+      expect(exportInApp).toMatchObject({ enabled: true, editable: true });
     });
 
     it('stores an explicit choice and reports it back', async () => {
@@ -222,6 +271,13 @@ describe('notifications (e2e)', () => {
         .put('/api/notifications/preferences')
         .set(as(owner))
         .send({ type: 'billing.payment_failed', channel: 'email', enabled: false })
+        .expect(403);
+
+      // Same for the export announcement, and for the same kind of reason.
+      await request(app.getHttpServer())
+        .put('/api/notifications/preferences')
+        .set(as(owner))
+        .send({ type: 'gdpr.export_ready', channel: 'email', enabled: false })
         .expect(403);
     });
 

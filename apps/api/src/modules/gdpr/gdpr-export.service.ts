@@ -19,7 +19,7 @@ import { DRIZZLE } from '../../database/database.module';
 import { JOBS, QUEUES } from '../../queue/queue.constants';
 import { S3Service } from '../../storage/s3.service';
 import { AuditService } from '../audit/audit.service';
-import { MailService } from '../mail/mail.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { buildArchive, collectOrganizationData, collectUserData } from './gdpr-collect';
 
 type ExportRow = typeof gdprExportRequest.$inferSelect;
@@ -34,7 +34,7 @@ export class GdprExportService {
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly s3: S3Service,
     private readonly audit: AuditService,
-    private readonly mail: MailService,
+    private readonly notifications: NotificationsService,
     @Inject(gdprConfig.KEY) private readonly config: ConfigType<typeof gdprConfig>,
     @Inject(appConfig.KEY) private readonly app: ConfigType<typeof appConfig>,
   ) {}
@@ -257,33 +257,49 @@ export class GdprExportService {
   }
 
   /**
-   * Tells the requester it is ready — and deliberately does not carry the link.
+   * Tells the requester it is ready — through the notification centre, so the reader's
+   * own preferences decide where it lands.
    *
-   * A presigned URL in an inbox is the archive itself, forwardable and searchable for
-   * as long as the mail lives. The email points at the screen; the screen mints a
-   * fresh URL behind the session that asked for it.
+   * Raised rather than emailed directly: this is the only announcement the product
+   * makes about an export, and a feature sending its own mail is a feature the
+   * preferences screen cannot describe. The email channel is marked `mandatory` in the
+   * registry, so it goes out whatever the switch says — an archive expires, and
+   * somebody who never learned it was ready has been ignored rather than served.
+   *
+   * **The link is not in it.** A presigned URL in an inbox is the archive itself,
+   * forwardable and searchable for as long as the mail lives. Both halves point at the
+   * screen; the screen mints a fresh URL behind the session that asked for it.
+   *
+   * `organizationId` is null for a personal export, and that is what makes the in-app
+   * half visible wherever the person happens to be working — see the notification
+   * table's comment on why that column is nullable.
    */
   private async notifyReady(row: ExportRow, expiresAt: Date): Promise<void> {
     try {
       const [recipient] = await this.db
-        .select({ email: user.email, name: user.name })
+        .select({ name: user.name })
         .from(user)
         .where(eq(user.id, row.userId))
         .limit(1);
 
       if (!recipient) return;
 
-      await this.mail.send({
-        to: recipient.email,
-        template: 'gdpr-export-ready',
-        params: {
+      const privacyUrl = `${this.app.dashboardUrl}/privacy`;
+
+      await this.notifications.notify({
+        organizationId: row.organizationId,
+        userIds: [row.userId],
+        type: 'gdpr.export_ready',
+        // Keys and placeholders, never a rendered sentence: the reader can change
+        // language, and an archive announced in Italian would stay Italian forever.
+        params: { scope: row.scope, expiresAt: expiresAt.toISOString() },
+        actionUrl: '/privacy',
+        email: {
           name: recipient.name,
           scope: row.scope,
           expiresAt: expiresAt.toISOString(),
-          privacyUrl: `${this.app.dashboardUrl}/privacy`,
+          privacyUrl,
         },
-        organizationId: row.organizationId,
-        userId: row.userId,
       });
     } catch (error: unknown) {
       // The archive exists; failing to announce it must not fail the job and lose it.

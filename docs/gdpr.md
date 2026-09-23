@@ -25,10 +25,22 @@ Non sono informazioni _su_ una persona, sono il mezzo per diventarla. Un archivi
 contenesse trasformerebbe un link di download in un takeover. IP, user agent e orari delle
 sessioni invece ci sono: quelli sono dati personali a tutti gli effetti.
 
-**L'email che annuncia l'archivio non contiene il link.** Finché è valida, una presigned URL
-_è_ l'archivio: in una casella di posta è inoltrabile, cercabile e sopravvive al momento in
-cui serviva. L'email punta alla schermata; la schermata genera una URL nuova dietro la
-sessione che la chiede.
+**Quando è pronto lo annuncia il centro notifiche**, non l'export per conto suo: una feature
+che si manda le email da sola è una feature che la schermata delle preferenze non può
+descrivere. Il tipo è `gdpr.export_ready`, in-app e via email. **L'email non si spegne**
+(`mandatory` nel registro): un archivio scade, e chi ha silenziato l'email mesi fa e non apre
+il centro notifiche scoprirebbe che era pronto solo dopo che lo sweep l'ha cancellato — cioè
+una richiesta ignorata, non servita. L'avviso in-app resta una preferenza, perché quello
+nessuno lo rimpiange.
+
+La riga in-app ha `organization_id` **nullo**: un export personale è un fatto della persona, e
+appenderlo a un tenant vorrebbe dire nasconderlo in tutti gli altri. Vedi il commento sulla
+tabella `notification`.
+
+**Né l'email né la notifica contengono il link.** Finché è valida, una presigned URL _è_
+l'archivio: in una casella di posta è inoltrabile, cercabile e sopravvive al momento in cui
+serviva. Entrambe puntano alla schermata; la schermata genera una URL nuova dietro la sessione
+che la chiede.
 
 **Chi può scaricare.** La riga deve essere del chiamante — e per un export di
 organizzazione si ricontrolla che _ancora oggi_ abbia `gdpr.export` in quel tenant. Chi ha

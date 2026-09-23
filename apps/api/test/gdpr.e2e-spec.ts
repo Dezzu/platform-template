@@ -1,11 +1,12 @@
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import {
   deletionRequest,
   emailMessage,
   gdprExportRequest,
   member,
+  notification,
   organization,
   session,
   subscription,
@@ -86,6 +87,7 @@ describe('gdpr (e2e)', () => {
       .get(S3Service)
       .deleteMany(archives.map((r) => r.objectKey).filter((key): key is string => !!key));
 
+    await db.delete(notification).where(inArray(notification.userId, ids));
     await db.delete(gdprExportRequest).where(inArray(gdprExportRequest.userId, ids));
     await db.delete(deletionRequest).where(inArray(deletionRequest.subjectId, [...ids, ...orgIds]));
     await db.delete(subscription).where(inArray(subscription.referenceId, orgIds));
@@ -189,6 +191,43 @@ describe('gdpr (e2e)', () => {
       // Presigned, straight at storage: the bytes never pass through this API.
       expect(res.body.data.url).toContain('X-Amz-Signature');
       expect(new Date(res.body.data.expiresAt as string).getTime()).toBeGreaterThan(Date.now());
+    });
+
+    /**
+     * Finishing an export has to *tell somebody*, through the notification centre
+     * rather than through mail of its own — a feature that sends its own email is a
+     * feature the preferences screen cannot describe.
+     *
+     * The row carries no organization on purpose: a personal export is a fact about
+     * the person, and pinning it to a tenant would hide it from them in every other
+     * one. It stores keys and parameters, never a sentence, so the announcement
+     * follows the reader's language rather than freezing the one they had that day.
+     */
+    it('announces the finished archive through the notification centre', async () => {
+      const pending = await givenExport(colleague, 'pending');
+      await app.get(GdprExportService).run(pending);
+
+      const [raised] = await db
+        .select()
+        .from(notification)
+        .where(
+          and(eq(notification.userId, colleague.id), eq(notification.type, 'gdpr.export_ready')),
+        )
+        .orderBy(desc(notification.createdAt))
+        .limit(1);
+
+      expect(raised).toBeDefined();
+      expect(raised?.organizationId).toBeNull();
+      expect(raised?.titleKey).toBe('notifications.types.gdpr.export_ready.title');
+      expect(raised?.actionUrl).toBe('/privacy');
+
+      // And it is readable from inside the tenant the person is working in, which is
+      // the whole point of the nullable column.
+      const listed = await request(app.getHttpServer())
+        .get('/api/notifications')
+        .set(as(colleague))
+        .expect(200);
+      expect((listed.body.data.items as { id: string }[]).map((n) => n.id)).toContain(raised?.id);
     });
 
     it('needs gdpr.export to ask for the whole organization', async () => {

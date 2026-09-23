@@ -1,0 +1,2 @@
+ALTER TABLE "notification" ALTER COLUMN "organization_id" DROP NOT NULL;--> statement-breakpoint
+CREATE INDEX "notification_user_idx" ON "notification" USING btree ("user_id","created_at" DESC NULLS LAST);

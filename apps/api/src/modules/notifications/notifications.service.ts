@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { and, count, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import {
   NOTIFICATION_CHANNELS,
   NOTIFICATION_REGISTRY,
@@ -32,7 +32,14 @@ type NotificationRow = typeof notification.$inferSelect;
 
 /** What a feature hands over when something worth telling somebody about happened. */
 export interface NotifyInput {
-  organizationId: string;
+  /**
+   * The tenant this happened in, or null when it did not happen in one.
+   *
+   * Null is for facts about the **person**: an export they asked for, an account
+   * change. Those must be visible whichever organization they are working in, and
+   * visible at all to somebody who belongs to none.
+   */
+  organizationId: string | null;
   /** The recipients. Resolving "who" is the caller's job — it knows what it means. */
   userIds: readonly string[];
   type: NotificationType;
@@ -162,22 +169,18 @@ export class NotificationsService {
   // ── Reading ────────────────────────────────────────────────────────────────
 
   async list(scope: OrgContext, query: NotificationListQuery): Promise<Paginated<Notification>> {
-    // Always this person's own. The scope covers the tenant; this covers the reader,
-    // and without it every member of an organization would read everyone's mail.
-    const mine = eq(notification.userId, scope.userId);
-    const unreadOnly = and(mine, isNull(notification.readAt));
-    // Composed so the type stays a plain SQL: `and()` widens to `SQL | undefined`, and
-    // `exactOptionalPropertyTypes` refuses to pass that as an optional `where`.
-    const where = query.unread && unreadOnly ? unreadOnly : mine;
+    // Recipient and tenant are both applied by the repository's `visibleTo`; this only
+    // adds the filter the screen asked for.
+    const unreadOnly = query.unread ? isNull(notification.readAt) : undefined;
 
     const [rows, total] = await Promise.all([
       this.repository.findMany(scope, {
-        where,
+        ...(unreadOnly ? { where: unreadOnly } : {}),
         orderBy: desc(notification.createdAt),
         limit: query.size,
         offset: query.page * query.size,
       }),
-      this.repository.count(scope, where),
+      this.repository.count(scope, unreadOnly),
     ]);
 
     return {
@@ -192,53 +195,23 @@ export class NotificationsService {
   }
 
   async unreadCount(scope: OrgContext): Promise<number> {
-    const [row] = await this.db
-      .select({ value: count() })
-      .from(notification)
-      .where(
-        and(
-          eq(notification.organizationId, scope.organizationId),
-          eq(notification.userId, scope.userId),
-          isNull(notification.readAt),
-        ),
-      );
-    return row?.value ?? 0;
+    return this.repository.count(scope, isNull(notification.readAt));
   }
 
   async markRead(scope: OrgContext, id: string): Promise<Notification> {
     const row = await this.repository.findById(scope, id);
     // Somebody else's notification is indistinguishable from a missing one, which is
     // deliberate: a 403 would confirm that the id exists.
-    if (!row || row.userId !== scope.userId) throw AppException.notFound('Notification');
+    if (!row) throw AppException.notFound('Notification');
 
-    // Idempotent: reading something twice does not move the moment it was first read.
-    if (row.readAt) return toDto(row);
-
-    const [updated] = await this.db
-      .update(notification)
-      .set({ readAt: new Date(), updatedAt: new Date() })
-      .where(eq(notification.id, id))
-      .returning();
-
-    return toDto(updated ?? row);
+    // Idempotent: the update is a no-op on an already-read row, and the row we already
+    // hold is what gets returned.
+    return toDto((await this.repository.markRead(scope, id)) ?? row);
   }
 
-  /** Marks everything this person has unread in this tenant. Returns how many. */
+  /** Marks everything this person has unread here. Returns how many. */
   async markAllRead(scope: OrgContext): Promise<number> {
-    const now = new Date();
-    const updated = await this.db
-      .update(notification)
-      .set({ readAt: now, updatedAt: now })
-      .where(
-        and(
-          eq(notification.organizationId, scope.organizationId),
-          eq(notification.userId, scope.userId),
-          isNull(notification.readAt),
-        ),
-      )
-      .returning({ id: notification.id });
-
-    return updated.length;
+    return this.repository.markAllRead(scope);
   }
 
   // ── Preferences ────────────────────────────────────────────────────────────

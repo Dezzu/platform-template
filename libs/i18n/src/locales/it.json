@@ -424,7 +424,8 @@
     "emptyUnread": "Nessuna notifica da leggere.",
     "groups": {
       "billing": "Abbonamento",
-      "organization": "Organizzazione"
+      "organization": "Organizzazione",
+      "privacy": "Privacy e dati"
     },
     "markAllRead": "Segna tutte come lette",
     "markRead": "Segna come letta",
@@ -445,6 +446,13 @@
           "body": "Di solito è una carta scaduta. L'abbonamento resta attivo ancora per qualche giorno.",
           "label": "Pagamento non riuscito",
           "title": "Il rinnovo di {{organizationName}} non è andato a buon fine"
+        }
+      },
+      "gdpr": {
+        "export_ready": {
+          "body": "Puoi scaricarla dalla pagina Privacy e dati finché non scade.",
+          "label": "Export dei dati pronto",
+          "title": "La copia dei tuoi dati è pronta"
         }
       },
       "member": {
