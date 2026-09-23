@@ -58,6 +58,7 @@
   [showColumnSelector]="false"
   [showAddButton]="false"
   [loading]="members.isLoading() && !members.hasValue()"
+  (reloaded)="members.reload()"
 >
   <ng-template duiTemplate="name" let-value let-item="item">
     @let row = asMember(item);
@@ -88,6 +89,7 @@
   [showColumnSelector]="false"
   [showAddButton]="false"
   [loading]="invitations.isLoading() && !invitations.hasValue()"
+  (reloaded)="invitations.reload()"
 >
   <ng-template duiTemplate="role" let-value>{{ 'members.roles.' + value | transloco }}</ng-template>
 </dui-table>

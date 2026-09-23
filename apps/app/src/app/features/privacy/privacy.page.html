@@ -51,6 +51,7 @@
         [showColumnSelector]="false"
         [showAddButton]="false"
         [loading]="exportsLoading()"
+        (reloaded)="reloadExports()"
       >
         <ng-template duiTemplate="scope" let-item="item">
           {{ 'privacy.exports.scopes.' + asExport(item).scope | transloco }}

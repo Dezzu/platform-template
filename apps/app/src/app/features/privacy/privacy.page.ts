@@ -141,6 +141,18 @@ export class PrivacyPage {
     ];
   });
 
+  /**
+   * The reload button, which is the only way a status moves on screen.
+   *
+   * An export goes from "in preparazione" to "pronto" in a worker, with nothing to
+   * tell the browser about it — and a poll would be a request per person per interval
+   * for a status that changes once. Pressing reload is the honest answer until there
+   * is a reason for server-sent events.
+   */
+  protected reloadExports(): void {
+    this.exportsResource.reload();
+  }
+
   protected asExport(row: unknown): GdprExportRequest {
     return row as GdprExportRequest;
   }

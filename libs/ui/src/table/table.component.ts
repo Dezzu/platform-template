@@ -153,6 +153,20 @@ export class TableComponent<T> {
   readonly openNew = output<void>();
 
   /**
+   * The reload button was pressed.
+   *
+   * Separate from `onLazyLoad` because the button is rendered in **both** modes while
+   * that output is only meaningful in one. A table driven by `[lazy]="false"` holds its
+   * own rows, has no page or sort to announce, and its caller has no reason to bind
+   * something called "lazy load" — so the press went nowhere and the button did nothing.
+   * It did exactly that on the members and privacy screens.
+   *
+   * Lazy callers keep binding `onLazyLoad`, which still carries `reload: true`; callers
+   * that own their data bind this.
+   */
+  readonly reloaded = output<void>();
+
+  /**
    * Announces which row was opened or closed.
    *
    * Expansion state stays inside the table — it is presentation — but the detail of a
@@ -310,11 +324,16 @@ export class TableComponent<T> {
   /**
    * Reloads while keeping the current state.
    *
-   * Flagged as a reload, because the state it emits is by definition the state the
+   * `reloaded` always fires; the lazy-load event only when the table is actually lazy.
+   * It is flagged as a reload, because the state it emits is by definition the state the
    * caller already has: without saying so, a caller that compares parameters before
    * fetching sees no change and the button does nothing.
    */
   reload(): void {
+    this.reloaded.emit();
+
+    if (!this.lazy()) return;
+
     const event =
       this.lastEvent ??
       ({ first: 0, rows: this.rowsPerPage(), sortField: null, sortOrder: null } as const);

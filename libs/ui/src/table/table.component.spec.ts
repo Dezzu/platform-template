@@ -83,6 +83,47 @@ describe('TableComponent', () => {
     expect(emitted[0]?.reload).toBe(true);
   });
 
+  /**
+   * The button is rendered in both modes, so it has to work in both.
+   *
+   * It did not: `reload()` only ever emitted `onLazyLoad`, which a table holding its own
+   * rows has no reason to bind — so on the members and privacy screens the press went
+   * nowhere and nothing happened. A button that silently does nothing is the failure
+   * this repository keeps finding by opening the page, and this is the cheap guard.
+   */
+  it('announces a reload even when the table is not lazy', async () => {
+    const fixture = setup();
+    fixture.componentRef.setInput('lazy', false);
+    await fixture.whenStable();
+
+    let reloads = 0;
+    const lazyEvents: DuiTablelazyLoadEvent[] = [];
+    fixture.componentInstance.reloaded.subscribe(() => (reloads += 1));
+    fixture.componentInstance.onLazyLoad.subscribe((event) => lazyEvents.push(event));
+
+    (fixture.componentInstance as unknown as { reload: () => void }).reload();
+    await fixture.whenStable();
+
+    expect(reloads).toBe(1);
+    // And no lazy event: a table that owns its rows has no page or sort to announce,
+    // and a caller binding both would fetch twice.
+    expect(lazyEvents).toHaveLength(0);
+  });
+
+  it('announces a reload to a lazy table too, alongside the lazy event', async () => {
+    const fixture = setup();
+    fixture.componentRef.setInput('lazy', true);
+    await fixture.whenStable();
+
+    let reloads = 0;
+    fixture.componentInstance.reloaded.subscribe(() => (reloads += 1));
+
+    (fixture.componentInstance as unknown as { reload: () => void }).reload();
+    await fixture.whenStable();
+
+    expect(reloads).toBe(1);
+  });
+
   it('does not flag the ordinary state changes as reloads', async () => {
     const fixture = setup();
     fixture.componentRef.setInput('lazy', true);
