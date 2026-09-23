@@ -483,6 +483,18 @@ amministrazione.
 per sola `action` e trovava un'impersonation reale fatta dall'interfaccia giorni prima:
 il test falliva sul dato di qualcun altro. Filtra sempre anche per `actorUserId`.
 
+**Due handler di click sullo stesso elemento di un trigger CDK si mangiano a vicenda.**
+La campanella aveva `[hlmDropdownMenuTrigger]` **e** `(click)="open()"` sullo stesso
+bottone. Dopo aver attivato una voce dentro il pannello — una notifica, o "Vedi tutte" —
+il click successivo sulla campanella veniva **inghiottito**: niente si apriva, il secondo
+click funzionava. Riprodotto 4 volte su 4; lo stato del trigger era coerente
+(`isOpen()=false`, nessun overlay), quindi il click non arrivava proprio. Il menu profilo,
+che ha solo il trigger, non ne soffriva.
+Il caricamento va agganciato a `(hlmDropdownMenuOpened)`, che per giunta è l'evento
+giusto: con `(click)` si ricaricava anche **chiudendo**, perché anche quello è un click.
+Regola generale: su un elemento che porta un trigger CDK, non aggiungere un secondo
+handler dello stesso evento — usa gli output del trigger.
+
 **Un backtick chiude la stringa anche dentro un template literal di SQL.** Stessa
 trappola del template Angular qui sotto, e l'ho presa due volte nella stessa sessione:
 un commento dentro `sql\`…\``che nominava una colonna fra backtick ha prodotto`Cannot find name 'filter'`su codice SQL perfettamente valido. Nei commenti dentro un
@@ -563,7 +575,7 @@ cancellare gli archivi produce esattamente la spazzatura che lo sweep esiste per
 
 Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-snail.md`.
 
-**377 test.** `pnpm verify` verde.
+**378 test.** `pnpm verify` verde.
 
 ### Cosa ha aggiunto la 9c
 
