@@ -1,10 +1,10 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, input, signal } from '@angular/core';
 import { NG_VALUE_ACCESSOR } from '@angular/forms';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideEye, lucideEyeOff, lucideX } from '@ng-icons/lucide';
 import { HlmFieldImports } from '@spartan-ng/helm/field';
 import { HlmInputGroupImports } from '@spartan-ng/helm/input-group';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { DuiInputBase } from '../dui-input-base';
 import { ValidatorErrorsComponent } from '../validator-errors/validator-errors.component';
 
@@ -66,7 +66,9 @@ import { ValidatorErrorsComponent } from '../validator-errors/validator-errors.c
               <button
                 hlmInputGroupButton
                 size="icon-xs"
-                [attr.aria-label]="toggleLabel()"
+                [attr.aria-label]="
+                  (revealed() ? 'common.hidePassword' : 'common.showPassword') | transloco
+                "
                 [attr.aria-pressed]="revealed()"
                 [disabled]="disabled()"
                 (click)="toggleReveal()"
@@ -83,8 +85,6 @@ import { ValidatorErrorsComponent } from '../validator-errors/validator-errors.c
   `,
 })
 export class PasswordInputComponent extends DuiInputBase<string | null | undefined> {
-  private readonly transloco = inject(TranslocoService);
-
   readonly toggleMask = input(true);
 
   /**
@@ -103,10 +103,6 @@ export class PasswordInputComponent extends DuiInputBase<string | null | undefin
     const value = this.value();
     return this.showClear() && value !== undefined && value !== null && value !== '';
   });
-
-  protected readonly toggleLabel = computed(() =>
-    this.transloco.translate(this.revealed() ? 'common.hidePassword' : 'common.showPassword'),
-  );
 
   protected toggleReveal(): void {
     this.revealed.update((revealed) => !revealed);

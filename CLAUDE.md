@@ -234,6 +234,14 @@ in posizione di tipo: l'autofix lo trasforma in `import type`, l'import sparisce
 `emitDecoratorMetadata` emette `Object`. La regola è disattivata per `apps/api`. In
 Angular usa `inject()` invece dell'injection via costruttore.
 
+**`translate()` dentro un `computed` congela la chiave.** Il `computed` non dipende da
+niente di reattivo, quindi gira una volta sola — e su un caricamento a freddo gira
+_prima_ che il catalogo sia arrivato: restituisce la chiave stessa e non ricalcola mai
+più. A schermo non si nota se è un `aria-label`, ma nella console c'è la riga
+`Missing translation`. Nei template si usa il **pipe** `| transloco`, che è reattivo per
+costruzione; `translate()` va bene solo dove la lingua è già caricata e il risultato non
+deve sopravvivere a un cambio lingua (per esempio dentro un handler).
+
 **I barrel gonfiano il bundle.** Un `@app/ui` unico trascinava 204 kB di
 `@spartan-ng/brain` in ogni rotta; `@app/contracts` trascinava Zod perché riesporta
 schemi costruiti a top-level che il bundler non può rimuovere. Usa i sottopercorsi:
