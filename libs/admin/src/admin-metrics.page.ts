@@ -13,7 +13,17 @@ import { AdminNavComponent } from './admin-nav.component';
 interface Tile {
   labelKey: string;
   value: string;
-  hint?: string | undefined;
+  /**
+   * The secondary line, as a key and its parameters rather than a finished string.
+   *
+   * Translated in the template with the pipe, never here: `translate()` inside a
+   * computed has nothing reactive to depend on, so it runs once — and on a cold load
+   * it runs before the catalogue has arrived and freezes the key itself on screen.
+   * It also used to be a bare number, which under "Organizzazioni attive" read as a
+   * stray "1" that explained nothing.
+   */
+  hintKey?: string | undefined;
+  hintParams?: Record<string, unknown> | undefined;
   tone?: 'up' | 'down' | undefined;
 }
 
@@ -70,7 +80,8 @@ export class AdminMetricsPage {
       {
         labelKey: 'metrics.usage.activeOrganizations',
         value: format(data.usage.activeOrganizations),
-        hint: `${format(data.usage.organizations)}`,
+        hintKey: 'metrics.usage.ofTotal',
+        hintParams: { total: format(data.usage.organizations) },
       },
       { labelKey: 'metrics.usage.dau', value: format(data.usage.dau) },
       { labelKey: 'metrics.usage.wau', value: format(data.usage.wau) },
@@ -80,7 +91,8 @@ export class AdminMetricsPage {
         value: format(data.usage.signupsLast30Days),
         // Null when the previous window was empty — see the contract on why that is
         // not the same as zero.
-        hint: trend === null ? undefined : `${trend > 0 ? '+' : ''}${trend}%`,
+        hintKey: trend === null ? undefined : 'metrics.usage.trend',
+        hintParams: trend === null ? undefined : { trend: `${trend > 0 ? '+' : ''}${trend}%` },
         tone: trend === null ? undefined : trend >= 0 ? 'up' : 'down',
       },
     ];
@@ -99,7 +111,8 @@ export class AdminMetricsPage {
       {
         labelKey: 'metrics.revenue.active',
         value: format(data.revenue.activeSubscriptions),
-        hint: `${format(data.revenue.trialingSubscriptions)}`,
+        hintKey: 'metrics.revenue.trialing',
+        hintParams: { count: format(data.revenue.trialingSubscriptions) },
       },
       {
         labelKey: 'metrics.revenue.cancelling',

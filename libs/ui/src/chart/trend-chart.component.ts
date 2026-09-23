@@ -1,5 +1,5 @@
 import { Component, computed, input, signal } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 
 /** One point of a daily series. Declared here: libs/ui may not import the contracts' shapes. */
 export interface TrendPoint {
@@ -23,6 +23,14 @@ interface Plot {
 const VIEW_W = 600;
 const VIEW_H = 160;
 const PAD_Y = 12;
+/**
+ * Horizontal inset.
+ *
+ * Without it the first and last points sit exactly on x=0 and x=VIEW_W, so half of
+ * the 2px stroke and half of the hover marker fall outside the box — which on screen
+ * reads as a line running out of its own card. Found by looking at the page.
+ */
+const PAD_X = 8;
 
 /**
  * A single series over time: area, line, and a crosshair on hover.
@@ -46,13 +54,13 @@ const PAD_Y = 12;
  */
 @Component({
   selector: 'dui-trend-chart',
-  imports: [DecimalPipe],
+  imports: [DatePipe, DecimalPipe],
   host: { class: 'block' },
   template: `
     <figure class="relative m-0">
       <svg
         [attr.viewBox]="viewBox"
-        class="h-40 w-full overflow-visible"
+        class="h-40 w-full"
         preserveAspectRatio="none"
         role="img"
         [attr.aria-label]="label()"
@@ -64,8 +72,8 @@ const PAD_Y = 12;
           of five lines behind a thirty-point series is more ink than the data.
         -->
         <line
-          [attr.x1]="0"
-          [attr.x2]="viewW"
+          [attr.x1]="padX"
+          [attr.x2]="viewW - padX"
           [attr.y1]="viewH - padY"
           [attr.y2]="viewH - padY"
           class="stroke-border"
@@ -101,35 +109,64 @@ const PAD_Y = 12;
               stroke-dasharray="3 3"
               vector-effect="non-scaling-stroke"
             />
-            <!--
-              A ring in the surface colour separates the marker from the line under it.
-              9px across, over the 8px floor a pointer can actually hit.
-            -->
-            <circle
-              [attr.cx]="a.x"
-              [attr.cy]="a.y"
-              r="4.5"
-              [attr.fill]="color()"
-              class="stroke-background"
-              stroke-width="2"
-              vector-effect="non-scaling-stroke"
-            />
           }
         }
       </svg>
 
+      <!--
+        The peak, labelled once.
+        
+        Without it the chart says "there was a spike" and nothing about how big, which
+        is half a chart. HTML rather than an SVG <text>: under
+        preserveAspectRatio="none" the glyphs would be stretched with everything else.
+      -->
+      @if (plot(); as p) {
+        <span
+          class="text-muted-foreground pointer-events-none absolute top-0 right-0 text-[11px] tabular-nums"
+        >
+          {{ p.max | number }}
+        </span>
+      }
+
       @if (active(); as a) {
+        <!--
+          The marker is an HTML dot, not an SVG circle, and that is forced by
+          preserveAspectRatio="none": under a non-uniform scale a circle is drawn as an
+          ellipse that gets flatter the wider the container. A div is round at any width.
+          The ring in the surface colour lifts it off the line underneath.
+        -->
+        <span
+          class="border-background pointer-events-none absolute z-10 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
+          [style.left.%]="(a.x / viewW) * 100"
+          [style.top.%]="(a.y / viewH) * 100"
+          [style.background]="color()"
+        ></span>
+
         <!--
           Positioned in percent of the container, so it follows the point through every
           container width without measuring anything.
         -->
         <div
-          class="bg-popover text-popover-foreground pointer-events-none absolute top-0 z-10 -translate-x-1/2 rounded-md border px-2 py-1 text-xs shadow-md"
-          [style.left.%]="(a.x / viewW) * 100"
+          class="bg-popover text-popover-foreground pointer-events-none absolute z-10 -translate-x-1/2 rounded-md border px-2 py-1 text-xs shadow-md"
+          [style.left.%]="tooltipLeft()"
+          [class.top-0]="!tooltipBelow()"
+          [class.bottom-6]="tooltipBelow()"
         >
-          <span class="text-muted-foreground block">{{ a.point.date }}</span>
+          <span class="text-muted-foreground block">{{ a.point.date | date: 'd MMM' }}</span>
           <span class="font-semibold tabular-nums">{{ a.point.value | number }}</span>
           <span class="text-muted-foreground"> {{ unit() }}</span>
+        </div>
+      }
+
+      <!--
+        First and last day. Thirty tick labels would be unreadable at this width and
+        the tooltip already names the day under the pointer; the two ends are what the
+        eye needs to place the shape in time.
+      -->
+      @if (points().length > 1) {
+        <div class="text-muted-foreground mt-1 flex justify-between text-[11px]">
+          <span>{{ points()[0]!.date | date: 'd MMM' }}</span>
+          <span>{{ points()[points().length - 1]!.date | date: 'd MMM' }}</span>
         </div>
       }
 
@@ -165,6 +202,7 @@ export class TrendChartComponent {
   protected readonly viewW = VIEW_W;
   protected readonly viewH = VIEW_H;
   protected readonly padY = PAD_Y;
+  protected readonly padX = PAD_X;
   protected readonly viewBox = `0 0 ${VIEW_W} ${VIEW_H}`;
 
   protected readonly hovered = signal<number | null>(null);
@@ -182,10 +220,11 @@ export class TrendChartComponent {
      */
     const max = Math.max(1, ...data.map((p) => p.value));
     const usable = VIEW_H - PAD_Y * 2;
-    const step = data.length > 1 ? VIEW_W / (data.length - 1) : 0;
+    const plotW = VIEW_W - PAD_X * 2;
+    const step = data.length > 1 ? plotW / (data.length - 1) : 0;
 
     const dots = data.map((point, index) => ({
-      x: data.length > 1 ? index * step : VIEW_W / 2,
+      x: data.length > 1 ? PAD_X + index * step : VIEW_W / 2,
       y: VIEW_H - PAD_Y - (point.value / max) * usable,
       point,
     }));
@@ -197,6 +236,30 @@ export class TrendChartComponent {
     const area = first && last ? `${line} L${last.x} ${base} L${first.x} ${base} Z` : '';
 
     return { line, area, dots, max };
+  });
+
+  /**
+   * Horizontal position of the tooltip, clamped away from the edges.
+   *
+   * Centred on the point it would hang half outside the card at the first and last
+   * day — which is where a spike on "yesterday" usually is. Clamping moves the box a
+   * few pixels; the crosshair still marks the exact point.
+   */
+  protected readonly tooltipLeft = computed(() => {
+    const x = this.active()?.x ?? 0;
+    return Math.min(90, Math.max(10, (x / VIEW_W) * 100));
+  });
+
+  /**
+   * Flipped below when the point is high.
+   *
+   * Pinned to the top it sat exactly on top of the peak — the one value somebody is
+   * hovering to read. Two positions are enough: the interesting point is either near
+   * the top or it is not.
+   */
+  protected readonly tooltipBelow = computed(() => {
+    const y = this.active()?.y;
+    return y !== undefined && y < VIEW_H * 0.45;
   });
 
   protected readonly active = computed(() => {
@@ -220,7 +283,11 @@ export class TrendChartComponent {
     const rect = target.getBoundingClientRect();
     if (rect.width === 0) return;
 
-    const ratio = (event.clientX - rect.left) / rect.width;
+    // Mapped through the same inset the points use: without it the pointer and the
+    // marker drift apart by a few pixels at each end.
+    const inset = (PAD_X / VIEW_W) * rect.width;
+    const usable = rect.width - inset * 2;
+    const ratio = usable <= 0 ? 0 : (event.clientX - rect.left - inset) / usable;
     const index = Math.round(ratio * (data.length - 1));
 
     this.hovered.set(Math.min(data.length - 1, Math.max(0, index)));

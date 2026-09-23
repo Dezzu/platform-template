@@ -34,15 +34,15 @@
   <article hlmCard class="p-4">
     <p class="text-muted-foreground text-xs">{{ tile.labelKey | transloco }}</p>
     <p class="mt-1 text-2xl font-semibold tabular-nums">{{ tile.value }}</p>
-    @if (tile.hint; as hint) {
+    @if (tile.hintKey; as hintKey) {
     <p
-      class="mt-0.5 text-xs tabular-nums"
+      class="mt-0.5 text-xs"
       [class.text-muted-foreground]="!tile.tone"
       [class.text-emerald-600]="tile.tone === 'up'"
       [class.dark:text-emerald-400]="tile.tone === 'up'"
       [class.text-destructive]="tile.tone === 'down'"
     >
-      {{ hint }}
+      {{ hintKey | transloco: tile.hintParams ?? {} }}
     </p>
     }
   </article>
@@ -56,7 +56,12 @@
   -->
   <section hlmCard class="p-4">
     <h3 class="text-sm font-medium">{{ 'metrics.charts.signups' | transloco }}</h3>
-    <p class="text-muted-foreground mb-2 text-xs">{{ 'metrics.charts.last30' | transloco }}</p>
+    <!--
+      Altezza minima fissa su entrambi i sottotitoli: quello a destra va a capo e senza
+      questo i due grafici partono da quote diverse, che è esattamente ciò che rende
+      difficile confrontare due serie affiancate.
+    -->
+    <p class="text-muted-foreground mb-2 min-h-8 text-xs">{{ 'metrics.charts.last30' | transloco }}</p>
     <dui-trend-chart
       [points]="snapshot.signupsPerDay"
       [label]="'metrics.charts.signups' | transloco"
@@ -67,7 +72,7 @@
 
   <section hlmCard class="p-4">
     <h3 class="text-sm font-medium">{{ 'metrics.charts.activeUsers' | transloco }}</h3>
-    <p class="text-muted-foreground mb-2 text-xs">{{ 'metrics.charts.sessionCaveat' | transloco }}</p>
+    <p class="text-muted-foreground mb-2 min-h-8 text-xs">{{ 'metrics.charts.sessionCaveat' | transloco }}</p>
     <dui-trend-chart
       [points]="snapshot.activeUsersPerDay"
       [label]="'metrics.charts.activeUsers' | transloco"
@@ -85,13 +90,13 @@
   <article hlmCard class="p-4">
     <p class="text-muted-foreground text-xs">{{ tile.labelKey | transloco }}</p>
     <p class="mt-1 text-2xl font-semibold tabular-nums">{{ tile.value }}</p>
-    @if (tile.hint; as hint) {
+    @if (tile.hintKey; as hintKey) {
     <p
-      class="mt-0.5 text-xs tabular-nums"
+      class="mt-0.5 text-xs"
       [class.text-muted-foreground]="!tile.tone"
       [class.text-destructive]="tile.tone === 'down'"
     >
-      {{ hint }}
+      {{ hintKey | transloco: tile.hintParams ?? {} }}
     </p>
     }
   </article>

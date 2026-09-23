@@ -420,15 +420,18 @@
       "cancelling": "Cancelling",
       "churned30": "Churned 30 days",
       "mrr": "MRR",
-      "title": "Revenue"
+      "title": "Revenue",
+      "trialing": "{{count}} trialing"
     },
     "title": "Metrics",
     "usage": {
       "activeOrganizations": "Active organizations",
       "dau": "Active today",
       "mau": "Active 30 days",
+      "ofTotal": "of {{total}} total",
       "signups30": "Signups 30 days",
       "title": "Usage",
+      "trend": "{{trend}} vs previous period",
       "users": "Users",
       "wau": "Active 7 days"
     }

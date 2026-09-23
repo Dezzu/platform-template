@@ -483,6 +483,18 @@ amministrazione.
 per sola `action` e trovava un'impersonation reale fatta dall'interfaccia giorni prima:
 il test falliva sul dato di qualcun altro. Filtra sempre anche per `actorUserId`.
 
+**Un backtick chiude la stringa anche dentro un template literal di SQL.** Stessa
+trappola del template Angular qui sotto, e l'ho presa due volte nella stessa sessione:
+un commento dentro `sql\`…\``che nominava una colonna fra backtick ha prodotto`Cannot find name 'filter'`su codice SQL perfettamente valido. Nei commenti dentro un
+template literal si usano le virgolette, o — per l'SQL — i commenti`--` di Postgres.
+
+**Un `LEFT JOIN` con un aggregato va protetto da `filter (where <chiave> is not null)`.**
+Senza, la riga senza corrispondenza porta tutte le colonne a null, un `CASE` cade nel suo
+`ELSE` e l'aggregato conta qualcosa che non esiste. Nella ripartizione dell'MRR per piano
+questo mostrava il piano Business a 49 € con **zero** abbonamenti — come barra più lunga
+del grafico — mentre la tile MRR sopra diceva 19 €. Due numeri in contraddizione sulla
+stessa schermata, e nessun test lo avrebbe visto: l'ha trovato l'aver aperto la pagina.
+
 **Un backtick dentro un template inline di Angular chiude la stringa.** Un commento HTML
 che nominava `non-scaling-stroke` fra backtick ha prodotto `Parsing error: ',' expected`
 su una riga che con l'errore non c'entrava nulla. Nei template inline di `libs/ui` si
@@ -738,6 +750,11 @@ Loki — ci sono già. Dettagli e passi di verifica nel suo
 - **L'asse parte da zero, sempre.** Un asse ritagliato sul minimo trasforma una
   settimana piatta in una catena montuosa, ed è il modo più comune in cui dati veri
   producono un'immagine falsa. Un test lo sorveglia.
+- **Quattro difetti su cinque sono usciti aprendo la pagina**, non dai test: l'MRR per
+  piano che contraddiceva la tile MRR, le linee che uscivano dalla card, il tooltip
+  appoggiato esattamente sul picco che si stava leggendo, i due grafici affiancati con
+  basi a quote diverse, e sotto le tile dei numeri nudi senza etichetta. §4.1 continua
+  ad avere ragione.
 - **Una serie per grafico, quindi nessuna legenda**; il colore viene dai token
   `--chart-*` del tema, che ha già una palette scura _scelta_ e non ribaltata. Il testo
   non indossa mai il colore della serie.

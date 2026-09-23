@@ -262,12 +262,20 @@ export class PlatformMetricsService {
     }>(sql`
       select p.key,
              count(s.id)::int as subscriptions,
+             -- The FILTER clause is the whole correctness of this query.
+             --
+             -- It is a LEFT JOIN, so a plan nobody is on still produces one row with
+             -- every subscription column null, the CASE falls through to its ELSE
+             -- branch, and it bills the plan's full monthly price for a subscription
+             -- that does not exist. The screen showed Business at EUR 49 with zero
+             -- subscriptions, as the largest bar, while the MRR tile above it said
+             -- EUR 19. Found by looking at the page.
              coalesce(sum(
                case when s.billing_interval = 'year'
                     then (p.amount_yearly / 12.0) * coalesce(s.seats, 1)
                     else p.amount_monthly * coalesce(s.seats, 1)
                end
-             ), 0)::int as mrr_cents
+             ) filter (where s.id is not null), 0)::int as mrr_cents
         from plan p
         left join subscription s
           on s.plan = p.key and s.status in ('active', 'trialing')

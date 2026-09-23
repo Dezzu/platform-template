@@ -420,15 +420,18 @@
       "cancelling": "In disdetta",
       "churned30": "Disdette 30 giorni",
       "mrr": "MRR",
-      "title": "Ricavi"
+      "title": "Ricavi",
+      "trialing": "{{count}} in prova"
     },
     "title": "Metriche",
     "usage": {
       "activeOrganizations": "Organizzazioni attive",
       "dau": "Attivi oggi",
       "mau": "Attivi 30 giorni",
+      "ofTotal": "su {{total}} totali",
       "signups30": "Iscrizioni 30 giorni",
       "title": "Utilizzo",
+      "trend": "{{trend}} sul periodo precedente",
       "users": "Utenti",
       "wau": "Attivi 7 giorni"
     }
