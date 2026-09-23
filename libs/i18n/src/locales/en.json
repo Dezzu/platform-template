@@ -459,9 +459,19 @@
       "email": "Email",
       "in_app": "In app"
     },
+    "columns": {
+      "createdAt": "When",
+      "state": "State",
+      "title": "Notification",
+      "type": "Type"
+    },
     "description": "What happened while you were elsewhere, in this organization.",
     "empty": "Nothing here.",
     "emptyUnread": "Nothing left to read.",
+    "filters": {
+      "all": "All",
+      "allTypes": "All types"
+    },
     "groups": {
       "billing": "Billing",
       "organization": "Organization",
@@ -469,6 +479,7 @@
     },
     "markAllRead": "Mark all as read",
     "markRead": "Mark as read",
+    "openIt": "Open",
     "preferences": {
       "always": "always",
       "description": "Where you want to be reached. This is about you, not about an organization: if you belong to several, the choice is made once.",
@@ -479,6 +490,10 @@
     "seeAll": "See all",
     "showAll": "Show all",
     "showUnread": "Unread only",
+    "states": {
+      "read": "Read",
+      "unread": "Unread"
+    },
     "title": "Notifications",
     "types": {
       "billing": {

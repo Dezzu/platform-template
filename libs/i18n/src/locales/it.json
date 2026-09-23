@@ -459,9 +459,19 @@
       "email": "Email",
       "in_app": "In app"
     },
+    "columns": {
+      "createdAt": "Quando",
+      "state": "Stato",
+      "title": "Notifica",
+      "type": "Tipo"
+    },
     "description": "Quello che è successo mentre eri altrove, in questa organizzazione.",
     "empty": "Nessuna notifica.",
     "emptyUnread": "Nessuna notifica da leggere.",
+    "filters": {
+      "all": "Tutte",
+      "allTypes": "Tutti i tipi"
+    },
     "groups": {
       "billing": "Abbonamento",
       "organization": "Organizzazione",
@@ -469,6 +479,7 @@
     },
     "markAllRead": "Segna tutte come lette",
     "markRead": "Segna come letta",
+    "openIt": "Apri",
     "preferences": {
       "always": "sempre",
       "description": "Dove vuoi essere raggiunto. Vale per te, non per l'organizzazione: se ne hai più di una, la scelta è unica.",
@@ -479,6 +490,10 @@
     "seeAll": "Vedi tutte",
     "showAll": "Mostra tutte",
     "showUnread": "Solo da leggere",
+    "states": {
+      "read": "Letta",
+      "unread": "Da leggere"
+    },
     "title": "Notifiche",
     "types": {
       "billing": {

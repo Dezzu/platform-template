@@ -1,67 +1,104 @@
-<div class="flex flex-wrap items-center justify-between gap-3">
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
   <div>
-    <h1 class="mb-1 text-2xl font-semibold">{{ 'notifications.title' | transloco }}</h1>
+    <h1 class="text-2xl font-semibold">{{ 'notifications.title' | transloco }}</h1>
     <p class="text-muted-foreground text-sm">{{ 'notifications.description' | transloco }}</p>
   </div>
 
-  <div class="flex items-center gap-2">
-    <button hlmBtn variant="outline" size="sm" type="button" (click)="toggleUnreadOnly()">
-      {{ (onlyUnread() ? 'notifications.showAll' : 'notifications.showUnread') | transloco }}
-    </button>
-    <button hlmBtn size="sm" type="button" [disabled]="busy()" (click)="markAllRead()">
-      {{ 'notifications.markAllRead' | transloco }}
-    </button>
-  </div>
+  <button hlmBtn size="sm" variant="outline" type="button" [disabled]="busy()" (click)="markAllRead()">
+    {{ 'notifications.markAllRead' | transloco }}
+  </button>
 </div>
 
 @if (failed()) {
-<p class="text-destructive mt-6 text-sm" role="alert">{{ 'errors.INTERNAL_ERROR' | transloco }}</p>
-} @else if (loading()) {
-<p class="text-muted-foreground mt-6 text-sm">{{ 'common.loading' | transloco }}</p>
-} @else if (empty()) {
-<p class="text-muted-foreground mt-6 text-sm">
-  {{ (onlyUnread() ? 'notifications.emptyUnread' : 'notifications.empty') | transloco }}
-</p>
-} @else {
-<ul class="divide-border mt-6 divide-y">
-  @for (row of rows(); track row.id) {
-  <li class="flex items-start gap-1">
-    <!--
-      A button, not a link: where it goes is data on the row, and marking it read has
-      to happen before the navigation. The tick beside it does the same thing without
-      the navigation, for everything worth knowing and not worth visiting.
-    -->
-    <button
-      type="button"
-      class="hover:bg-muted/60 flex min-w-0 flex-1 flex-col items-start gap-1 rounded-md px-2 py-3 text-left"
-      (click)="open(row)"
-    >
-      <span class="flex w-full items-center gap-2">
-        @if (!row.readAt) {
-        <span class="bg-primary size-2 shrink-0 rounded-full" aria-hidden="true"></span>
-        }
-        <span class="text-sm" [class.font-semibold]="!row.readAt"> {{ row.titleKey | transloco: paramsOf(row) }} </span>
-        <span class="text-muted-foreground ml-auto shrink-0 text-xs"> {{ row.createdAt | date: 'short' }} </span>
-      </span>
-
-      <span class="text-muted-foreground text-sm"> {{ row.bodyKey | transloco: paramsOf(row) }} </span>
-    </button>
-
-    @if (!row.readAt) {
-    <button
-      hlmBtn
-      variant="ghost"
-      size="sm"
-      type="button"
-      class="mt-2 size-8 shrink-0 px-0"
-      [attr.aria-label]="'notifications.markRead' | transloco"
-      [attr.title]="'notifications.markRead' | transloco"
-      (click)="markRead(row)"
-    >
-      <ng-icon name="lucideCheck" size="16" />
-    </button>
-    }
-  </li>
-  }
-</ul>
+<p class="text-destructive mb-4 text-sm" role="alert">{{ 'errors.INTERNAL_ERROR' | transloco }}</p>
 }
+
+<dui-table
+  dataKey="id"
+  emptyMessage="notifications.empty"
+  [cols]="columns()"
+  [items]="rows()"
+  [actions]="actions()"
+  [actionsAsMenu]="true"
+  [lazy]="true"
+  [rows]="20"
+  [loading]="loading()"
+  [totalRecords]="total()"
+  [showAddButton]="false"
+  [showSearch]="false"
+  (onLazyLoad)="onLazyLoad($event)"
+  (reloaded)="reload()"
+>
+  <!--
+    I filtri stanno sopra la tabella, in una riga sola, e mandano al server: filtrare
+    nel browser vorrebbe dire in silenzio "cerca fra le venti righe che stai guardando".
+  -->
+  <ng-template duiTemplate="customFilters">
+    <div class="flex flex-wrap items-center gap-1">
+      <button
+        hlmBtn
+        size="sm"
+        type="button"
+        [variant]="!onlyUnread() ? 'secondary' : 'ghost'"
+        (click)="setUnread(false)"
+      >
+        {{ 'notifications.filters.all' | transloco }}
+      </button>
+      <button hlmBtn size="sm" type="button" [variant]="onlyUnread() ? 'secondary' : 'ghost'" (click)="setUnread(true)">
+        {{ 'notifications.showUnread' | transloco }}
+      </button>
+
+      <span class="bg-border mx-1 h-5 w-px" aria-hidden="true"></span>
+
+      <button
+        hlmBtn
+        size="sm"
+        type="button"
+        [variant]="activeType() === null ? 'secondary' : 'ghost'"
+        (click)="setType(null)"
+      >
+        {{ 'notifications.filters.allTypes' | transloco }}
+      </button>
+      @for (type of types; track type) {
+      <button
+        hlmBtn
+        size="sm"
+        type="button"
+        [variant]="activeType() === type ? 'secondary' : 'ghost'"
+        (click)="setType(type)"
+      >
+        {{ 'notifications.types.' + type + '.label' | transloco }}
+      </button>
+      }
+    </div>
+  </ng-template>
+
+  <ng-template duiTemplate="title" let-item="item">
+    @let row = asNotification(item);
+    <div class="min-w-0">
+      <!-- Il grassetto è l'unico segnale di "non letta" nella riga: si legge di traverso. -->
+      <span class="block truncate" [class.font-semibold]="!row.readAt">
+        {{ row.titleKey | transloco: paramsOf(row) }}
+      </span>
+      <span class="text-muted-foreground block truncate text-xs"> {{ row.bodyKey | transloco: paramsOf(row) }} </span>
+    </div>
+  </ng-template>
+
+  <ng-template duiTemplate="type" let-item="item">
+    <span class="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs">
+      {{ 'notifications.types.' + asNotification(item).type + '.label' | transloco }}
+    </span>
+  </ng-template>
+
+  <ng-template duiTemplate="state" let-item="item">
+    @let row = asNotification(item); @if (row.readAt) {
+    <span class="text-muted-foreground text-xs">{{ 'notifications.states.read' | transloco }}</span>
+    } @else {
+    <span class="text-primary text-xs font-medium">{{ 'notifications.states.unread' | transloco }}</span>
+    }
+  </ng-template>
+
+  <ng-template duiTemplate="createdAt" let-item="item">
+    <span class="text-sm whitespace-nowrap">{{ asNotification(item).createdAt | date: 'short' }}</span>
+  </ng-template>
+</dui-table>

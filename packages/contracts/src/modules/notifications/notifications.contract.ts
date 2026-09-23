@@ -130,6 +130,13 @@ export type Notification = z.infer<typeof NotificationSchema>;
 export const NotificationListQuerySchema = PageQuerySchema.extend({
   /** Only what has not been read yet — what the bell opens on. */
   unread: z.stringbool().optional(),
+  /**
+   * One kind of notification.
+   *
+   * An enum and not a free string: the set is closed, and a filter that accepted
+   * anything would answer "no results" to a typo instead of refusing it.
+   */
+  type: z.enum(NOTIFICATION_TYPES).optional(),
 });
 export type NotificationListQuery = z.infer<typeof NotificationListQuerySchema>;
 

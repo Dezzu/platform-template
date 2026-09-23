@@ -483,6 +483,14 @@ amministrazione.
 per sola `action` e trovava un'impersonation reale fatta dall'interfaccia giorni prima:
 il test falliva sul dato di qualcun altro. Filtra sempre anche per `actorUserId`.
 
+**`NG8113: <direttiva> is not used within the template` vuol dire che il template ha
+perso del contenuto.** Non è un avviso cosmetico sugli import: è il compilatore che
+segnala che quello che usava quella direttiva non c'è più. Le tab dell'area di
+amministrazione sono sparite da `admin-nav.component.html` e sono state committate così,
+perché filtravo l'output della build con `grep -E "ERROR|error"` e gli avvisi non li
+leggevo. **Dopo una build Angular guarda anche i WARNING**, non solo gli errori — e un
+NG8113 comparso dal nulla si tratta come un guasto, non come un import da togliere.
+
 **Due handler di click sullo stesso elemento di un trigger CDK si mangiano a vicenda.**
 La campanella aveva `[hlmDropdownMenuTrigger]` **e** `(click)="open()"` sullo stesso
 bottone. Dopo aver attivato una voce dentro il pannello — una notifica, o "Vedi tutte" —
@@ -621,6 +629,12 @@ Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-sna
   evento si aprirà a ventaglio su centinaia di persone; oggi il massimo è "gli admin di
   un'organizzazione". Il punto in cui cambiarlo è quel metodo, e chi lo chiama non deve
   saperlo.
+- **La campanella è un popover, non un menu.** Il menu CDK imponeva che ogni riga fosse
+  una voce, quindi il pulsante non poteva stare accanto al testo senza annidare un
+  bottone in un bottone. Il popover non impone niente: riga larga, azione di fianco al
+  corpo. L'elenco completo è una `dui-table` lazy da 20 righe con filtri che vanno al
+  server (stato e tipo) — filtrare nel browser vorrebbe dire "cerca fra le venti righe
+  che stai guardando".
 - **La campanella non fa polling** — e dalla 9f non ne ha più bisogno: il server spinge.
   Vedi la sezione 9f qui sotto. Restava ferma al valore letto alla costruzione della
   shell, quindi una notifica arrivata mentre guardavi la pagina si vedeva solo dopo un

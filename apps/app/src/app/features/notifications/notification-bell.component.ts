@@ -6,7 +6,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideBell, lucideCheck } from '@ng-icons/lucide';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
-import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
+import { HlmPopoverImports } from '@spartan-ng/helm/popover';
 import type { Notification } from '@app/contracts';
 import { NotificationCenterService, NotificationsApi, ToastService } from '@app/core';
 
@@ -15,6 +15,12 @@ const PREVIEW_SIZE = 5;
 
 /**
  * The bell in the header: a count, and the few most recent behind it.
+ *
+ * A **popover**, not a dropdown menu. The menu brought its own semantics — every row
+ * had to be a menu item, so the title and the clear button could not share a line
+ * without nesting a button inside a button — and in exchange it dictated the layout.
+ * The popover imposes nothing, which is why the row can be wide with its action beside
+ * the text rather than under it.
  *
  * The panel is a glance, not the archive — the five still waiting, then a way through
  * to the full page. Everything that needs paging, filtering or history lives there;
@@ -33,7 +39,7 @@ const PREVIEW_SIZE = 5;
  */
 @Component({
   selector: 'app-notification-bell',
-  imports: [NgIcon, RouterLink, DatePipe, TranslocoPipe, HlmButtonImports, HlmDropdownMenuImports],
+  imports: [NgIcon, RouterLink, DatePipe, TranslocoPipe, HlmButtonImports, HlmPopoverImports],
   providers: [provideIcons({ lucideBell, lucideCheck })],
   templateUrl: './notification-bell.component.html',
 })
@@ -44,6 +50,16 @@ export class NotificationBellComponent {
   private readonly toasts = inject(ToastService);
 
   protected readonly unread = this.centre.unread;
+
+  /**
+   * Controlled, not left to the popover.
+   *
+   * Holding the state here is what lets a row close the panel before navigating, and
+   * what makes "opened" an event this component can react to rather than a click it
+   * has to guess from. The previous version bound a second `(click)` handler to the
+   * trigger for that, and paid for it — see §5.
+   */
+  protected readonly state = signal<'open' | 'closed'>('closed');
 
   /**
    * Bumped on every open, which is what re-runs the loader.
@@ -78,17 +94,31 @@ export class NotificationBellComponent {
     () => !this.loading() && !this.failed() && this.rows().length === 0,
   );
 
-  protected open(): void {
-    this.openedAt.update((value) => value + 1);
+  protected onStateChange(state: 'open' | 'closed'): void {
+    this.state.set(state);
+    // Only opening is worth a fetch. The closing transition used to trigger one too,
+    // back when this was bound to the trigger's click.
+    if (state === 'open') this.openedAt.update((value) => value + 1);
+  }
+
+  protected close(): void {
+    this.state.set('closed');
   }
 
   protected paramsOf(row: Notification): Record<string, unknown> {
     return row.params ?? {};
   }
 
-  /** Marks it read, then goes where it points — in that order, and awaited. */
+  /**
+   * Marks it read, closes the panel, then goes where it points — in that order.
+   *
+   * Closing before navigating rather than leaving it to the overlay: the panel is
+   * anchored to a button in the shell, which survives the navigation, so a popover
+   * nobody closed would still be hanging there over the new page.
+   */
   protected async openOne(row: Notification): Promise<void> {
     await this.dismiss(row);
+    this.close();
     await this.router.navigateByUrl(row.actionUrl ?? '/notifications');
   }
 

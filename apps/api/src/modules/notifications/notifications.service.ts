@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger, type MessageEvent } from '@nestjs/common';
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, type SQL } from 'drizzle-orm';
 import {
   NOTIFICATION_CHANNELS,
   NOTIFICATION_REGISTRY,
@@ -234,18 +234,28 @@ export class NotificationsService {
   // ── Reading ────────────────────────────────────────────────────────────────
 
   async list(scope: OrgContext, query: NotificationListQuery): Promise<Paginated<Notification>> {
-    // Recipient and tenant are both applied by the repository's `visibleTo`; this only
-    // adds the filter the screen asked for.
-    const unreadOnly = query.unread ? isNull(notification.readAt) : undefined;
+    /**
+     * Recipient and tenant are both applied by the repository's `visibleTo`; this only
+     * adds what the screen asked for. Composed into one `SQL` because
+     * `exactOptionalPropertyTypes` refuses to pass `SQL | undefined` as an optional
+     * `where`, and because two filters that can each be absent is exactly where a
+     * hand-assembled predicate starts dropping one of them.
+     */
+    const filters = [
+      query.unread ? isNull(notification.readAt) : undefined,
+      query.type ? eq(notification.type, query.type) : undefined,
+    ].filter((clause): clause is SQL => clause !== undefined);
+
+    const where = filters.length > 0 ? (and(...filters) as SQL) : undefined;
 
     const [rows, total] = await Promise.all([
       this.repository.findMany(scope, {
-        ...(unreadOnly ? { where: unreadOnly } : {}),
+        ...(where ? { where } : {}),
         orderBy: desc(notification.createdAt),
         limit: query.size,
         offset: query.page * query.size,
       }),
-      this.repository.count(scope, unreadOnly),
+      this.repository.count(scope, where),
     ]);
 
     return {
