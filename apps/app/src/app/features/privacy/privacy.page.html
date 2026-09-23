@@ -1,0 +1,202 @@
+<h1 class="mb-1 text-2xl font-semibold">{{ 'privacy.title' | transloco }}</h1>
+<p class="text-muted-foreground mb-6 text-sm">{{ 'privacy.description' | transloco }}</p>
+
+<div class="flex flex-col gap-6">
+  <!-- ── A copy of the data ──────────────────────────────────────────────── -->
+  <section hlmCard>
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'privacy.exports.title' | transloco }}</h2>
+      <p hlmCardDescription>{{ 'privacy.exports.description' | transloco }}</p>
+    </div>
+
+    <div hlmCardContent class="flex flex-col gap-4">
+      <div class="flex flex-wrap gap-2">
+        <button hlmBtn size="sm" type="button" [disabled]="busy()" (click)="requestPersonalExport()">
+          {{ 'privacy.exports.requestMine' | transloco }}
+        </button>
+
+        @if (showsOrganization()) {
+        <button
+          hlmBtn
+          size="sm"
+          variant="outline"
+          type="button"
+          [disabled]="busy()"
+          (click)="requestOrganizationExport()"
+          *appCan="[permissionKeys.GDPR_EXPORT]"
+        >
+          {{ 'privacy.exports.requestOrganization' | transloco }}
+        </button>
+        }
+      </div>
+
+      @if (exportsFailed()) {
+      <p class="text-destructive text-sm" role="alert">{{ 'errors.INTERNAL_ERROR' | transloco }}</p>
+      } @else {
+      <!--
+        Not lazy: this list is the last twenty requests one person made, so there is
+        nothing for the server to page through and a search box over four rows would be
+        furniture.
+      -->
+      <dui-table
+        dataKey="id"
+        emptyMessage="privacy.exports.empty"
+        [cols]="columns()"
+        [items]="exports()"
+        [actions]="actions()"
+        [actionsAsMenu]="false"
+        [lazy]="false"
+        [paginator]="false"
+        [showSearch]="false"
+        [showColumnSelector]="false"
+        [showAddButton]="false"
+        [loading]="exportsLoading()"
+      >
+        <ng-template duiTemplate="scope" let-item="item">
+          {{ 'privacy.exports.scopes.' + asExport(item).scope | transloco }}
+        </ng-template>
+
+        <ng-template duiTemplate="status" let-item="item">
+          @let request = asExport(item);
+          <span
+            class="rounded-full px-2 py-0.5 text-xs font-medium"
+            [class]="
+              request.status === 'ready'
+                ? 'bg-green-100 text-green-900 dark:bg-green-900/40 dark:text-green-100'
+                : request.status === 'failed'
+                  ? 'bg-destructive/10 text-destructive'
+                  : 'bg-muted text-muted-foreground'
+            "
+          >
+            {{ 'privacy.exports.statuses.' + request.status | transloco }}
+          </span>
+        </ng-template>
+
+        <ng-template duiTemplate="expiresAt" let-item="item">
+          @if (asExport(item).expiresAt; as expiresAt) {
+          <span>{{ expiresAt | date: 'medium' }}</span>
+          } @else {
+          <!-- A request that never produced an archive has nothing to expire. -->
+          <span class="text-muted-foreground">—</span>
+          }
+        </ng-template>
+      </dui-table>
+      }
+    </div>
+  </section>
+
+  <!-- ── The cookie choice ───────────────────────────────────────────────── -->
+  <section hlmCard>
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'privacy.consent.title' | transloco }}</h2>
+      <p hlmCardDescription>{{ 'privacy.consent.description' | transloco }}</p>
+    </div>
+
+    <div hlmCardContent class="flex flex-col gap-3">
+      @if (consentDecidedAt(); as decidedAt) {
+      <p class="text-sm">{{ 'privacy.consent.decidedAt' | transloco: { date: decidedAt | date: 'medium' } }}</p>
+      <ul class="text-muted-foreground flex flex-wrap gap-2 text-xs">
+        @for (labelKey of consentSummary(); track labelKey) {
+        <li class="bg-muted rounded-full px-2 py-0.5">{{ labelKey | transloco }}</li>
+        }
+      </ul>
+      } @else {
+      <p class="text-muted-foreground text-sm">{{ 'privacy.consent.undecided' | transloco }}</p>
+      }
+
+      <div>
+        <button hlmBtn size="sm" variant="outline" type="button" (click)="changeConsent()">
+          {{ 'privacy.consent.change' | transloco }}
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Erasure ─────────────────────────────────────────────────────────── -->
+  <section hlmCard class="border-destructive/40">
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'privacy.deletion.title' | transloco }}</h2>
+      <p hlmCardDescription>{{ 'privacy.deletion.description' | transloco }}</p>
+    </div>
+
+    <div hlmCardContent class="flex flex-col gap-4">
+      @if (accountDeletion(); as pending) {
+      <!--
+        The date, not "pending". The grace period only protects somebody who knows when
+        it runs out.
+      -->
+      <div class="border-destructive/40 flex flex-col gap-2 rounded-md border p-3" role="status">
+        <p class="text-sm">
+          {{ 'privacy.deletion.pendingAccount' | transloco: { date: pending.scheduledFor | date: 'medium' } }}
+        </p>
+        <div>
+          <button
+            hlmBtn
+            size="sm"
+            variant="secondary"
+            type="button"
+            [disabled]="busy()"
+            (click)="cancelDeletion(pending)"
+          >
+            {{ 'privacy.deletion.cancel' | transloco }}
+          </button>
+        </div>
+      </div>
+      } @else if (organizationDeletion(); as pendingOrg) {
+      <div class="border-destructive/40 flex flex-col gap-2 rounded-md border p-3" role="status">
+        <p class="text-sm">
+          {{ 'privacy.deletion.pendingOrganization' | transloco: { date: pendingOrg.scheduledFor | date: 'medium' } }}
+        </p>
+        <div>
+          <button
+            hlmBtn
+            size="sm"
+            variant="secondary"
+            type="button"
+            [disabled]="busy()"
+            (click)="cancelDeletion(pendingOrg)"
+          >
+            {{ 'privacy.deletion.cancel' | transloco }}
+          </button>
+        </div>
+      </div>
+      } @else {
+      <dui-textarea-input
+        [label]="'privacy.deletion.reason' | transloco"
+        [placeholder]="'privacy.deletion.reasonPlaceholder' | transloco"
+        [rows]="3"
+        [formField]="reasonForm.reason"
+      />
+
+      <div class="flex flex-wrap gap-2">
+        <button
+          hlmBtn
+          size="sm"
+          variant="destructive"
+          type="button"
+          [disabled]="busy()"
+          (click)="scheduleAccountDeletion()"
+        >
+          {{ 'privacy.deletion.deleteAccount' | transloco }}
+        </button>
+
+        @if (showsOrganization()) {
+        <button
+          hlmBtn
+          size="sm"
+          variant="outline"
+          type="button"
+          [disabled]="busy()"
+          (click)="scheduleOrganizationDeletion()"
+          *appCan="[permissionKeys.ORG_DELETE]"
+        >
+          {{ 'privacy.deletion.deleteOrganization' | transloco }}
+        </button>
+        }
+      </div>
+
+      <p class="text-muted-foreground text-xs">{{ 'privacy.deletion.retention' | transloco }}</p>
+      }
+    </div>
+  </section>
+</div>

@@ -14,4 +14,12 @@ export const environment = {
   appName: 'SaaS Template',
   apiUrl: '/api',
   authUrl: '/api/auth',
+  /**
+   * Origin of the marketing site, which owns the legal pages.
+   *
+   * Absolute rather than relative because it is a *different application*: the cookie
+   * banner and the sign-up form link to `/privacy-policy` and `/terms`, and a relative
+   * path would resolve against the dashboard's own host and 404.
+   */
+  webUrl: 'http://localhost:4200',
 };

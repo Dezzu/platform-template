@@ -55,6 +55,22 @@ export const ERROR_CODES = {
   FILE_NOT_READY: 'FILE_NOT_READY',
   STORAGE_UNAVAILABLE: 'STORAGE_UNAVAILABLE',
 
+  // Privacy, export and erasure
+  /** One export at a time per subject — a second would only queue the same work. */
+  GDPR_EXPORT_IN_PROGRESS: 'GDPR_EXPORT_IN_PROGRESS',
+  /** The archive is still being built; there is nothing to download yet. */
+  GDPR_EXPORT_NOT_READY: 'GDPR_EXPORT_NOT_READY',
+  /** It was built, and its retention window has passed. Ask for a new one. */
+  GDPR_EXPORT_EXPIRED: 'GDPR_EXPORT_EXPIRED',
+  /** There is already a pending erasure for this account or organization. */
+  GDPR_DELETION_ALREADY_SCHEDULED: 'GDPR_DELETION_ALREADY_SCHEDULED',
+  /**
+   * The organization still pays for something. Cancelling somebody's subscription as
+   * a side effect of an erasure request would be money moving without a click, so the
+   * request is refused and the billing screen is where it gets undone.
+   */
+  GDPR_DELETION_BLOCKED_BY_SUBSCRIPTION: 'GDPR_DELETION_BLOCKED_BY_SUBSCRIPTION',
+
   // Platform state
   MAINTENANCE_MODE: 'MAINTENANCE_MODE',
   FEATURE_DISABLED: 'FEATURE_DISABLED',

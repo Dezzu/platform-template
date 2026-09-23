@@ -65,8 +65,11 @@ Mai `any`. Mai `@ts-ignore` senza una riga che spieghi perché.
 - Ogni tabella di dominio ha `organization_id NOT NULL`. Eccezioni: `user`, `session`,
   `account`, `verification`, `twoFactor`, `notification_preference` (scope utente);
   `plan`, `feature_flag`, `stripe_event`, `app_setting`, `subscription` (globali);
-  `email_message`, dove la colonna è **nullable** — verifica email e reset password
-  partono prima che l'organizzazione esista.
+  `email_message` e `gdpr_export_request`, dove la colonna è **nullable** — verifica
+  email e reset password partono prima che l'organizzazione esista, e chiedere una copia
+  dei propri dati è una domanda su una persona, non su un tenant; `deletion_request`, che
+  la colonna non ce l'ha affatto, perché il soggetto è un account **o** un'organizzazione
+  e `subject_id` lo dice già.
 - Le query org-scoped passano da `TenantRepository`, che **pretende** un `OrgScope`.
   Non usare `this.db` direttamente in un repository: renderebbe facile la query non
   scopata, che è esattamente ciò che il meccanismo impedisce.
@@ -81,6 +84,10 @@ Mai `any`. Mai `@ts-ignore` senza una riga che spieghi perché.
   un membro non aggiunto perché SES ha avuto un brutto secondo.
 - Ogni payload di job è validato con Zod nel worker. Un payload avvelenato solleva
   `UnrecoverableError` (niente retry): fra cinque tentativi non diventerà valido.
+- **Le richieste di cancellazione non cancellano da sole.** Un soggetto con un
+  abbonamento vivo viene rifiutato (`GDPR_DELETION_BLOCKED_BY_SUBSCRIPTION`), mai disdetto
+  per conto suo: disdire l'abbonamento di qualcuno come effetto collaterale è denaro che
+  si muove senza un click. Vedi [docs/gdpr.md](./docs/gdpr.md).
 - **Permessi e rango sono due domande diverse.** I permessi dicono cosa puoi fare alle
   _cose_, il rango cosa puoi fare alle _persone_. Confonderli è il modo in cui un admin
   che ha legittimamente `members.remove` rimuove l'owner e si prende il tenant. Chi
@@ -465,6 +472,32 @@ amministrazione.
 per sola `action` e trovava un'impersonation reale fatta dall'interfaccia giorni prima:
 il test falliva sul dato di qualcun altro. Filtra sempre anche per `actorUserId`.
 
+**`count(*)` grezzo in un `sql` torna una stringa, e `'0' === 0` è falso.** Il driver `pg`
+restituisce i bigint come stringhe: l'helper `count()` di Drizzle lo sa e converte, un
+frammento `sql` scritto a mano no. Una guardia del tipo `(row.owners ?? 0) === 0` non
+scatta **mai** — e nel caso in cui è successo significava che l'unico owner di
+un'organizzazione poteva cancellarsi in silenzio lasciando un tenant che nessuno può
+amministrare. Si aggiunge `::int` nella query (o si passa da `Number()`), e lo si prova con
+un test: qui l'ha trovato quello.
+
+**Drizzle avvolge gli errori del driver: lo SQLSTATE è in `cause`, non sull'errore.** Un
+`catch` che legge `error.code` per riconoscere una violazione di unicità (`23505`) non
+combacia mai, in silenzio — e un 409 che spiega esattamente cosa è successo diventa un 500
+che non dice niente. Succedeva a `deletion_request`, e l'ha trovato un test. Si cammina la
+catena delle `cause` (vedi `isUniqueViolation` in `gdpr-deletion.service.ts`).
+
+**Nelle e2e i worker girano nello stesso processo.** Quindi un job accodato da un test
+viene davvero eseguito, mentre il test successivo sta girando: un'asserzione del tipo "è
+ancora in preparazione" sulla riga appena accodata è una corsa che passa sulle macchine
+lente. Si costruisce lo stato che serve inserendo la riga direttamente, e si prova la
+pipeline chiamando il service (`app.get(GdprExportService).run(id)`) invece di aspettare la
+coda — che su un deployment con `QUEUE_RUN_WORKERS=false` non arriverebbe mai.
+
+**Le e2e che accodano un export lasciano oggetti nel bucket.** Cancellare le righe senza
+cancellare gli archivi produce esattamente la spazzatura che lo sweep esiste per evitare:
+`gdpr.e2e-spec` legge gli `objectKey` **prima** di cancellare le righe e chiama
+`S3Service.deleteMany`.
+
 **`@nestjs/cli` è stato rimosso**: `nest build` si rompe su Node 22+ (ciclo ESM su
 `ora`). Si usa `tsc -b` con project references.
 
@@ -474,15 +507,15 @@ il test falliva sul dato di qualcun altro. Filtra sempre anche per `actorUserId`
 
 **Fatte:** 0 tooling · 1 database · 2 auth · 3 config/envelope · 4 contratti+OpenAPI ·
 5 tenancy/permessi/audit · 6 frontend · 7 billing Stripe · 8 code+email+storage ·
-9a membri+inviti+pagine auth · 9b area di amministrazione · 9c feature flag + maintenance · 9d notifiche + preferenze.
+9a membri+inviti+pagine auth · 9b area di amministrazione · 9c feature flag + maintenance ·
+9d notifiche + preferenze · 9e GDPR + cookie banner + pagine legali.
 
-**Da fare (fase 9, nell'ordine deciso):** GDPR + cookie banner.
-Poi 10 osservabilità · 11 Docker+CI · 12 Terraform.
-(Audit UI e impersonation: fatti.)
+**Da fare:** 10 osservabilità · 11 Docker+CI · 12 Terraform.
+(Audit UI e impersonation: fatti. La fase 9 è chiusa.)
 
 Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-snail.md`.
 
-**336 test.** `pnpm verify` verde.
+**356 test.** `pnpm verify` verde.
 
 ### Cosa ha aggiunto la 9c
 
@@ -526,6 +559,48 @@ Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-sna
   azione che la cambia. Un timer sarebbe una richiesta per utente per intervallo per
   sempre, per un numero quasi sempre zero: quando servirà muoversi da sola, la risposta
   onesta sono gli SSE, non il poll.
+
+### Cosa ha aggiunto la 9e
+
+Il dettaglio sta in [docs/gdpr.md](./docs/gdpr.md); qui le decisioni che cambiano come si
+scrive il resto.
+
+- **L'ambito sta nella rotta, mai nel body.** Esportare sé stessi non richiede permessi,
+  esportare il proprio datore di lavoro richiede `gdpr.export`, cancellare il tenant
+  richiede `org.delete`: tre risposte diverse che una guard deve dare _prima_ che qualcosa
+  legga un body. Un endpoint unico che prende `{ scope }` sposterebbe quella decisione
+  dentro l'handler, che è dove vivono i controlli dimenticati.
+- **Un archivio non contiene credenziali.** Niente hash, token OAuth, segreto TOTP o token
+  di sessione: non sono informazioni _su_ una persona, sono il mezzo per diventarla, e un
+  archivio che li portasse trasformerebbe un link di download in un takeover. L'elenco
+  delle esclusioni è scritto dentro il file stesso (`meta.excluded`).
+- **L'email che annuncia l'export non porta il link.** Finché vale, una presigned URL _è_
+  l'archivio. L'email punta alla schermata; la schermata ne genera una nuova a ogni click,
+  dietro la sessione che la chiede — la stessa proprietà che `email_message` compra con la
+  redazione dei parametri.
+- **La cancellazione è una macchina a stati, e i soldi la fermano.** 30 giorni di
+  ripensamento, e `awaiting_billing` per il caso in cui un abbonamento rinasca dentro la
+  finestra. Non disdiciamo noi: vedi §1.
+- **Cancellare un account non cancella il registro attività.** La riga `user` sparisce con
+  le sue cascate, l'`audit_log` resta con l'attore a null e `actor_email` ripulita a mano —
+  è una colonna snapshot e sopravviverebbe con l'indirizzo dentro. Le organizzazioni in cui
+  quell'account era l'unico membro se ne vanno con lui; una con altri membri e nessun altro
+  owner blocca la richiesta.
+- **Il consenso cookie è un cookie, non una riga.** Il visitatore per cui il banner esiste
+  non ha un account. `CONSENT_VERSION` fa sì che aggiungere una categoria **richieda di
+  nuovo** il consenso invece di ereditare un "sì" dato a una domanda diversa, e
+  `parseConsent` forza a `true` le categorie necessarie perché un cookie è stato del client
+  e si può modificare a mano.
+- **Rifiutare costa quanto accettare.** Stesso bottone, stessa riga, stesso numero di
+  click. È a una classe CSS di distanza dal diventare un dark pattern, quindi sta scritto
+  nel componente.
+- **Le pagine legali non stanno nel catalogo i18n.** Sono documenti — lunghi, datati,
+  riscritti da un legale — e quel catalogo è eager anche nella dashboard. Stanno in
+  `apps/web/src/app/pages/legal/legal-content.ts`, con i `[…]` da riempire.
+- **Il sito marketing ora traduce.** Era l'unico posto che violava la regola i18n della §1
+  (copy italiano hard-coded); il banner ci ha portato il runtime Transloco comunque, quindi
+  tenere le stringhe fuori dal catalogo era pagare il costo senza prendere il beneficio.
+  Costa ~70 kB sul bundle iniziale di `web` — vedi "Aperto, e consapevole".
 
 ### Il back office: una sola applicazione, con un confine
 
@@ -582,13 +657,26 @@ una schermata nuova:
   di proposito in quella modalità, quindi senza quella schermata un account nuovo resta
   bloccato su `ORGANIZATION_REQUIRED`. Vedi
   [docs/modalita-utente-e-organizzazione.md](./docs/modalita-utente-e-organizzazione.md).
-- **Il bundle iniziale supera il budget**: 783 kB contro 700 (avviso; l'errore è a 850).
-  Di quei 783, i due locali `it.json`/`en.json` pesano ~34 kB **eager**: `provideI18n`
-  li importa, non li scarica. Ogni schermata nuova aggiunge il suo testo al primo
-  caricamento — le due di questa fase da sole valgono ~9 kB.
+- **I bundle iniziali superano il budget, entrambi.** `app` è a **816 kB** contro 700
+  (avviso; l'errore è a 850, quindi il margine è ~34 kB e la prossima schermata lo
+  consuma). `web` è a **470 kB** contro 400 (errore a 600), ed è nuovo: il sito marketing
+  ha preso il runtime Transloco con i due cataloghi quando ha preso il banner cookie.
+  Di quei bundle, `it.json`/`en.json` pesano ~40 kB **eager** in tutte e due le app:
+  `provideI18n` li importa, non li scarica. Ogni schermata nuova aggiunge il suo testo al
+  primo caricamento.
+  Il passo che paga, quando si deciderà di farlo, è il loader HTTP di Transloco: toglie i
+  cataloghi dal bundle iniziale di entrambe. Finché non serve, **i budget sono avvisi che
+  vanno letti**, non numeri da alzare.
   Peggio: **`pnpm verify` non costruisce le app Angular** — `pnpm build` è `pnpm -r`, che
   copre solo i pacchetti del workspace — quindi i budget non li guarda nessuno. Sono
   stretti apposta e sono stati superati per tre commit senza che se ne accorgesse niente.
+  Dopo una fase che tocca il frontend, lancia `pnpm ng build app` **e** `pnpm ng build web`
+  a mano.
+- **`webUrl` e `dashboardUrl` vanno impostati prima di un deploy reale.** Sono costanti di
+  build in `apps/*/src/environments/environment.prod.ts`, non variabili d'ambiente: la
+  dashboard le usa per linkare le pagine legali del sito marketing (banner cookie e form di
+  registrazione), il sito marketing per linkare la dashboard. Lasciate vuote i link non
+  vengono renderizzati — cioè un banner cookie senza informativa dietro.
 - `AUTH_REQUIRE_EMAIL_VERIFICATION` è `false` in locale e **obbligatorio a true in
   produzione** (`crossFieldIssues`). Prima di accenderlo in dev, considera che il link
   arriva su Mailpit e funziona.

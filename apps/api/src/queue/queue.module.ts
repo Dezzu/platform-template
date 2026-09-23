@@ -53,6 +53,7 @@ import { QUEUES } from './queue.constants';
     BullModule.registerQueue(
       { name: QUEUES.EMAIL, defaultJobOptions: { removeOnComplete: true } },
       { name: QUEUES.MAINTENANCE },
+      { name: QUEUES.GDPR },
     ),
   ],
   exports: [BullModule],

@@ -182,6 +182,18 @@ export const routes: Routes = [
         path: 'profile',
         loadComponent: () => import('./features/profile/profile.page').then((m) => m.ProfilePage),
       },
+      {
+        /**
+         * Also from the profile menu, and behind no permission: asking for a copy of
+         * your own data and asking for it to be erased are rights, not features. The
+         * organization halves of the screen are hidden by permission inside it.
+         *
+         * The emails about an export or a pending erasure link here, so the path is
+         * part of the contract — see GDPR_EXPORT_READY and the deletion templates.
+         */
+        path: 'privacy',
+        loadComponent: () => import('./features/privacy/privacy.page').then((m) => m.PrivacyPage),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],
   },

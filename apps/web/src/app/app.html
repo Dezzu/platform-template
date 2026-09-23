@@ -1,1 +1,21 @@
 <router-outlet />
+
+<!--
+  At the root: the choice has to be offered on whichever page somebody lands on, and it
+  must survive the navigation to the policy it links to.
+
+  Deferred, and here that is about more than weight. These pages are prerendered, so the
+  server — which has no cookie to read — would otherwise bake a banner into the static
+  HTML and every returning visitor would see it flash before hydration took it away.
+  Deferred, nothing renders until the browser has actually read the answer.
+-->
+@defer (when consent.visible()) {
+<dui-cookie-banner
+  [open]="consent.visible()"
+  [choices]="consentChoices()"
+  privacyUrl="/privacy-policy"
+  (acceptAll)="consent.acceptAll()"
+  (rejectAll)="consent.rejectAll()"
+  (save)="saveConsent($event)"
+/>
+}

@@ -25,6 +25,18 @@ const SAMPLES: Record<string, Record<string, unknown>> = {
     organizationName: 'Acme Srl',
     url: 'https://app.example.com/billing',
   },
+  'gdpr-export-ready': {
+    name: 'Erika',
+    scope: 'user',
+    expiresAt: '2026-10-01T10:00:00.000Z',
+    privacyUrl: 'https://app.example.com/privacy',
+  },
+  'account-deletion-scheduled': {
+    name: 'Erika',
+    subjectType: 'user',
+    scheduledFor: '2026-10-23T10:00:00.000Z',
+    privacyUrl: 'https://app.example.com/privacy',
+  },
 };
 
 describe('email template registry', () => {

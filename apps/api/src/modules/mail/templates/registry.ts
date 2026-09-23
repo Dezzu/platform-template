@@ -4,6 +4,8 @@ import { memberJoinedTemplate } from './member-joined.template';
 import { paymentFailedTemplate } from './payment-failed.template';
 import { organizationInvitationTemplate } from './organization-invitation.template';
 import { passwordResetTemplate } from './password-reset.template';
+import { gdprExportReadyTemplate } from './gdpr-export-ready.template';
+import { accountDeletionScheduledTemplate } from './account-deletion-scheduled.template';
 
 /**
  * Every email the product can send.
@@ -27,6 +29,10 @@ export const EMAIL_TEMPLATES = {
   // freeze the reader's language at the moment the event happened.
   'member-joined': memberJoinedTemplate,
   'payment-failed': paymentFailedTemplate,
+  // Privacy. Neither carries a link to anything but a screen: see the comment in
+  // gdpr-export-ready.template.ts on why an archive link must never sit in an inbox.
+  'gdpr-export-ready': gdprExportReadyTemplate,
+  'account-deletion-scheduled': accountDeletionScheduledTemplate,
 } as const;
 
 export type EmailTemplateId = keyof typeof EMAIL_TEMPLATES;

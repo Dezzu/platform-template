@@ -25,3 +25,34 @@ export const emailMessageStatus = pgEnum('email_message_status', ['pending', 'se
  * already treat the channel as data rather than as two hardcoded branches.
  */
 export const notificationChannel = pgEnum('notification_channel', ['in_app', 'email']);
+
+/** Whose data an export covers: one person, or one tenant and everyone in it. */
+export const gdprExportScope = pgEnum('gdpr_export_scope', ['user', 'organization']);
+
+/**
+ * `expired` is a state, not the absence of a file. Somebody following a link from a
+ * week-old email should be told the archive expired rather than shown a 404 that reads
+ * like the export never ran.
+ */
+export const gdprExportStatus = pgEnum('gdpr_export_status', [
+  'pending',
+  'processing',
+  'ready',
+  'failed',
+  'expired',
+]);
+
+export const deletionSubjectType = pgEnum('deletion_subject_type', ['user', 'organization']);
+
+/**
+ * Erasure is a state machine because of one state: `awaiting_billing`. An organization
+ * that still has a live subscription when its erasure falls due is neither erased nor
+ * forgotten — it waits and is looked at again. See docs/gdpr.md.
+ */
+export const deletionRequestStatus = pgEnum('deletion_request_status', [
+  'scheduled',
+  'awaiting_billing',
+  'cancelled',
+  'executed',
+  'failed',
+]);

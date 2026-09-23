@@ -41,6 +41,18 @@ export class MaintenanceScheduler implements OnApplicationBootstrap {
       },
     );
 
-    this.logger.log(`scheduled "${JOBS.FILES_JANITOR}"`);
+    await this.queue.upsertJobScheduler(
+      JOBS.GDPR_SWEEP,
+      // Hourly, not nightly. An archive expires at a wall-clock time and an erasure
+      // falls due at one; a daily sweep would mean a retention window that is "48
+      // hours, give or take a day", which is not what the policy says.
+      { pattern: '25 * * * *' },
+      {
+        name: JOBS.GDPR_SWEEP,
+        opts: { attempts: 1, removeOnComplete: { count: 48 } },
+      },
+    );
+
+    this.logger.log(`scheduled "${JOBS.FILES_JANITOR}" and "${JOBS.GDPR_SWEEP}"`);
   }
 }

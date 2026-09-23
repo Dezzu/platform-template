@@ -121,6 +121,7 @@
     "signUpTitle": "Crea il tuo account",
     "signingIn": "Accesso in corso…",
     "signingUp": "Registrazione in corso…",
+    "termsNotice": "Registrandoti accetti i nostri termini di servizio e l’informativa sulla privacy.",
     "withGoogle": "Continua con Google"
   },
   "billing": {
@@ -168,6 +169,35 @@
     "showPassword": "Mostra la password",
     "toggleMenu": "Apri o chiudi il menu"
   },
+  "consent": {
+    "acceptAll": "Accetta tutto",
+    "body": "Usiamo i cookie necessari a far funzionare il servizio. Tutto il resto lo attivi tu.",
+    "categories": {
+      "analytics": {
+        "description": "Ci dicono quali pagine vengono usate, in forma aggregata.",
+        "label": "Statistiche"
+      },
+      "marketing": {
+        "description": "Misurano l’efficacia delle campagne. Disattivati finché non li attivi.",
+        "label": "Marketing"
+      },
+      "necessary": {
+        "description": "Sessione, preferenze di interfaccia e memoria di questa scelta. Senza, il servizio non funziona.",
+        "label": "Necessari"
+      },
+      "preferences": {
+        "description": "Ricordano lingua, tema e altre impostazioni fra una visita e l’altra.",
+        "label": "Preferenze"
+      }
+    },
+    "customise": "Personalizza",
+    "hideDetails": "Nascondi i dettagli",
+    "preferences": "Preferenze cookie",
+    "privacyLink": "Informativa privacy",
+    "rejectAll": "Rifiuta tutto",
+    "saveChoices": "Salva le scelte",
+    "title": "Cookie"
+  },
   "errors": {
     "CANNOT_GRANT_HIGHER_ROLE": "Non puoi assegnare un ruolo superiore al tuo.",
     "CANNOT_MODIFY_SELF": "Non puoi eseguire questa operazione su te stesso.",
@@ -183,6 +213,11 @@
     "FLAG_OVERRIDE_EXISTS": "Esiste già un'eccezione per questo soggetto.",
     "FORBIDDEN": "Non hai i permessi per questa operazione.",
     "FORBIDDEN_MISSING_PERMISSION": "Non hai i permessi per questa operazione.",
+    "GDPR_DELETION_ALREADY_SCHEDULED": "C’è già una cancellazione programmata.",
+    "GDPR_DELETION_BLOCKED_BY_SUBSCRIPTION": "C’è ancora un abbonamento attivo: disdicilo prima di chiedere la cancellazione.",
+    "GDPR_EXPORT_EXPIRED": "L’archivio è scaduto. Richiedine uno nuovo.",
+    "GDPR_EXPORT_IN_PROGRESS": "Un archivio è già in preparazione: attendi che sia pronto.",
+    "GDPR_EXPORT_NOT_READY": "L’archivio non è ancora pronto.",
     "INTERNAL_ERROR": "Si è verificato un errore imprevisto. Riprova.",
     "INVITATION_ALREADY_SENT": "A questo indirizzo è già stato inviato un invito.",
     "INVITATION_EXPIRED": "L’invito è scaduto. Chiedine uno nuovo.",
@@ -271,6 +306,12 @@
     "seePlans": "Vedi i piani",
     "total": "Progetti totali"
   },
+  "legal": {
+    "backHome": "Torna alla home",
+    "privacy": "Privacy",
+    "terms": "Termini",
+    "updated": "Ultimo aggiornamento: {{date}}"
+  },
   "maintenance": {
     "activeNotice": "Il prodotto è chiuso per manutenzione. Tu stai passando lo stesso; i clienti vedono l'avviso.",
     "allowRoles": "Chi passa comunque",
@@ -294,6 +335,25 @@
     "untilHint": "Solo informativo: niente si riaccende da solo a quest'ora.",
     "untilLabel": "Previsto fino a",
     "upgrading": "Stiamo aggiornando il sistema. Torniamo a breve."
+  },
+  "marketing": {
+    "features": {
+      "billing": {
+        "body": "Stripe Checkout e portale clienti, con webhook idempotenti.",
+        "title": "Abbonamenti"
+      },
+      "deploy": {
+        "body": "Docker, CI e infrastruttura descritta in Terraform.",
+        "title": "Pronto al deploy"
+      },
+      "tenancy": {
+        "body": "Organizzazioni, ruoli e permessi, con isolamento verificato dai test.",
+        "title": "Multi-tenant dal giorno uno"
+      }
+    },
+    "heroBody": "Autenticazione, organizzazioni, permessi, abbonamenti e osservabilità già montati e verificati. Resta da scrivere solo il dominio.",
+    "heroTitle": "Il punto di partenza, non il foglio bianco",
+    "signIn": "Accedi"
   },
   "members": {
     "acceptInvitation": "Accetta l’invito",
@@ -422,6 +482,67 @@
       "description": "Per chi lavora sul prodotto ogni giorno.",
       "name": "Pro"
     }
+  },
+  "privacy": {
+    "consent": {
+      "change": "Cambia le preferenze",
+      "decidedAt": "Scelta registrata il {{date}}.",
+      "description": "La tua scelta è salvata in questo browser e vale sei mesi.",
+      "title": "Cookie e consenso",
+      "undecided": "Non hai ancora espresso una scelta in questo browser."
+    },
+    "deletion": {
+      "cancel": "Annulla la cancellazione",
+      "cancelled": "Cancellazione annullata.",
+      "confirmAccount": {
+        "action": "Programma la cancellazione",
+        "message": "Fra 30 giorni account, contenuti e file vengono eliminati definitivamente. Fino ad allora puoi annullare.",
+        "title": "Cancellare il tuo account?"
+      },
+      "confirmOrganization": {
+        "action": "Programma la cancellazione",
+        "message": "Fra 30 giorni l’organizzazione, i suoi contenuti e i suoi file vengono eliminati per tutti i membri. Fino ad allora puoi annullare.",
+        "title": "Cancellare {{name}}?"
+      },
+      "deleteAccount": "Cancella il mio account",
+      "deleteOrganization": "Cancella l’organizzazione",
+      "description": "La cancellazione viene eseguita dopo 30 giorni. Fino ad allora puoi annullarla.",
+      "pendingAccount": "Il tuo account verrà cancellato il {{date}}.",
+      "pendingOrganization": "L’organizzazione verrà cancellata il {{date}}.",
+      "reason": "Perché te ne vai? (facoltativo)",
+      "reasonPlaceholder": "Ci aiuta a capire cosa non ha funzionato.",
+      "retention": "I documenti fiscali restano conservati per il periodo previsto dalla legge: i dati personali vengono anonimizzati, le fatture no.",
+      "scheduled": "Cancellazione programmata. Trovi la data qui sopra.",
+      "title": "Chiusura dell’account"
+    },
+    "description": "Scarica una copia dei tuoi dati, rivedi la scelta sui cookie o chiudi l’account.",
+    "exports": {
+      "columns": {
+        "expiresAt": "Disponibile fino al",
+        "requestedAt": "Richiesta",
+        "scope": "Ambito",
+        "status": "Stato"
+      },
+      "description": "L’archivio è un file JSON. Non contiene password, token né i codici del secondo fattore.",
+      "download": "Scarica",
+      "empty": "Nessuna richiesta finora.",
+      "requestMine": "Richiedi i miei dati",
+      "requestOrganization": "Richiedi i dati dell’organizzazione",
+      "requested": "Richiesta registrata: ti scriviamo quando l’archivio è pronto.",
+      "scopes": {
+        "organization": "Organizzazione",
+        "user": "I miei dati"
+      },
+      "statuses": {
+        "expired": "Scaduto",
+        "failed": "Non riuscito",
+        "pending": "In coda",
+        "processing": "In preparazione",
+        "ready": "Pronto"
+      },
+      "title": "Copia dei tuoi dati"
+    },
+    "title": "Privacy e dati"
   },
   "profile": {
     "account": "Il tuo account",

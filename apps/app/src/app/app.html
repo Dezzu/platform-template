@@ -1,3 +1,23 @@
 <router-outlet />
 
 <dui-toaster [toasts]="toasts()" (dismissed)="dismiss($event)" />
+
+<!--
+  At the root, like the toaster: the choice has to be offered on the sign-in screen
+  too, which lives outside the shell, and it must survive the navigation it causes.
+
+  Deferred, because most visits never see it. The banner drags the switch component and
+  its brain primitive along, and putting that in the initial bundle for the one visit in
+  a hundred that has not answered yet is exactly the kind of weight the budgets in
+  angular.json exist to notice.
+-->
+@defer (when consent.visible()) {
+<dui-cookie-banner
+  [open]="consent.visible()"
+  [choices]="consentChoices()"
+  [privacyUrl]="privacyUrl"
+  (acceptAll)="consent.acceptAll()"
+  (rejectAll)="consent.rejectAll()"
+  (save)="saveConsent($event)"
+/>
+}

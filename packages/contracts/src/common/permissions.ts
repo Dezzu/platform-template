@@ -28,6 +28,11 @@ export const PERMISSIONS = {
   // Audit
   AUDIT_READ: 'audit.read',
 
+  // Privacy and data protection. Exporting an organization means exporting every
+  // member's personal data along with it, which is why it is a permission of its own
+  // rather than something `settings.manage` happens to cover.
+  GDPR_EXPORT: 'gdpr.export',
+
   // Files
   FILES_READ: 'files.read',
   FILES_WRITE: 'files.write',

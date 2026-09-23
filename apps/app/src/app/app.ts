@@ -3,9 +3,12 @@ import { RouterOutlet } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { merge } from 'rxjs';
 import { TranslocoService } from '@jsverse/transloco';
-import { ToastService } from '@app/core';
+import { ConsentService, ToastService } from '@app/core';
 import { FORM_ERROR_KEYS, FormUtilityService, ThemeService } from '@app/ui/mix';
 import { ToasterComponent, type ToastMessage } from '@app/ui/toast';
+import { CookieBannerComponent, type ConsentChoice } from '@app/ui/cookie-banner';
+import { CONSENT_REGISTRY, type ConsentCategory } from '@app/contracts/consent';
+import { environment } from '../environments/environment';
 
 /**
  * The root holds the outlet and the toaster: the frame lives in ShellPage, behind the
@@ -28,12 +31,14 @@ import { ToasterComponent, type ToastMessage } from '@app/ui/toast';
  */
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ToasterComponent],
+  imports: [RouterOutlet, ToasterComponent, CookieBannerComponent],
   templateUrl: './app.html',
   host: { class: 'block min-h-screen' },
 })
 export class App {
   private readonly toastService = inject(ToastService);
+  /** Public: the template binds the banner straight to it. */
+  protected readonly consent = inject(ConsentService);
   /** Injected for its constructor: it is what toggles `.dark` on the document. */
   private readonly theme = inject(ThemeService);
   private readonly forms = inject(FormUtilityService);
@@ -86,5 +91,30 @@ export class App {
 
   protected dismiss(id: number): void {
     this.toastService.dismiss(id);
+  }
+
+  /** Where the banner's "read the policy" link goes. The marketing site owns the text. */
+  protected readonly privacyUrl = environment.webUrl
+    ? `${environment.webUrl}/privacy-policy`
+    : undefined;
+
+  /**
+   * Mapped, not passed through, for the same reason the toasts are: `libs/ui` knows
+   * nothing of the consent registry, and being driven by inputs is what keeps the
+   * banner a rendering decision rather than a policy one.
+   */
+  protected readonly consentChoices = computed<ConsentChoice[]>(() => {
+    const granted = this.consent.granted();
+    return CONSENT_REGISTRY.map((category) => ({
+      id: category.id,
+      labelKey: category.labelKey,
+      descriptionKey: category.descriptionKey,
+      required: category.required,
+      granted: granted[category.id],
+    }));
+  });
+
+  protected saveConsent(granted: Record<string, boolean>): void {
+    this.consent.save(granted as Record<ConsentCategory, boolean>);
   }
 }

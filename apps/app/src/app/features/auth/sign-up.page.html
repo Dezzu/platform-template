@@ -44,6 +44,21 @@
   </form>
 
   <div hlmCardFooter class="flex-col gap-3">
+    <!--
+      Said before the account exists, not buried in a settings screen afterwards: this
+      is the moment somebody is agreeing to something, and the links are what make the
+      sentence more than a formality.
+    -->
+    <p class="text-muted-foreground text-center text-xs">
+      {{ 'auth.termsNotice' | transloco }} @if (termsUrl; as terms) {
+      <span class="block">
+        <a [href]="terms" class="underline underline-offset-2">{{ 'legal.terms' | transloco }}</a>
+        ·
+        <a [href]="privacyUrl" class="underline underline-offset-2"> {{ 'legal.privacy' | transloco }} </a>
+      </span>
+      }
+    </p>
+
     <button hlmBtn variant="outline" class="w-full" type="button" (click)="signUpWithGoogle()">
       {{ 'auth.withGoogle' | transloco }}
     </button>

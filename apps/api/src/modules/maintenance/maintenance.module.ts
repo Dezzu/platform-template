@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { FilesModule } from '../files/files.module';
+import { GdprModule } from '../gdpr/gdpr.module';
 import { MaintenanceController } from './maintenance.controller';
 import { MaintenanceModeService } from './maintenance-mode.service';
 import { MaintenanceProcessor } from './maintenance.processor';
@@ -14,7 +15,7 @@ import { MaintenanceScheduler } from './maintenance.scheduler';
  * MeController both need it.
  */
 @Module({
-  imports: [FilesModule],
+  imports: [FilesModule, GdprModule],
   controllers: [MaintenanceController],
   providers: [MaintenanceModeService, MaintenanceProcessor, MaintenanceScheduler],
   exports: [MaintenanceModeService],

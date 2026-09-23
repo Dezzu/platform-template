@@ -3,6 +3,7 @@ export * from './common/base-response';
 export * from './common/pagination';
 export * from './common/permissions';
 export * from './common/app-mode';
+export * from './common/consent';
 
 export * from './modules/plans/plans.contract';
 export * from './modules/users/users.contract';
@@ -15,3 +16,4 @@ export * from './modules/audit/audit.contract';
 export * from './modules/notifications/notifications.contract';
 export * from './modules/flags/flags.contract';
 export * from './modules/maintenance/maintenance.contract';
+export * from './modules/gdpr/gdpr.contract';

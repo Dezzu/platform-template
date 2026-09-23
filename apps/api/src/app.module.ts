@@ -24,6 +24,7 @@ import { FlagsModule } from './modules/flags/flags.module';
 import { FeatureGuard } from './modules/flags/feature.guard';
 import { MailModule } from './modules/mail/mail.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { GdprModule } from './modules/gdpr/gdpr.module';
 import { MaintenanceModule } from './modules/maintenance/maintenance.module';
 import { MaintenanceGuard } from './modules/maintenance/maintenance.guard';
 import { PermissionsGuard } from './auth/permissions.guard';
@@ -84,6 +85,7 @@ import { PermissionsGuard } from './auth/permissions.guard';
     AdminModule,
     FlagsModule,
     NotificationsModule,
+    GdprModule,
     MaintenanceModule,
   ],
   providers: [

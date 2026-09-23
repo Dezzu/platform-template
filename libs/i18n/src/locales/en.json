@@ -121,6 +121,7 @@
     "signUpTitle": "Create your account",
     "signingIn": "Signing in…",
     "signingUp": "Creating account…",
+    "termsNotice": "By signing up you accept our terms of service and privacy policy.",
     "withGoogle": "Continue with Google"
   },
   "billing": {
@@ -168,6 +169,35 @@
     "showPassword": "Show password",
     "toggleMenu": "Open or close the menu"
   },
+  "consent": {
+    "acceptAll": "Accept all",
+    "body": "We use the cookies the service needs to work. Everything else is up to you.",
+    "categories": {
+      "analytics": {
+        "description": "Tell us which pages get used, in aggregate.",
+        "label": "Analytics"
+      },
+      "marketing": {
+        "description": "Measure how campaigns perform. Off until you turn them on.",
+        "label": "Marketing"
+      },
+      "necessary": {
+        "description": "Session, interface preferences and the record of this choice. Without them the service does not work.",
+        "label": "Necessary"
+      },
+      "preferences": {
+        "description": "Remember language, theme and other settings between visits.",
+        "label": "Preferences"
+      }
+    },
+    "customise": "Customise",
+    "hideDetails": "Hide details",
+    "preferences": "Cookie preferences",
+    "privacyLink": "Privacy policy",
+    "rejectAll": "Reject all",
+    "saveChoices": "Save choices",
+    "title": "Cookies"
+  },
   "errors": {
     "CANNOT_GRANT_HIGHER_ROLE": "You cannot grant a role higher than your own.",
     "CANNOT_MODIFY_SELF": "You cannot perform this action on yourself.",
@@ -183,6 +213,11 @@
     "FLAG_OVERRIDE_EXISTS": "There is already an exception for that subject.",
     "FORBIDDEN": "You do not have permission to do this.",
     "FORBIDDEN_MISSING_PERMISSION": "You do not have permission to do this.",
+    "GDPR_DELETION_ALREADY_SCHEDULED": "An erasure is already scheduled.",
+    "GDPR_DELETION_BLOCKED_BY_SUBSCRIPTION": "There is still an active subscription — cancel it before asking for erasure.",
+    "GDPR_EXPORT_EXPIRED": "That archive has expired. Ask for a new one.",
+    "GDPR_EXPORT_IN_PROGRESS": "An archive is already being prepared — wait for it to finish.",
+    "GDPR_EXPORT_NOT_READY": "The archive is not ready yet.",
     "INTERNAL_ERROR": "Something went wrong. Please try again.",
     "INVITATION_ALREADY_SENT": "An invitation has already been sent to this address.",
     "INVITATION_EXPIRED": "The invitation has expired. Ask for a new one.",
@@ -271,6 +306,12 @@
     "seePlans": "See plans",
     "total": "Total projects"
   },
+  "legal": {
+    "backHome": "Back to home",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "updated": "Last updated: {{date}}"
+  },
   "maintenance": {
     "activeNotice": "The product is closed for maintenance. You are getting through anyway; customers are seeing the notice.",
     "allowRoles": "Who still gets in",
@@ -294,6 +335,25 @@
     "untilHint": "Informative only: nothing switches itself back on at that time.",
     "untilLabel": "Expected until",
     "upgrading": "We are upgrading the system. Back shortly."
+  },
+  "marketing": {
+    "features": {
+      "billing": {
+        "body": "Stripe Checkout and the customer portal, with idempotent webhooks.",
+        "title": "Subscriptions"
+      },
+      "deploy": {
+        "body": "Docker, CI and infrastructure described in Terraform.",
+        "title": "Ready to deploy"
+      },
+      "tenancy": {
+        "body": "Organizations, roles and permissions, with isolation the tests actually check.",
+        "title": "Multi-tenant from day one"
+      }
+    },
+    "heroBody": "Authentication, organizations, permissions, subscriptions and observability already assembled and verified. All that is left is the domain.",
+    "heroTitle": "The starting point, not the blank page",
+    "signIn": "Sign in"
   },
   "members": {
     "acceptInvitation": "Accept the invitation",
@@ -422,6 +482,67 @@
       "description": "For people working on the product every day.",
       "name": "Pro"
     }
+  },
+  "privacy": {
+    "consent": {
+      "change": "Change preferences",
+      "decidedAt": "Choice recorded on {{date}}.",
+      "description": "Your choice is stored in this browser and lasts six months.",
+      "title": "Cookies and consent",
+      "undecided": "You have not made a choice in this browser yet."
+    },
+    "deletion": {
+      "cancel": "Call off the erasure",
+      "cancelled": "Erasure called off.",
+      "confirmAccount": {
+        "action": "Schedule the erasure",
+        "message": "In 30 days your account, your content and your files are deleted for good. Until then you can call it off.",
+        "title": "Erase your account?"
+      },
+      "confirmOrganization": {
+        "action": "Schedule the erasure",
+        "message": "In 30 days the organization, its content and its files are deleted for every member. Until then you can call it off.",
+        "title": "Erase {{name}}?"
+      },
+      "deleteAccount": "Erase my account",
+      "deleteOrganization": "Erase the organization",
+      "description": "Erasure runs after 30 days. Until then you can call it off.",
+      "pendingAccount": "Your account will be erased on {{date}}.",
+      "pendingOrganization": "The organization will be erased on {{date}}.",
+      "reason": "Why are you leaving? (optional)",
+      "reasonPlaceholder": "It helps us understand what did not work.",
+      "retention": "Accounting documents are kept for as long as the law requires: personal data is anonymised, invoices are not.",
+      "scheduled": "Erasure scheduled. The date is above.",
+      "title": "Closing your account"
+    },
+    "description": "Download a copy of your data, revisit your cookie choice, or close your account.",
+    "exports": {
+      "columns": {
+        "expiresAt": "Available until",
+        "requestedAt": "Requested",
+        "scope": "Scope",
+        "status": "Status"
+      },
+      "description": "The archive is a JSON file. It holds no passwords, no tokens and no two-factor codes.",
+      "download": "Download",
+      "empty": "No requests yet.",
+      "requestMine": "Request my data",
+      "requestOrganization": "Request the organization's data",
+      "requested": "Request recorded — we will write to you when the archive is ready.",
+      "scopes": {
+        "organization": "Organization",
+        "user": "My data"
+      },
+      "statuses": {
+        "expired": "Expired",
+        "failed": "Failed",
+        "pending": "Queued",
+        "processing": "Preparing",
+        "ready": "Ready"
+      },
+      "title": "A copy of your data"
+    },
+    "title": "Privacy and data"
   },
   "profile": {
     "account": "Your account",

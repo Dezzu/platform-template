@@ -16,6 +16,7 @@ export * from './api/me.api';
 export * from './api/session.api';
 export * from './api/notifications.api';
 export * from './api/plans.api';
+export * from './api/gdpr.api';
 export * from './billing/billing.service';
 
 export * from './permissions/permissions.service';
@@ -24,6 +25,7 @@ export * from './permissions/can.directive';
 export * from './permissions/can-platform.directive';
 export * from './features/feature-flags.service';
 export * from './features/if-flag.directive';
+export * from './consent/consent.service';
 export * from './notifications/toast.service';
 export * from './notifications/notification-center.service';
 

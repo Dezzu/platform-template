@@ -37,6 +37,13 @@ const ERROR_KEYS: Record<string, string> = {
   host: { class: 'flex min-h-screen items-center justify-center bg-background p-4' },
 })
 export class SignUpPage {
+  /**
+   * The legal pages live on the marketing site, so these are absolute and empty when
+   * `webUrl` has not been set for the deployment — see environment.prod.ts.
+   */
+  protected readonly termsUrl = environment.webUrl ? `${environment.webUrl}/terms` : '';
+  protected readonly privacyUrl = environment.webUrl ? `${environment.webUrl}/privacy-policy` : '';
+
   private readonly auth = inject(AuthService);
   private readonly permissions = inject(PermissionsService);
   private readonly router = inject(Router);

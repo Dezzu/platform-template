@@ -1,29 +1,43 @@
 <header class="border-b">
   <nav class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
     <span class="font-semibold">{{ appName }}</span>
-    <a href="http://localhost:4300" class="bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium">
-      Accedi
+    <a [href]="dashboardUrl" class="bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium">
+      {{ 'marketing.signIn' | transloco }}
     </a>
   </nav>
 </header>
 
 <main class="mx-auto max-w-5xl px-6">
   <section class="py-20 text-center">
-    <h1 class="text-4xl font-semibold tracking-tight sm:text-5xl">Il punto di partenza, non il foglio bianco</h1>
-    <p class="text-muted-foreground mx-auto mt-4 max-w-2xl text-lg">
-      Autenticazione, organizzazioni, permessi, abbonamenti e osservabilità già montati e verificati. Resta da scrivere
-      solo il dominio.
-    </p>
+    <h1 class="text-4xl font-semibold tracking-tight sm:text-5xl">{{ 'marketing.heroTitle' | transloco }}</h1>
+    <p class="text-muted-foreground mx-auto mt-4 max-w-2xl text-lg">{{ 'marketing.heroBody' | transloco }}</p>
   </section>
 
   <section class="grid gap-6 pb-20 sm:grid-cols-3">
-    @for (feature of features; track feature.title) {
+    @for (feature of features; track feature) {
     <article class="rounded-lg border p-5">
-      <h2 class="font-medium">{{ feature.title }}</h2>
-      <p class="text-muted-foreground mt-2 text-sm">{{ feature.body }}</p>
+      <h2 class="font-medium">{{ 'marketing.features.' + feature + '.title' | transloco }}</h2>
+      <p class="text-muted-foreground mt-2 text-sm">{{ 'marketing.features.' + feature + '.body' | transloco }}</p>
     </article>
     }
   </section>
 </main>
 
-<footer class="text-muted-foreground border-t py-6 text-center text-sm">© {{ year }} {{ appName }}</footer>
+<footer class="text-muted-foreground border-t py-6 text-center text-sm">
+  <p>© {{ year }} {{ appName }}</p>
+  <nav class="mt-2 flex flex-wrap items-center justify-center gap-4">
+    <a routerLink="/privacy-policy" class="hover:text-foreground underline underline-offset-2">
+      {{ 'legal.privacy' | transloco }}
+    </a>
+    <a routerLink="/terms" class="hover:text-foreground underline underline-offset-2">
+      {{ 'legal.terms' | transloco }}
+    </a>
+    <!--
+      Required, not a courtesy: consent has to be as easy to withdraw as it was to
+      give, and this link is the only way back to the banner once it has been answered.
+    -->
+    <button type="button" class="hover:text-foreground underline underline-offset-2" (click)="consent.reopen()">
+      {{ 'consent.preferences' | transloco }}
+    </button>
+  </nav>
+</footer>

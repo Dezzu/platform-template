@@ -142,6 +142,13 @@ export class ShellPage {
       icon: 'lucideUser',
       action: () => void this.router.navigateByUrl('/profile'),
     },
+    {
+      // Here rather than in the sidebar: it is about the person, not about the tenant,
+      // and it is the first place somebody looks when they want out.
+      labelKey: 'privacy.title',
+      icon: 'lucideLockKeyhole',
+      action: () => void this.router.navigateByUrl('/privacy'),
+    },
   ];
 
   private readonly visibleItems = computed<(ShellNavItem & { section?: string })[]>(() =>

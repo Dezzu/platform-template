@@ -147,6 +147,30 @@ export class S3Service {
     }
   }
 
+  /**
+   * Writes an object this process produced itself.
+   *
+   * The rule that bytes never pass through Node is about **user** uploads: those go
+   * browser → storage over a presigned PUT, because a 200 MB upload would otherwise
+   * occupy an API process for its whole duration. A GDPR archive has no browser on the
+   * other end — the worker is what builds it — so there is nothing to presign and no
+   * request waiting. It is still never read back through here: the download is a
+   * presigned GET like everything else.
+   */
+  async put(key: string, body: Buffer | string, contentType: string): Promise<number> {
+    const payload = typeof body === 'string' ? Buffer.from(body, 'utf8') : body;
+    await this.client.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Body: payload,
+        ContentType: contentType,
+        ContentLength: payload.byteLength,
+      }),
+    );
+    return payload.byteLength;
+  }
+
   async delete(key: string): Promise<void> {
     await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
   }
