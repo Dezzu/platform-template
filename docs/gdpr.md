@@ -49,9 +49,23 @@ funzionante. Una riga di qualcun altro risponde 404, mai 403: un 403 confermereb
 quell'id esiste.
 
 **La riga sopravvive all'archivio.** Passata la finestra di ritenzione
-(`GDPR_EXPORT_TTL_HOURS`) lo sweep cancella l'oggetto e mette la riga in `expired`. "Chi ha
-chiesto cosa, e quando" è a sua volta una domanda che arriva, e si risponde con una riga
-che dice `expired`, non con un buco.
+(`GDPR_EXPORT_TTL_HOURS`) lo sweep fa tre cose, in quest'ordine: cancella l'oggetto dal
+bucket, mette la riga in `expired` e azzera `object_key` e `size_bytes`. Da quel momento
+`downloadable` è falso — quindi il bottone sparisce — e l'endpoint di download risponde
+**410 `GDPR_EXPORT_EXPIRED`** invece di 404: chi arriva da un link vecchio deve leggere
+"è scaduto, richiedilo", non qualcosa che somiglia a "non è mai esistito".
+
+"Chi ha chiesto cosa, e quando" è a sua volta una domanda che arriva, e si risponde con
+una riga che dice `expired`, non con un buco.
+
+**Lo sweep gira ogni ora, non ogni notte** (`25 * * * *` sulla coda `maintenance`). Un
+archivio scade a un orario, non a una data: con una passata giornaliera la finestra di
+ritenzione diventerebbe "48 ore, più o meno un giorno", che non è quello che dice
+l'informativa. Costa una query per ora che quasi sempre non trova niente.
+
+Un test e2e lo copre davvero — crea l'archivio, lo fa scadere, lancia lo sweep e verifica
+che **l'oggetto non sia più nel bucket**, non solo che la riga sia cambiata. Provato
+togliendo la cancellazione: fallisce.
 
 ---
 

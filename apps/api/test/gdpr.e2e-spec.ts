@@ -230,6 +230,64 @@ describe('gdpr (e2e)', () => {
       expect((listed.body.data.items as { id: string }[]).map((n) => n.id)).toContain(raised?.id);
     });
 
+    /**
+     * The retention window, enforced rather than promised.
+     *
+     * This is the case that costs if it silently stops working: an archive nobody
+     * sweeps is every piece of personal data the product holds about somebody, sitting
+     * in a bucket past the date the privacy policy gave. Nothing on screen would say
+     * so — the row would keep reading `ready` and the download would keep working,
+     * which looks like the feature behaving.
+     *
+     * The assertion that matters is the last one: the object is really gone from
+     * storage, not merely unreferenced.
+     */
+    it('sweeps an expired archive: the object goes, the row says so, the link dies', async () => {
+      const pending = await givenExport(colleague, 'pending');
+      await app.get(GdprExportService).run(pending);
+
+      const [ready] = await db
+        .select()
+        .from(gdprExportRequest)
+        .where(eq(gdprExportRequest.id, pending));
+
+      expect(ready?.status).toBe('ready');
+      expect(ready?.objectKey).toBeTruthy();
+      // It is really there before the sweep, or the check afterwards proves nothing.
+      expect(await app.get(S3Service).head(ready!.objectKey!)).toBeDefined();
+
+      // The one thing a test cannot wait for. Everything else is the real path.
+      await db
+        .update(gdprExportRequest)
+        .set({ expiresAt: new Date(Date.now() - 3_600_000) })
+        .where(eq(gdprExportRequest.id, pending));
+
+      const swept = await app.get(GdprExportService).sweepExpired();
+      expect(swept).toBeGreaterThanOrEqual(1);
+
+      const [after] = await db
+        .select()
+        .from(gdprExportRequest)
+        .where(eq(gdprExportRequest.id, pending));
+
+      expect(after?.status).toBe('expired');
+      // Nulled, not just marked: a key left behind points at an object that is gone.
+      expect(after?.objectKey).toBeNull();
+      expect(after?.sizeBytes).toBeNull();
+
+      // The row survives the archive on purpose — "who asked for what, and when" is
+      // itself a question a data protection officer gets asked.
+      expect(after?.createdAt).toBeDefined();
+
+      const refused = await request(app.getHttpServer())
+        .get(`/api/gdpr/exports/${pending}/download`)
+        .set(as(colleague))
+        .expect(410);
+      expect(refused.body.messageCode).toBe('GDPR_EXPORT_EXPIRED');
+
+      expect(await app.get(S3Service).head(ready!.objectKey!)).toBeUndefined();
+    });
+
     it('needs gdpr.export to ask for the whole organization', async () => {
       const refused = await request(app.getHttpServer())
         .post('/api/gdpr/exports/organization')

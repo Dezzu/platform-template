@@ -563,7 +563,7 @@ cancellare gli archivi produce esattamente la spazzatura che lo sweep esiste per
 
 Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-snail.md`.
 
-**376 test.** `pnpm verify` verde.
+**377 test.** `pnpm verify` verde.
 
 ### Cosa ha aggiunto la 9c
 
