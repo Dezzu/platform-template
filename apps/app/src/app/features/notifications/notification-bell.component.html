@@ -10,9 +10,14 @@
 >
   <ng-icon name="lucideBell" size="18" />
 
+  <!--
+    The ring is what makes it readable, not decoration: the badge sits on the corner of
+    the bell, and without a band of the header's own colour between them the digit is
+    drawn straight over the glyph's lines. It was legible only if you knew to look.
+  -->
   @if (unread() > 0) {
   <span
-    class="bg-primary text-primary-foreground absolute top-1 right-1 min-w-4 rounded-full px-1 text-[10px] leading-4 font-semibold"
+    class="bg-primary text-primary-foreground ring-background absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[11px] leading-none font-semibold ring-2"
     role="status"
   >
     {{ unread() > 99 ? '99+' : unread() }}

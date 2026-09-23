@@ -1,4 +1,4 @@
-import { Component, computed, DOCUMENT, inject, signal } from '@angular/core';
+import { Component, computed, DestroyRef, DOCUMENT, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
@@ -124,9 +124,18 @@ export class ShellPage {
   protected readonly appName = environment.appName;
   protected readonly user = this.auth.user;
   constructor() {
-    // Primed once here rather than by the bell: the badge has to be right before
-    // anybody presses anything, and the bell only fetches its list when opened.
+    /**
+     * Primed once here rather than by the bell: the badge has to be right before
+     * anybody presses anything, and the bell only fetches its list when opened.
+     *
+     * Then the live connection, which is what keeps it right. Opened here and closed
+     * with the shell, so it exists exactly while somebody is signed in and looking:
+     * the screens outside the shell have no bell to update, and a stream left open
+     * after sign-out is a held request against a session that no longer exists.
+     */
     void this.centre.refresh();
+    this.centre.connect();
+    inject(DestroyRef).onDestroy(() => this.centre.disconnect());
   }
 
   protected readonly displayName = computed(() => {

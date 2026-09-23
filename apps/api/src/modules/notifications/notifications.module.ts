@@ -1,5 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { registerNotifier } from './notifications.bridge';
+import { NotificationBus } from './notification-bus.service';
 import { NotificationsController } from './notifications.controller';
 import { NotificationsRepository } from './notifications.repository';
 import { NotificationsService } from './notifications.service';
@@ -12,7 +13,7 @@ import { NotificationsService } from './notifications.service';
 @Global()
 @Module({
   controllers: [NotificationsController],
-  providers: [NotificationsService, NotificationsRepository],
+  providers: [NotificationsService, NotificationsRepository, NotificationBus],
   exports: [NotificationsService],
 })
 export class NotificationsModule {

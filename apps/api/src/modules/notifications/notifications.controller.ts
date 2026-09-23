@@ -4,11 +4,14 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  type MessageEvent,
   Param,
   Post,
   Put,
   Query,
+  Sse,
 } from '@nestjs/common';
+import type { Observable } from 'rxjs';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import {
@@ -26,8 +29,8 @@ import {
   type Paginated,
   type UnreadCount,
 } from '@app/contracts';
-import { ApiEnvelope, ApiStandardErrors } from '../../common';
-import { CurrentOrg, type OrgContext } from '../../auth/org-context';
+import { ApiEnvelope, ApiStandardErrors, RawResponse } from '../../common';
+import { CurrentOrg, CurrentOrgOptional, type OrgContext } from '../../auth/org-context';
 import { OrgOptional, RequirePermissions } from '../../auth/permissions.decorator';
 import { NotificationsService } from './notifications.service';
 
@@ -93,6 +96,35 @@ export class NotificationsController {
   @ApiEnvelope(NotificationSchema)
   markRead(@CurrentOrg() org: OrgContext, @Param('id') id: string): Promise<Notification> {
     return this.notifications.markRead(org, id);
+  }
+
+  /**
+   * The live connection: one long-lived response, one event per notification raised.
+   *
+   * Before this the badge was set once, when the shell was built, and nothing moved it
+   * again — so a notification that arrived while you were looking at the page appeared
+   * only after a reload. That is what this replaces, and it replaces it with a push
+   * rather than with a poll: a timer would be a request per person per interval
+   * forever for a number that is almost always zero, which is the trade CLAUDE.md said
+   * to refuse until server-sent events were worth it.
+   *
+   * `@OrgOptional()`, not a permission: `EventSource` cannot set headers, so this is
+   * authenticated by the session cookie like everything else, and the tenant is
+   * whatever the caller is working in — used to filter, not to authorise. What
+   * authorises is inside `streamFor`, which only ever forwards events addressed to
+   * this user.
+   *
+   * `@RawResponse()` keeps the envelope off it — see the interceptor.
+   */
+  @Sse('stream')
+  @OrgOptional()
+  @RawResponse()
+  @ApiOperation({ summary: 'Server-sent events: one per notification raised for you' })
+  stream(
+    @Session() session: UserSession,
+    @CurrentOrgOptional() org: OrgContext | null,
+  ): Observable<MessageEvent> {
+    return this.notifications.streamFor(session.user.id, org?.organizationId ?? null);
   }
 
   @Get('preferences')

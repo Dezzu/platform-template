@@ -53,10 +53,18 @@ export class NotificationBellComponent {
    */
   private readonly openedAt = signal(0);
 
+  /**
+   * Re-read on every open, and again whenever the stream says something arrived.
+   *
+   * `arrived()` is a counter, not a flag, for the same reason `openedAt` is: a
+   * boolean would settle and the panel would go stale. Without it an open panel keeps
+   * showing the list it had while the number above it moves — which looks like the
+   * count lying rather than like the list lagging.
+   */
   private readonly latest = resource({
-    params: () => this.openedAt(),
+    params: () => ({ opened: this.openedAt(), arrived: this.centre.arrived() }),
     loader: ({ params }) =>
-      params === 0
+      params.opened === 0
         ? Promise.resolve(null)
         : firstValueFrom(this.api.list({ size: PREVIEW_SIZE, unread: true })),
   });

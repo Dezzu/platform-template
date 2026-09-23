@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, type MessageEvent } from '@nestjs/common';
 import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import {
   NOTIFICATION_CHANNELS,
@@ -21,10 +21,12 @@ import {
   type Database,
   type DbOrTx,
 } from '@app/db';
+import { filter, interval, map, merge, type Observable } from 'rxjs';
 import { AppException } from '../../common';
 import { DRIZZLE } from '../../database/database.module';
 import type { OrgContext } from '../../auth/org-context';
 import { MailService } from '../mail/mail.service';
+import { NotificationBus } from './notification-bus.service';
 import { NotificationsRepository } from './notifications.repository';
 import { EMAIL_FOR_TYPE, type NotificationEmail } from './notification-email.map';
 
@@ -68,6 +70,7 @@ export class NotificationsService {
 
   constructor(
     private readonly repository: NotificationsRepository,
+    private readonly bus: NotificationBus,
     private readonly mail: MailService,
     @Inject(DRIZZLE) private readonly db: Database,
   ) {}
@@ -113,6 +116,24 @@ export class NotificationsService {
       const emailTemplate = EMAIL_FOR_TYPE[input.type];
       if (emailTemplate && input.email && wantsEmail.length > 0) {
         await this.sendEmails(wantsEmail, input, emailTemplate);
+      }
+
+      /**
+       * Last, and only for the people who actually got an in-app row.
+       *
+       * Announced after the write, never before: a browser told to refetch before the
+       * INSERT has landed asks the server a question whose answer is still "nothing"
+       * and then believes it. Announcing for somebody who switched the in-app channel
+       * off would be just as wrong — their badge cannot move, so telling their other
+       * tabs to go and look is a request that can only come back unchanged.
+       */
+      if (wantsInApp.length > 0) {
+        await this.bus.publish({
+          userIds: wantsInApp,
+          organizationId: input.organizationId,
+          type: input.type,
+          raisedAt: new Date().toISOString(),
+        });
       }
     } catch (error: unknown) {
       // Outside a transaction a failed notification must not fail the user's request:
@@ -164,6 +185,42 @@ export class NotificationsService {
       );
 
     return new Map(rows.map((row) => [`${row.userId}:${row.channel}`, row.enabled]));
+  }
+
+  // ── The live connection ────────────────────────────────────────────────────
+
+  /**
+   * The events one browser should hear, as an Observable the SSE handler returns.
+   *
+   * Two filters, and the first is the security one: every process receives every
+   * event, so what makes a connection see only its own is `userIds.includes` right
+   * here. The second mirrors what the reader would see if they asked — a notification
+   * raised in another tenant must not move a badge that does not count it.
+   *
+   * What goes over the wire is a nudge, not the notification: the browser refetches
+   * the count and, if the panel is open, the list. That keeps the number authoritative
+   * — it is a query against the same predicate the page uses — and keeps this stream
+   * from becoming a second, divergent read model.
+   */
+  streamFor(userId: string, organizationId: string | null): Observable<MessageEvent> {
+    const events = this.bus.stream.pipe(
+      filter((event) => event.userIds.includes(userId)),
+      filter((event) => event.organizationId === null || event.organizationId === organizationId),
+      map((event): MessageEvent => ({ type: 'notification', data: { type: event.type } })),
+    );
+
+    /**
+     * A comment every 25 seconds, and it is not optional.
+     *
+     * Nginx closes an idle upstream connection after 60 by default, Cloudflare after
+     * 100, and a connection that dies silently is one `EventSource` reconnects from —
+     * repeatedly, which turns a live badge into a reconnect loop nobody sees. The
+     * first tick also flushes the response headers, so the browser knows it is
+     * connected before anything has happened.
+     */
+    const heartbeat = interval(25_000).pipe(map((): MessageEvent => ({ type: 'ping', data: {} })));
+
+    return merge(events, heartbeat);
   }
 
   // ── Reading ────────────────────────────────────────────────────────────────

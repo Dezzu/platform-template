@@ -513,14 +513,14 @@ cancellare gli archivi produce esattamente la spazzatura che lo sweep esiste per
 **Fatte:** 0 tooling · 1 database · 2 auth · 3 config/envelope · 4 contratti+OpenAPI ·
 5 tenancy/permessi/audit · 6 frontend · 7 billing Stripe · 8 code+email+storage ·
 9a membri+inviti+pagine auth · 9b area di amministrazione · 9c feature flag + maintenance ·
-9d notifiche + preferenze · 9e GDPR + cookie banner + pagine legali.
+9d notifiche + preferenze · 9e GDPR + cookie banner + pagine legali · 9f notifiche live (SSE).
 
 **Da fare:** 10 osservabilità · 11 Docker+CI · 12 Terraform.
 (Audit UI e impersonation: fatti. La fase 9 è chiusa.)
 
 Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-snail.md`.
 
-**360 test.** `pnpm verify` verde.
+**366 test.** `pnpm verify` verde.
 
 ### Cosa ha aggiunto la 9c
 
@@ -566,10 +566,11 @@ Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-sna
   evento si aprirà a ventaglio su centinaia di persone; oggi il massimo è "gli admin di
   un'organizzazione". Il punto in cui cambiarlo è quel metodo, e chi lo chiama non deve
   saperlo.
-- **La campanella non fa polling.** Si aggiorna al caricamento della shell e dopo ogni
-  azione che la cambia. Un timer sarebbe una richiesta per utente per intervallo per
-  sempre, per un numero quasi sempre zero: quando servirà muoversi da sola, la risposta
-  onesta sono gli SSE, non il poll.
+- **La campanella non fa polling** — e dalla 9f non ne ha più bisogno: il server spinge.
+  Vedi la sezione 9f qui sotto. Restava ferma al valore letto alla costruzione della
+  shell, quindi una notifica arrivata mentre guardavi la pagina si vedeva solo dopo un
+  reload; se il badge era a zero non compariva affatto, che si legge come campanella
+  rotta e non come numero vecchio.
 
 ### Cosa ha aggiunto la 9e
 
@@ -612,6 +613,34 @@ scrive il resto.
   (copy italiano hard-coded); il banner ci ha portato il runtime Transloco comunque, quindi
   tenere le stringhe fuori dal catalogo era pagare il costo senza prendere il beneficio.
   Costa ~70 kB sul bundle iniziale di `web` — vedi "Aperto, e consapevole".
+
+### Cosa ha aggiunto la 9f
+
+- **La campanella è viva.** `GET /notifications/stream` è un SSE: il service pubblica
+  quando scrive le righe, ogni processo API ascolta, e ogni connessione riceve solo ciò
+  che la riguarda. Il badge si muove senza reload e senza navigazione.
+- **Pub/sub, non una coda — la differenza è il punto.** BullMQ consegna ogni job a **un
+  solo** consumatore: giusto per mandare un'email, sbagliato qui. Una connessione SSE
+  vive su un processo, e con due container API la notifica la scrive chi ha servito la
+  POST mentre la connessione pende da chi ha scelto il proxy: con una coda l'evento
+  finirebbe sul processo giusto circa una volta su due, e il badge si muoverebbe per
+  alcuni e non per altri senza una riga nei log. Il pub/sub di Valkey lo manda a tutti,
+  e ognuno tiene ciò che le sue connessioni hanno chiesto.
+- **Sul canale viaggia una spinta, non la notifica.** L'evento porta destinatari, tenant
+  e tipo; il browser poi richiede il conteggio. Così il numero resta autorevole — viene
+  dalla stessa query della pagina — e lo stream non diventa un secondo read model che
+  può dissentire dal primo.
+- **Il filtro del destinatario è il confine di sicurezza.** Ogni processo riceve ogni
+  evento, quindi ciò che impedisce a un browser di vedere la posta di un altro è
+  `userIds.includes` dentro `streamFor`, e nient'altro: sotto non c'è una query con un
+  predicato di tenant a fare da rete. Un test lo sorveglia.
+- **Un heartbeat ogni 25 secondi, non opzionale.** Nginx chiude una connessione
+  upstream inattiva a 60, Cloudflare a 100, e una connessione che muore in silenzio è
+  una che `EventSource` riapre — di continuo, trasformando una campanella viva in un
+  ciclo di riconnessioni che nessuno vede.
+- **`@RawResponse()`** toglie l'envelope a un handler. Serve solo agli stream: un SSE
+  incartato perderebbe il `type` che dice a `EventSource` a quale listener appartiene
+  ogni messaggio.
 
 ### Il back office: una sola applicazione, con un confine
 
@@ -668,7 +697,7 @@ una schermata nuova:
   di proposito in quella modalità, quindi senza quella schermata un account nuovo resta
   bloccato su `ORGANIZATION_REQUIRED`. Vedi
   [docs/modalita-utente-e-organizzazione.md](./docs/modalita-utente-e-organizzazione.md).
-- **I bundle iniziali superano il budget, entrambi.** `app` è a **816 kB** contro 700
+- **I bundle iniziali superano il budget, entrambi.** `app` è a **817 kB** contro 700
   (avviso; l'errore è a 850, quindi il margine è ~34 kB e la prossima schermata lo
   consuma). `web` è a **470 kB** contro 400 (errore a 600), ed è nuovo: il sito marketing
   ha preso il runtime Transloco con i due cataloghi quando ha preso il banner cookie.
