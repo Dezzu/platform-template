@@ -6,6 +6,7 @@ import {
   AuthService,
   CanPlatformDirective,
   FeatureFlagsService,
+  IfFlagDirective,
   NotificationCenterService,
   NAV_MANIFEST,
   NAV_SECTIONS,
@@ -20,6 +21,7 @@ import {
   type ShellNavItem,
   type ShellNavSection,
 } from '@app/ui/layout';
+import { IN_APP_NOTIFICATIONS_FLAG } from '@app/contracts/flags';
 import { environment } from '../../environments/environment';
 
 /**
@@ -38,13 +40,18 @@ import { environment } from '../../environments/environment';
     AppShellComponent,
     ProfileMenuComponent,
     CanPlatformDirective,
+    IfFlagDirective,
     NotificationBellComponent,
     TranslocoPipe,
     HlmButtonImports,
   ],
   template: `
     <dui-app-shell [appName]="appName" [sections]="visibleSections()">
-      <app-notification-bell shellHeaderEnd />
+      <!--
+        Dietro il flag come la pagina: spento il centro notifiche, la campanella non
+        deve restare lì a mostrare un numero che non si può più aprire.
+      -->
+      <app-notification-bell shellHeaderEnd *appIfFlag="inAppNotifications" />
 
       <dui-profile-menu
         shellHeaderEnd
@@ -122,6 +129,8 @@ export class ShellPage {
   private readonly router = inject(Router);
 
   protected readonly appName = environment.appName;
+  /** Il template la usa con `*appIfFlag`; il costruttore con `flags.enabled`. */
+  protected readonly inAppNotifications = IN_APP_NOTIFICATIONS_FLAG;
   protected readonly user = this.auth.user;
   constructor() {
     /**
@@ -133,9 +142,11 @@ export class ShellPage {
      * the screens outside the shell have no bell to update, and a stream left open
      * after sign-out is a held request against a session that no longer exists.
      */
-    void this.centre.refresh();
-    this.centre.connect();
-    inject(DestroyRef).onDestroy(() => this.centre.disconnect());
+    if (this.flags.enabled(IN_APP_NOTIFICATIONS_FLAG)) {
+      void this.centre.refresh();
+      this.centre.connect();
+      inject(DestroyRef).onDestroy(() => this.centre.disconnect());
+    }
   }
 
   protected readonly displayName = computed(() => {

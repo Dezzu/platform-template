@@ -483,6 +483,21 @@ amministrazione.
 per sola `action` e trovava un'impersonation reale fatta dall'interfaccia giorni prima:
 il test falliva sul dato di qualcun altro. Filtra sempre anche per `actorUserId`.
 
+**Un flag seedato che nessuno legge è un interruttore che mente.** `notifications.inApp`
+esisteva nel seed, compariva nella schermata di amministrazione, si poteva spegnere — e
+non era referenziato da nessuna parte tranne un commento di esempio. Spento, le notifiche
+continuavano ad arrivare. Se aggiungi una riga a `seed.ts`, il flag **deve** avere almeno
+un lettore, altrimenti toglilo: un controllo che accetta il click e non cambia niente è
+peggio di un controllo assente, ed è la stessa cosa che qui rifiutiamo altrove (l'header
+ordinabile che l'API ignora, il canale obbligatorio che risponde 403 invece di fingere).
+
+**Un flag che spegne un canale non deve spegnere gli altri.** `notifications.inApp` chiude
+il centro in-app — righe, campanella, SSE, pagina — e **non tocca l'email**: la chiave si
+chiama così apposta. `billing.payment_failed` è obbligatoria via email, e un interruttore
+di piattaforma che zittisse in silenzio un rinnovo fallito toglierebbe il prodotto a
+qualcuno che non è stato avvisato. Le rotte delle **preferenze** restano perciò fuori dal
+flag: governano anche l'email.
+
 **`NG8113: <direttiva> is not used within the template` vuol dire che il template ha
 perso del contenuto.** Non è un avviso cosmetico sugli import: è il compilatore che
 segnala che quello che usava quella direttiva non c'è più. Le tab dell'area di
@@ -583,7 +598,7 @@ cancellare gli archivi produce esattamente la spazzatura che lo sweep esiste per
 
 Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-snail.md`.
 
-**378 test.** `pnpm verify` verde.
+**381 test.** `pnpm verify` verde.
 
 ### Cosa ha aggiunto la 9c
 
@@ -629,6 +644,12 @@ Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-sna
   evento si aprirà a ventaglio su centinaia di persone; oggi il massimo è "gli admin di
   un'organizzazione". Il punto in cui cambiarlo è quel metodo, e chi lo chiama non deve
   saperlo.
+- **Il centro in-app sta dietro `notifications.inApp`**, e il flag è letto in quattro
+  punti: `notify()` (se non scrive la riga, non c'è badge né toast né SSE), le rotte di
+  lettura, la campanella nella shell e la rotta `/notifications`. La chiave sta in
+  `@app/contracts/flags` — **non** nel barrel: importarla da `@app/contracts` sul percorso
+  eager ha portato il bundle iniziale da 821 kB a 1.26 MB e il budget ha rifiutato la
+  build, che è il meccanismo che funziona.
 - **La campanella è un popover, non un menu.** Il menu CDK imponeva che ogni riga fosse
   una voce, quindi il pulsante non poteva stare accanto al testo senza annidare un
   bottone in un bottone. Il popover non impone niente: riga larga, azione di fianco al

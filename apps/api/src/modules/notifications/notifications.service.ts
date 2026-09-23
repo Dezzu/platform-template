@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger, type MessageEvent } from '@nestjs/common';
 import { and, desc, eq, inArray, isNull, type SQL } from 'drizzle-orm';
 import {
+  IN_APP_NOTIFICATIONS_FLAG,
   NOTIFICATION_CHANNELS,
   NOTIFICATION_REGISTRY,
   NOTIFICATION_TYPES,
@@ -25,6 +26,7 @@ import { filter, interval, map, merge, type Observable } from 'rxjs';
 import { AppException } from '../../common';
 import { DRIZZLE } from '../../database/database.module';
 import type { OrgContext } from '../../auth/org-context';
+import { FlagsService } from '../flags/flags.service';
 import { MailService } from '../mail/mail.service';
 import { NotificationBus } from './notification-bus.service';
 import { NotificationsRepository } from './notifications.repository';
@@ -71,6 +73,7 @@ export class NotificationsService {
   constructor(
     private readonly repository: NotificationsRepository,
     private readonly bus: NotificationBus,
+    private readonly flags: FlagsService,
     private readonly mail: MailService,
     @Inject(DRIZZLE) private readonly db: Database,
   ) {}
@@ -91,9 +94,28 @@ export class NotificationsService {
       const definition = NOTIFICATION_REGISTRY[input.type];
       const chosen = await this.chosenFor(input.userIds, input.type, tx);
 
-      const wantsInApp = input.userIds.filter((id) =>
-        notificationEnabled(input.type, 'in_app', chosen.get(`${id}:in_app`)),
-      );
+      /**
+       * Two gates on the in-app channel, and they answer different questions.
+       *
+       * The preference is the reader's: "do not put this in my centre". The flag is the
+       * platform's: `notifications.inApp` switches the centre off entirely, for a
+       * tenant or for everyone. Resolved per recipient because a flag can be overridden
+       * per user and per organization, and a fan-out here is a handful of people.
+       *
+       * Email is deliberately outside both of these. The flag is named for the in-app
+       * channel and it stays there: `billing.payment_failed` is mandatory by email, and
+       * a platform switch that silently muted a failed renewal would take the product
+       * away from somebody who never got told.
+       */
+      const wantsInApp: string[] = [];
+      for (const id of input.userIds) {
+        if (!notificationEnabled(input.type, 'in_app', chosen.get(`${id}:in_app`))) continue;
+        const centreOn = await this.flags.isEnabled(IN_APP_NOTIFICATIONS_FLAG, {
+          userId: id,
+          organizationId: input.organizationId,
+        });
+        if (centreOn) wantsInApp.push(id);
+      }
       const wantsEmail = input.userIds.filter((id) =>
         notificationEnabled(input.type, 'email', chosen.get(`${id}:email`)),
       );

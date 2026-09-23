@@ -1,4 +1,5 @@
 import { Global, Module } from '@nestjs/common';
+import { FlagsModule } from '../flags/flags.module';
 import { registerNotifier } from './notifications.bridge';
 import { NotificationBus } from './notification-bus.service';
 import { NotificationsController } from './notifications.controller';
@@ -12,6 +13,7 @@ import { NotificationsService } from './notifications.service';
  */
 @Global()
 @Module({
+  imports: [FlagsModule],
   controllers: [NotificationsController],
   providers: [NotificationsService, NotificationsRepository, NotificationBus],
   exports: [NotificationsService],

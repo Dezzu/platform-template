@@ -1,8 +1,18 @@
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { inArray } from 'drizzle-orm';
-import { member, notification, notificationPreference, organization, session, user } from '@app/db';
+import { and, eq, inArray } from 'drizzle-orm';
+import {
+  emailMessage,
+  member,
+  notification,
+  notificationPreference,
+  organization,
+  session,
+  user,
+} from '@app/db';
 import { db } from '../src/database/db';
+import { FlagsService } from '../src/modules/flags/flags.service';
+import { NotificationsService } from '../src/modules/notifications/notifications.service';
 import { createTestApp } from './app.factory';
 import { createOrganization, ORIGIN, signUp, type TestUser } from './helpers/auth';
 
@@ -47,6 +57,19 @@ describe('notifications (e2e)', () => {
     return row?.id ?? '';
   }
 
+  /**
+   * Flips the flag the way the product does — through the service, which is what
+   * clears its own resolution cache. Writing the row behind its back would leave the
+   * cached answer in place for the next few seconds and make the test lie.
+   */
+  async function setFlag(enabled: boolean): Promise<void> {
+    await app.get(FlagsService).update(
+      { userId: owner.id, role: 'superadmin', headers: new Headers() },
+      'notifications.inApp',
+      { enabled },
+    );
+  }
+
   beforeAll(async () => {
     app = await createTestApp();
 
@@ -65,6 +88,16 @@ describe('notifications (e2e)', () => {
       role: 'member',
       createdAt: new Date(),
     });
+
+    /**
+     * Forced on, not assumed.
+     *
+     * This suite shares its database with development, where somebody may well have
+     * switched the in-app centre off from the administration screen — and then every
+     * case here fails on a 403 that has nothing to do with what it is testing. That
+     * happened.
+     */
+    await setFlag(true);
   });
 
   afterAll(async () => {
@@ -207,6 +240,83 @@ describe('notifications (e2e)', () => {
         .set(as(colleague))
         .expect(200);
       expect(theirs.body.data.unread).toBeGreaterThan(0);
+    });
+  });
+
+  /**
+   * The platform switch, as opposed to the reader's.
+   *
+   * `notifications.inApp` used to be seeded, shown in the administration screen, and
+   * read by absolutely nothing: an administrator could turn the in-app centre off and
+   * notifications kept arriving. A switch that accepts the click and changes nothing is
+   * the failure this template refuses everywhere else, and it was shipped here.
+   *
+   * The second case is the one that matters more. The flag is named for the in-app
+   * channel and must stay there: `billing.payment_failed` is mandatory by email, and a
+   * platform switch that silently muted a failed renewal would take the product away
+   * from somebody who was never told.
+   */
+  describe('the in-app centre behind its flag', () => {
+    afterEach(() => setFlag(true));
+
+    it('writes no in-app row while the centre is off', async () => {
+      // Measured as a difference, not against zero: the cases above have already left
+      // rows for this account, and a hard-coded total breaks the moment one is added.
+      const count = async () =>
+        (
+          await db
+            .select()
+            .from(notification)
+            .where(and(eq(notification.userId, owner.id), eq(notification.type, 'member.joined')))
+        ).length;
+
+      const before = await count();
+      await setFlag(false);
+
+      await app.get(NotificationsService).notify({
+        organizationId: orgId,
+        userIds: [owner.id],
+        type: 'member.joined',
+        params: { memberName: 'Nobody' },
+      });
+
+      expect(await count()).toBe(before);
+    });
+
+    it('still sends the email, because the flag is about the centre and not the news', async () => {
+      await setFlag(false);
+
+      await app.get(NotificationsService).notify({
+        organizationId: orgId,
+        userIds: [owner.id],
+        type: 'billing.payment_failed',
+        email: { organizationName: 'Acme', url: 'https://app.example.com/billing' },
+      });
+
+      const sent = await db
+        .select()
+        .from(emailMessage)
+        .where(and(eq(emailMessage.userId, owner.id), eq(emailMessage.template, 'payment-failed')));
+
+      // Mandatory by email: the one message whose absence is itself the damage.
+      expect(sent.length).toBeGreaterThan(0);
+    });
+
+    it('refuses the reading routes while it is off', async () => {
+      await setFlag(false);
+
+      const res = await request(app.getHttpServer())
+        .get('/api/notifications')
+        .set(as(owner))
+        .expect(403);
+
+      expect(res.body.messageCode).toBe('FEATURE_DISABLED');
+
+      // The preferences stay reachable: they govern email too, and email keeps flowing.
+      await request(app.getHttpServer())
+        .get('/api/notifications/preferences')
+        .set(as(owner))
+        .expect(200);
     });
   });
 

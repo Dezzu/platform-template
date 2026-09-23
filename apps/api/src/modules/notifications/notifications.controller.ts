@@ -15,6 +15,7 @@ import type { Observable } from 'rxjs';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import {
+  IN_APP_NOTIFICATIONS_FLAG,
   PERMISSIONS,
   NotificationListQuerySchema,
   NotificationPreferenceSchema,
@@ -32,6 +33,7 @@ import {
 import { ApiEnvelope, ApiStandardErrors, RawResponse } from '../../common';
 import { CurrentOrg, CurrentOrgOptional, type OrgContext } from '../../auth/org-context';
 import { OrgOptional, RequirePermissions } from '../../auth/permissions.decorator';
+import { RequireFeature } from '../flags/feature.decorator';
 import { NotificationsService } from './notifications.service';
 
 /**
@@ -45,6 +47,11 @@ import { NotificationsService } from './notifications.service';
  * Preferences are deliberately NOT tenant-scoped — "do not email me about this" is a
  * statement about a person, not about an organization, so those two routes work even
  * for somebody who has not picked one yet.
+ *
+ * They are also the only routes here **not** behind `notifications.inApp`, and for the
+ * same reason: that flag switches off the in-app centre, not notifications. Email keeps
+ * flowing, so the switches that govern email have to stay reachable — including the one
+ * that says a channel is mandatory.
  */
 @ApiTags('notifications')
 @ApiStandardErrors()
@@ -54,6 +61,7 @@ export class NotificationsController {
 
   @Get()
   @RequirePermissions(PERMISSIONS.ORG_READ)
+  @RequireFeature(IN_APP_NOTIFICATIONS_FLAG)
   @ApiOperation({ summary: 'The notifications addressed to you in this organization' })
   @ApiEnvelope(zPaginated(NotificationSchema))
   list(
@@ -66,6 +74,7 @@ export class NotificationsController {
   /** What the bell shows. Separate from the list because it is polled on its own. */
   @Get('unread-count')
   @RequirePermissions(PERMISSIONS.ORG_READ)
+  @RequireFeature(IN_APP_NOTIFICATIONS_FLAG)
   @ApiOperation({ summary: 'How many are still unread' })
   @ApiEnvelope(UnreadCountSchema)
   async unreadCount(@CurrentOrg() org: OrgContext): Promise<UnreadCount> {
@@ -78,6 +87,7 @@ export class NotificationsController {
    */
   @Post('read-all')
   @RequirePermissions(PERMISSIONS.ORG_READ)
+  @RequireFeature(IN_APP_NOTIFICATIONS_FLAG)
   // 200, not Nest's default 201 for POST: nothing is created, a flag moves.
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Mark everything read' })
@@ -91,6 +101,7 @@ export class NotificationsController {
 
   @Post(':id/read')
   @RequirePermissions(PERMISSIONS.ORG_READ)
+  @RequireFeature(IN_APP_NOTIFICATIONS_FLAG)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Mark one read' })
   @ApiEnvelope(NotificationSchema)
@@ -118,6 +129,7 @@ export class NotificationsController {
    */
   @Sse('stream')
   @OrgOptional()
+  @RequireFeature(IN_APP_NOTIFICATIONS_FLAG)
   @RawResponse()
   @ApiOperation({ summary: 'Server-sent events: one per notification raised for you' })
   stream(

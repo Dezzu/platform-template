@@ -5,6 +5,7 @@ import type { Database } from '@app/db';
 import type { NotificationBus, NotificationEvent } from './notification-bus.service';
 import type { NotificationsRepository } from './notifications.repository';
 import { NotificationsService } from './notifications.service';
+import type { FlagsService } from '../flags/flags.service';
 import type { MailService } from '../mail/mail.service';
 
 /**
@@ -38,6 +39,9 @@ describe('NotificationsService.streamFor', () => {
     const service = new NotificationsService(
       {} as NotificationsRepository,
       bus,
+      // Neither is touched by `streamFor`, which is the point of building the service
+      // by hand: the test says which collaborator actually matters.
+      {} as FlagsService,
       {} as MailService,
       {} as Database,
     );

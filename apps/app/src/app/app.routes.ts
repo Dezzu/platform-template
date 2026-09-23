@@ -4,8 +4,10 @@ import {
   navGuard,
   requireAnyPermission,
   requireAnyPlatformPermission,
+  requireFeature,
 } from '@app/core';
 import { PERMISSIONS, PLATFORM_PERMISSIONS } from '@app/contracts/permissions';
+import { IN_APP_NOTIFICATIONS_FLAG } from '@app/contracts/flags';
 import type { Routes } from '@angular/router';
 
 /**
@@ -179,6 +181,10 @@ export const routes: Routes = [
          * menu item next to it would be a second door to the same room.
          */
         path: 'notifications',
+        // Il flag spegne il centro notifiche, non solo la campanella: nasconderla
+        // lascerebbe raggiungibile la pagina da un segnalibro o dalla barra degli
+        // indirizzi. L'API rifiuta comunque — questo evita di caricare il chunk.
+        canMatch: [requireFeature(IN_APP_NOTIFICATIONS_FLAG)],
         loadComponent: () =>
           import('./features/notifications/notifications.page').then((m) => m.NotificationsPage),
       },

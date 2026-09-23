@@ -24,6 +24,7 @@
       "@app/contracts/permissions": ["./packages/contracts/src/common/permissions.ts"],
       "@app/contracts/app-mode": ["./packages/contracts/src/common/app-mode.ts"],
       "@app/contracts/consent": ["./packages/contracts/src/common/consent.ts"],
+      "@app/contracts/flags": ["./packages/contracts/src/common/flags.ts"],
       "@app/contracts/errors": ["./packages/contracts/src/common/error-codes.ts"]
     }
   },
