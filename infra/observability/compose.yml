@@ -1,0 +1,301 @@
+# Stack di osservabilità — SOLO i pezzi additivi.
+#
+# Non contiene Grafana e non contiene Loki, ed è la decisione portante di questo file:
+# ce li hai già, creati dalla UI di Portainer, con la raccolta dei log dal socket
+# docker. Un secondo Grafana accanto al primo significherebbe due posti dove cercare un
+# grafico e due dove configurare un datasource, e il secondo diventerebbe quello
+# aggiornato a metà.
+#
+# Quello che aggiunge:
+#   alloy       — riceve OTLP dalle applicazioni e smista (l'unico endpoint che le app
+#                 conoscono). Sostituire un backend è una modifica ad alloy/config.alloy.
+#   tempo       — le trace, più le metriche RED generate da loro
+#   prometheus  — il magazzino delle metriche
+#
+# E, dietro profilo perché potresti già averli:
+#   --profile host-metrics      node-exporter + cAdvisor
+#   --profile postgres-metrics  postgres-exporter sul Postgres condiviso
+#   --profile errors            GlitchTip
+#
+# Deploy: stack Portainer a sé, con il repository puntato su infra/observability.
+# Leggi il README prima: la rete esterna va creata e condivisa, o niente si parla.
+
+name: saas-template-observability
+
+# ── Blocchi condivisi ─────────────────────────────────────────────────────────
+#
+# La rotazione dei log non è igiene: senza, il json-file driver cresce finché il disco
+# della VPS finisce, e a finire non è il disco di questo stack ma quello di tutti e 27.
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  alloy:
+    image: grafana/alloy:v1.19.2
+    container_name: obs-alloy
+    restart: unless-stopped
+    <<: *logging
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      # Senza questo, il recapito della configurazione richiede un riavvio del
+      # container a ogni modifica.
+      - --stability.level=generally-available
+      - /etc/alloy/config.alloy
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+    ports:
+      # Pubblicate sull'host perché le applicazioni possono girare in stack diversi e
+      # su reti diverse: OTEL_EXPORTER_OTLP_ENDPOINT punta qui. Se l'app sta sulla
+      # stessa rete, preferisci `http://alloy:4318` e togli questa sezione.
+      - "${OTLP_HTTP_PORT:-4318}:4318"
+      - "${OTLP_GRPC_PORT:-4317}:4317"
+    networks:
+      - observability
+    depends_on:
+      # `service_started` e non `service_healthy`: Tempo non ha un healthcheck (vedi
+      # sopra). Non è un problema — l'exporter OTLP di Alloy ha una coda di retry, e
+      # qualche span perso nei secondi di avvio non è un segnale che qualcuno guarda.
+      tempo:
+        condition: service_started
+      prometheus:
+        condition: service_started
+    # Un connect TCP, non una GET su /-/ready: l'immagine di Alloy non ha wget, né curl,
+    # né busybox — ha però bash, e `/dev/tcp` è l'unico client che resta. Sceglie la
+    # 4318 e non la porta di amministrazione perché è quella che conta: un Alloy con il
+    # receiver OTLP non agganciato è un Alloy inutile anche se risponde su /-/ready.
+    #
+    # Dice che la porta ascolta, non che la pipeline funzioni. Per quello si guarda
+    # `alloy_build_info` in Prometheus — vedi il README.
+    healthcheck:
+      test: ["CMD", "bash", "-c", "timeout 2 bash -c '</dev/tcp/127.0.0.1/4318'"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  tempo:
+    image: grafana/tempo:2.9.5
+    container_name: obs-tempo
+    restart: unless-stopped
+    <<: *logging
+    command: ["-config.file=/etc/tempo/tempo.yml"]
+    # Tempo scrive sul volume come utente non-root: montato da root, il container
+    # riparte in loop con un "permission denied" che sembra un problema di config.
+    user: "10001:10001"
+    volumes:
+      - ./tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo-data:/var/tempo
+    networks:
+      - observability
+    # Nessun healthcheck, e non per pigrizia: l'immagine di Tempo è distroless — niente
+    # shell, niente wget, niente curl — quindi non c'è modo di interrogare /ready da
+    # dentro il container. Un healthcheck che non può girare lascia il servizio
+    # `unhealthy` per sempre e blocca chi ci dipende, che è esattamente com'è andata la
+    # prima volta che l'ho scritto. La prontezza si verifica da fuori: vedi il README.
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  prometheus:
+    image: prom/prometheus:v3.14.0
+    container_name: obs-prometheus
+    restart: unless-stopped
+    <<: *logging
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-30d}
+      # Obbligatorio, non un'ottimizzazione: senza, sia Alloy sia il generatore di
+      # metriche di Tempo scrivono verso un 404 e le metriche semplicemente non
+      # esistono, senza che nulla lo dica.
+      - --web.enable-remote-write-receiver
+      # Serve a Grafana per i link agli exemplar e alle query native.
+      - --web.enable-lifecycle
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - observability
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  # ── Opzionali ───────────────────────────────────────────────────────────────
+
+  node-exporter:
+    image: prom/node-exporter:v1.12.1
+    container_name: obs-node-exporter
+    restart: unless-stopped
+    profiles: ["host-metrics"]
+    <<: *logging
+    command:
+      - --path.rootfs=/host
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+    networks:
+      - observability
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.53.0
+    container_name: obs-cadvisor
+    restart: unless-stopped
+    profiles: ["host-metrics"]
+    <<: *logging
+    # Legge il socket docker in sola lettura. È comunque accesso al socket: chi entra
+    # in questo container vede tutti i container dell'host. Tienilo dietro il profilo
+    # se non ti serve davvero.
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+    privileged: true
+    networks:
+      - observability
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.19.0
+    container_name: obs-postgres-exporter
+    restart: unless-stopped
+    profiles: ["postgres-metrics"]
+    <<: *logging
+    environment:
+      # Un ruolo in sola lettura, non quello dell'applicazione: questo container legge
+      # pg_stat_* di TUTTI i database dell'istanza condivisa.
+      # Vuoto di default e non `:?`: compose interpola TUTTO il file, anche i servizi
+      # dietro un profilo che non hai chiesto, quindi una variabile obbligatoria qui
+      # impedirebbe il deploy dello stack di base. Senza DSN il container esce subito e
+      # lo dice — che è la riga di difesa giusta, un livello più in là.
+      DATA_SOURCE_NAME: ${POSTGRES_EXPORTER_DSN:-}
+    networks:
+      - observability
+      - postgres
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  glitchtip:
+    image: glitchtip/glitchtip:6.2.6
+    container_name: obs-glitchtip
+    restart: unless-stopped
+    profiles: ["errors"]
+    <<: *logging
+    environment:
+      # Vuote di default, non obbligatorie: vedi il commento su postgres-exporter —
+      # compose interpola anche i servizi dietro un profilo spento. Il README dice
+      # cosa serve prima di accendere `errors`.
+      DATABASE_URL: ${GLITCHTIP_DATABASE_URL:-}
+      SECRET_KEY: ${GLITCHTIP_SECRET_KEY:-}
+      PORT: 8000
+      GLITCHTIP_DOMAIN: ${GLITCHTIP_DOMAIN:-}
+      REDIS_URL: redis://glitchtip-redis:6379/0
+      EMAIL_URL: ${GLITCHTIP_EMAIL_URL:-consolemail://}
+      DEFAULT_FROM_EMAIL: ${GLITCHTIP_FROM_EMAIL:-glitchtip@localhost}
+      # Chiusa: è un endpoint su internet, e una registrazione aperta su un error
+      # tracker è un modo per farsi leggere gli stack trace da estranei.
+      ENABLE_USER_REGISTRATION: "false"
+      ENABLE_ORGANIZATION_CREATION: "false"
+    networks:
+      - observability
+      - postgres
+    depends_on:
+      glitchtip-redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  glitchtip-worker:
+    image: glitchtip/glitchtip:6.2.6
+    container_name: obs-glitchtip-worker
+    restart: unless-stopped
+    profiles: ["errors"]
+    <<: *logging
+    command: ["./bin/run-celery-with-beat.sh"]
+    environment:
+      DATABASE_URL: ${GLITCHTIP_DATABASE_URL:-}
+      SECRET_KEY: ${GLITCHTIP_SECRET_KEY:-}
+      GLITCHTIP_DOMAIN: ${GLITCHTIP_DOMAIN:-}
+      REDIS_URL: redis://glitchtip-redis:6379/0
+      EMAIL_URL: ${GLITCHTIP_EMAIL_URL:-consolemail://}
+      DEFAULT_FROM_EMAIL: ${GLITCHTIP_FROM_EMAIL:-glitchtip@localhost}
+    networks:
+      - observability
+      - postgres
+    depends_on:
+      glitchtip-redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  glitchtip-redis:
+    image: valkey/valkey:9-alpine
+    container_name: obs-glitchtip-redis
+    restart: unless-stopped
+    profiles: ["errors"]
+    <<: *logging
+    command: ["valkey-server", "--save", "60", "1", "--appendonly", "no"]
+    volumes:
+      - glitchtip-redis-data:/data
+    networks:
+      - observability
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+networks:
+  # Esterna, e va creata a mano una volta sola — vedi il README. È il punto in cui
+  # questo stack si innesta sul tuo: il Grafana che hai già deve stare su questa rete
+  # per interrogare Tempo e Prometheus, e le applicazioni per raggiungere Alloy.
+  observability:
+    external: true
+    name: ${OBSERVABILITY_NETWORK:-observability}
+
+  # La rete del Postgres condiviso. Serve solo ai profili che ci parlano.
+  postgres:
+    external: true
+    name: ${POSTGRES_NETWORK:-postgres_network}
+
+volumes:
+  tempo-data:
+  prometheus-data:
+  glitchtip-redis-data:

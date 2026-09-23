@@ -1,0 +1,64 @@
+# Datasource per il Grafana che hai già — questo stack non ne porta uno.
+#
+# Due modi per applicarlo:
+#   a) montalo in /etc/grafana/provisioning/datasources/ del tuo Grafana e riavvia;
+#   b) ricrea gli stessi campi a mano dalla UI (Connections → Data sources).
+#
+# La parte che vale davvero non sono gli URL: sono i blocchi di correlazione in fondo a
+# ogni datasource. Senza, hai tre finestre separate; con, dalla riga di log arrivi alla
+# trace e dal punto sul grafico arrivi alla richiesta che l'ha prodotto.
+
+apiVersion: 1
+
+datasources:
+  - name: Tempo (saas-template)
+    type: tempo
+    uid: tempo-saas
+    access: proxy
+    url: http://tempo:3200
+    jsonData:
+      # Dalla trace ai log: Grafana cerca in Loki le righe con lo stesso trace_id.
+      # Funziona perché l'applicazione lo scrive in ogni riga — vedi
+      # docs/osservabilita.md, §3.
+      tracesToLogsV2:
+        # ⚠️ Deve essere l'uid del TUO datasource Loki. Se non lo sai: Connections →
+        # Data sources → il tuo Loki → l'uid è nell'URL della pagina.
+        datasourceUid: loki
+        spanStartTimeShift: -5m
+        spanEndTimeShift: 5m
+        filterByTraceID: true
+        filterBySpanID: false
+        # I log non hanno le label del servizio: si cerca per contenuto, che è il
+        # motivo per cui i log sono JSON con trace_id come campo di primo livello.
+        customQuery: true
+        query: '{container=~".+"} |= "$${__span.traceId}"'
+
+      tracesToMetrics:
+        datasourceUid: prometheus-saas
+        spanStartTimeShift: -5m
+        spanEndTimeShift: 5m
+        queries:
+          - name: Latenza della rotta
+            query: 'histogram_quantile(0.95, sum by (le) (rate(traces_spanmetrics_latency_bucket{$$__tags}[5m])))'
+
+      # Il grafo dei servizi, generato da Tempo stesso a partire dalle trace: non c'è
+      # niente da disegnare a mano e non resta mai indietro rispetto alla realtà.
+      serviceMap:
+        datasourceUid: prometheus-saas
+      nodeGraph:
+        enabled: true
+      streamingEnabled:
+        search: true
+
+  - name: Prometheus (saas-template)
+    type: prometheus
+    uid: prometheus-saas
+    access: proxy
+    url: http://prometheus:9090
+    jsonData:
+      httpMethod: POST
+      # Dal grafico alla trace. Gli exemplar li produce il metrics generator di Tempo
+      # (send_exemplars nel suo config): senza questo blocco restano dati inerti.
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: tempo-saas

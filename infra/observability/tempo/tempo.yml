@@ -1,0 +1,61 @@
+# Tempo in single binary: un processo, storage locale su volume.
+#
+# Non è una scelta di ripiego. Le trace sono il segnale più voluminoso e il meno
+# consultato: si guardano quando qualcosa è andato storto, quasi mai altrimenti. Un
+# cluster con object storage si giustifica quando la retention supera le settimane o
+# quando il volume supera quello che un disco regge — non prima.
+
+server:
+  http_listen_port: 3200
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        # Solo gRPC: l'unico che parla con Tempo è Alloy, che sta nella stessa rete.
+        # HTTP qui sarebbe una seconda porta da tenere chiusa senza nulla in cambio.
+        grpc:
+          endpoint: 0.0.0.0:4317
+
+ingester:
+  # Blocchi piccoli e frequenti: una trace diventa interrogabile in minuti anziché in
+  # ore, che è la differenza fra "cerco la richiesta che è appena fallita" e "aspetto".
+  max_block_duration: 5m
+
+compactor:
+  compaction:
+    # 14 giorni. Una trace più vecchia di due settimane non viene aperta da nessuno, e
+    # la retention è il parametro che decide quanto disco serve.
+    block_retention: 336h
+
+# Le metriche RED (rate, errors, duration) generate dalle trace stesse: latenza e tasso
+# di errore per servizio senza che le applicazioni debbano strumentare nulla.
+# Il grafo dei servizi viene da qui, non da una configurazione scritta a mano.
+metrics_generator:
+  registry:
+    external_labels:
+      source: tempo
+  storage:
+    path: /var/tempo/generator/wal
+    remote_write:
+      - url: http://prometheus:9090/api/v1/write
+        # Gli exemplar sono ciò che rende cliccabile un punto su un grafico fino alla
+        # trace che l'ha prodotto. Senza, la metrica dice "è lento" e si ricomincia.
+        send_exemplars: true
+  traces_storage:
+    path: /var/tempo/generator/traces
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /var/tempo/blocks
+    wal:
+      path: /var/tempo/wal
+
+overrides:
+  defaults:
+    metrics_generator:
+      processors:
+        - service-graphs
+        - span-metrics

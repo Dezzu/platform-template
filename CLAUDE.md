@@ -483,6 +483,15 @@ amministrazione.
 per sola `action` e trovava un'impersonation reale fatta dall'interfaccia giorni prima:
 il test falliva sul dato di qualcun altro. Filtra sempre anche per `actorUserId`.
 
+**Un healthcheck che non può girare è peggio di nessun healthcheck.** L'immagine di Tempo
+è distroless — niente shell, niente wget, niente curl — quindi la `test` HTTP che sembrava
+ovvia falliva con `exec: "/bin/sh": no such file or directory`, il container restava
+`unhealthy` per sempre e `depends_on: service_healthy` bloccava Alloy all'avvio. Lo stack
+non partiva, e il log di Tempo diceva `Tempo started`. Tempo ora non ha healthcheck e la
+prontezza si verifica da fuori; Alloy — che ha `bash` ma nessun client HTTP — usa un
+connect TCP con `/dev/tcp`. Prima di scrivere una `test`, controlla cosa c'è nell'immagine:
+`docker run --rm --entrypoint sh <img> -c 'command -v wget curl'`.
+
 **Un peer opzionale nuovo può sdoppiare una dipendenza condivisa.** `drizzle-orm` dichiara
 `@opentelemetry/api` come peer opzionale: nel momento in cui `apps/api` l'ha aggiunto fra le
 sue dipendenze dirette, pnpm ha creato una **seconda** istanza di drizzle per quel contesto,
@@ -529,10 +538,10 @@ cancellare gli archivi produce esattamente la spazzatura che lo sweep esiste per
 5 tenancy/permessi/audit · 6 frontend · 7 billing Stripe · 8 code+email+storage ·
 9a membri+inviti+pagine auth · 9b area di amministrazione · 9c feature flag + maintenance ·
 9d notifiche + preferenze · 9e GDPR + cookie banner + pagine legali · 9f notifiche live (SSE) ·
-10a strumentazione OTel + log strutturati + metriche custom.
+10a strumentazione OTel + log strutturati + metriche custom · 10b stack di osservabilità additivo.
 
-**Da fare:** 10b infrastruttura osservabilità (`infra/observability/`, `infra/backup/`) ·
-10c dashboard metriche di business in `/admin/metrics` · 11 Docker+CI · 12 Terraform.
+**Da fare:** 10c `infra/backup/` (dump + restore provato) · 10d dashboard metriche di
+business in `/admin/metrics` · 11 Docker+CI · 12 Terraform.
 (Audit UI e impersonation: fatti. La fase 9 è chiusa.)
 
 Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-snail.md`.
@@ -682,6 +691,25 @@ come si scrive il resto.
   opzionale, quindi `apps/api` e `packages/db` si sono ritrovati su due istanze diverse di
   `drizzle-orm` e i tipi hanno smesso di combaciare attraverso il confine fra i due
   pacchetti. Vedi §5.
+
+### Cosa ha aggiunto la 10b
+
+`infra/observability/` è uno stack Portainer a sé, **additivo**: niente Grafana, niente
+Loki — ci sono già. Dettagli e passi di verifica nel suo
+[README](./infra/observability/README.md).
+
+- **Le app conoscono solo Alloy.** Un collector in mezzo vuol dire che sostituire Tempo o
+  Prometheus è una modifica a `alloy/config.alloy`, non un redeploy di ogni servizio.
+- **Le reti esterne sono il passo che, saltato, non dà errori.** I container partono e
+  semplicemente non si vedono: il Grafana esistente deve entrare nella rete
+  `observability` per interrogare Tempo, e le app per raggiungere Alloy.
+- **Prometheus riceve, non raccoglie.** Le metriche arrivano spinte da Alloy e dal
+  generatore di Tempo, quindi serve `--web.enable-remote-write-receiver`: senza,
+  entrambe le sorgenti scrivono verso un 404 e nulla lo dice.
+- **Quello che paga davvero sono i blocchi di correlazione nei datasource**, non gli URL:
+  `tracesToLogsV2` per il salto trace → log, e i `derivedFields` da aggiungere al _tuo_
+  Loki per quello inverso, che è quello che serve più spesso.
+- **Le immagini distroless non possono avere un healthcheck HTTP.** Vedi §5.
 
 ### Il back office: una sola applicazione, con un confine
 

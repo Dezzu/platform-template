@@ -1,0 +1,53 @@
+# Prometheus: magazzino delle metriche, non il punto di raccolta.
+#
+# Le metriche delle applicazioni NON vengono raccolte con uno scrape: arrivano spinte
+# da Alloy (OTLP → remote write) e da Tempo (metriche RED generate dalle trace). Per
+# questo il container parte con --web.enable-remote-write-receiver, senza il quale
+# entrambe le sorgenti scrivono nel vuoto con un 404 che nessuno legge.
+#
+# Qui sotto restano solo gli scrape dei componenti di osservabilità stessi: chi guarda
+# i guardiani.
+
+global:
+  scrape_interval: 30s
+  scrape_timeout: 10s
+  # Finisce su ogni serie ed è ciò che permette di tenere più ambienti in un Prometheus
+  # solo senza confondere produzione e staging.
+  external_labels:
+    stack: saas-template
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: alloy
+    static_configs:
+      - targets: ["alloy:12345"]
+
+  - job_name: tempo
+    static_configs:
+      - targets: ["tempo:3200"]
+
+  # ── Opzionali ───────────────────────────────────────────────────────────────
+  #
+  # Commentati di proposito, non dimenticati. I servizi corrispondenti stanno dietro
+  # un profilo compose e sono spenti finché non li chiedi: uno scrape verso un
+  # container che non esiste lascia un target rosso in permanenza, e un target sempre
+  # rosso insegna a ignorare i target rossi.
+  #
+  # Abilitando il profilo, togli il commento al blocco che gli corrisponde.
+  #
+  # `--profile host-metrics`
+  # - job_name: node-exporter
+  #   static_configs:
+  #     - targets: ["node-exporter:9100"]
+  #
+  # - job_name: cadvisor
+  #   static_configs:
+  #     - targets: ["cadvisor:8080"]
+  #
+  # `--profile postgres-metrics`
+  # - job_name: postgres
+  #   static_configs:
+  #     - targets: ["postgres-exporter:9187"]

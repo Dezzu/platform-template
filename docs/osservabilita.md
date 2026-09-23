@@ -1,7 +1,7 @@
 # Osservabilità
 
-Cosa emette l'applicazione, e perché è fatta così. L'infrastruttura che la riceve
-(Alloy, Tempo, Prometheus, GlitchTip) è la seconda metà della fase 10 e non c'è ancora.
+Cosa emette l'applicazione, e perché è fatta così. L'infrastruttura che la riceve sta in
+[`infra/observability/`](../infra/observability/README.md).
 
 ---
 
@@ -97,6 +97,21 @@ questa persona", "la trace del request id che c'è nel ticket".
 Gira come interceptor e non come middleware perché è il primo punto in cui il tenant
 esiste: lo risolve `PermissionsGuard`, e le guard girano prima degli interceptor.
 
+**Due conseguenze di quella posizione, verificate guardando le trace in Tempo e non
+dedotte dal codice.**
+
+Gli attributi finiscono sullo span **interno** di Nest (`request handler - /api/plans`),
+non sul server span: dentro un interceptor lo span attivo è quello aperto dalla
+strumentazione di Express, non quello HTTP che gli sta sopra. In pratica non cambia le
+ricerche — TraceQL confronta gli attributi a qualsiasi profondità, quindi
+`{ .user.id = "…" }` trova la trace lo stesso — ma la lista delle trace in Grafana mostra
+gli attributi della radice, e lì non li vedi.
+
+E una richiesta respinta da una **guard** non passa mai di qui: un 401 dell'AuthGuard
+produce una trace senza `request.id`, perché l'interceptor non è stato eseguito. È
+corretto — non c'era né tenant né utente da registrare — ma va saputo prima di cercare
+un attributo che non può esserci.
+
 `user.impersonator_id` è separato da `user.id`, che resta la persona per conto della quale
 si agisce: senza, le azioni di un amministratore sotto impersonation risultano del cliente
 — esattamente al contrario nell'unico caso in cui la distinzione serve.
@@ -160,10 +175,10 @@ in campi da Loki, ed è tutto il punto dei log strutturati.
 
 ## 7. Cosa manca della fase 10
 
-- `infra/observability/` — Alloy, Tempo, Prometheus, GlitchTip, più il compose dello stack
-  Grafana+Loki già esistente da esportare da Portainer perché entri in git.
 - `infra/backup/` — dump del Postgres condiviso su MinIO con retention e uno **script di
   restore provato**.
+- L'export da Portainer del compose dello stack Grafana+Loki già esistente, perché entri
+  in git e diventi gestibile da Terraform come il resto.
 - La dashboard metriche di business sotto `/admin/metrics` — separata da Grafana di
   proposito: Grafana risponde a "il sistema è sano?", quella risponde a "il business
   funziona?" e vive dietro l'auth dell'applicazione.

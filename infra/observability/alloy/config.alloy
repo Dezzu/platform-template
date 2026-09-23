@@ -1,0 +1,67 @@
+// Alloy: l'unico componente con cui le applicazioni parlano.
+//
+// Riceve OTLP dalle app e smista: le trace a Tempo, le metriche a Prometheus. I log
+// NON passano di qui — arrivano a Loki dalla raccolta stdout che lo stack esistente fa
+// già dal socket docker, e mandarli anche via OTLP li metterebbe in Loki due volte.
+// Vedi docs/osservabilita.md.
+//
+// Il vantaggio di avere un collector in mezzo è che le app conoscono un solo endpoint:
+// cambiare backend — un Tempo gestito, un altro Prometheus — è una modifica a questo
+// file invece che un redeploy di ogni servizio.
+
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+otelcol.receiver.otlp "default" {
+  // 0.0.0.0 e non localhost: dentro un container il loopback non è raggiungibile
+  // dagli altri container, ed è l'errore che fa sembrare Alloy "su ma sordo".
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    traces  = [otelcol.processor.batch.default.input]
+    metrics = [otelcol.processor.batch.default.input]
+  }
+}
+
+// Accorpa prima di spedire. Senza, ogni span è una richiesta HTTP verso Tempo: il costo
+// non è la banda ma il numero di connessioni, che è ciò che satura per primo.
+otelcol.processor.batch "default" {
+  timeout = "5s"
+
+  output {
+    traces  = [otelcol.exporter.otlp.tempo.input]
+    metrics = [otelcol.exporter.prometheus.default.input]
+  }
+}
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:4317"
+
+    // Traffico interno alla rete docker, mai esposto. TLS qui vorrebbe dire gestire
+    // certificati fra due container che si parlano su una bridge privata.
+    tls {
+      insecure = true
+    }
+  }
+}
+
+// Le metriche OTLP diventano serie Prometheus e vengono spinte, non raccolte: Alloy è
+// il produttore e Prometheus il magazzino, quindi è Alloy a sapere dove scrivere.
+otelcol.exporter.prometheus "default" {
+  forward_to = [prometheus.remote_write.default.receiver]
+}
+
+prometheus.remote_write "default" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+  }
+}
