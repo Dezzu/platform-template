@@ -28,33 +28,20 @@
   </ng-template>
 
   <!--
-    One cell for the whole configuration, because the three parts only mean anything
-    together: "off" next to "40%" is not a contradiction, it is a rollout in progress,
-    and two separate columns invite the reader to believe the first one.
+    Un badge e basta: il flag è acceso o spento, e non c'è più una percentuale o un
+    elenco di eccezioni che possa contraddire quello che dice.
   -->
   <ng-template duiTemplate="state" let-item="item">
     @let flag = asFlag(item);
-    <div class="flex flex-wrap items-center gap-2">
-      <span
-        class="rounded-full px-2 py-0.5 text-xs font-medium"
-        [class]="
-          flag.enabled
-            ? 'bg-green-100 text-green-900 dark:bg-green-900/40 dark:text-green-100'
-            : 'bg-muted text-muted-foreground'
-        "
-      >
-        {{ (flag.enabled ? 'flags.on' : 'flags.off') | transloco }}
-      </span>
-
-      @if (!flag.enabled && flag.rolloutPercent > 0) {
-      <span class="text-muted-foreground text-xs">
-        {{ 'flags.rolloutAt' | transloco: { percent: flag.rolloutPercent } }}
-      </span>
-      } @if (flag.overrideCount > 0) {
-      <span class="text-muted-foreground text-xs">
-        · {{ 'flags.overrideCount' | transloco: { count: flag.overrideCount } }}
-      </span>
-      }
-    </div>
+    <span
+      class="rounded-full px-2 py-0.5 text-xs font-medium"
+      [class]="
+        flag.enabled
+          ? 'bg-green-100 text-green-900 dark:bg-green-900/40 dark:text-green-100'
+          : 'bg-muted text-muted-foreground'
+      "
+    >
+      {{ (flag.enabled ? 'flags.on' : 'flags.off') | transloco }}
+    </span>
   </ng-template>
 </dui-table>

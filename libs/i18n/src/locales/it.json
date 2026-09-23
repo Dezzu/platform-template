@@ -249,7 +249,6 @@
     "columns": {
       "description": "Descrizione",
       "key": "Chiave",
-      "rollout": "Rollout graduale (%)",
       "state": "Stato",
       "updatedAt": "Modificato il"
     },
@@ -265,21 +264,11 @@
     "keyHint": "Minuscole e punti, per esempio notifications.inApp. La chiave non si cambia più dopo: un nome che sparisce spegne la funzionalità in silenzio.",
     "keyPlaceholder": "area.funzionalita",
     "new": "Nuovo feature flag",
-    "noOverrides": "Nessuna eccezione: vale per tutti la stessa risposta.",
     "off": "spento",
     "on": "attivo",
-    "overrideCount": "{{count}} eccezioni",
     "overrideRemoved": "Eccezione rimossa.",
     "overrideSaved": "Eccezione salvata.",
-    "overrides": "Eccezioni",
-    "overridesHint": "Una risposta diversa per una singola organizzazione o per una singola persona. Battono sia il rollout sia l'interruttore globale.",
-    "rolloutAt": "rollout al {{percent}}%",
-    "rolloutHint": "Percentuale di organizzazioni che lo vedono mentre l'interruttore globale è spento. La stessa organizzazione resta sempre dallo stesso lato.",
     "saved": "Feature flag «{{key}}» salvato.",
-    "subject": {
-      "organization": "Organizzazione",
-      "user": "Utente"
-    },
     "subjectIdLabel": "Identificativo",
     "subjectIdPlaceholder": "id dell'organizzazione o dell'utente",
     "subjectLabel": "Tipo",

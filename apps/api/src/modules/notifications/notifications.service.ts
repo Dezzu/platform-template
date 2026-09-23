@@ -97,25 +97,25 @@ export class NotificationsService {
       /**
        * Two gates on the in-app channel, and they answer different questions.
        *
-       * The preference is the reader's: "do not put this in my centre". The flag is the
-       * platform's: `notifications.inApp` switches the centre off entirely, for a
-       * tenant or for everyone. Resolved per recipient because a flag can be overridden
-       * per user and per organization, and a fan-out here is a handful of people.
+       * The flag is the platform's: `notifications.inApp` switches the centre off for
+       * everybody, which is what a feature flag means here — one decision about the
+       * product, not a per-customer exception. Asked once, before the loop: the answer
+       * cannot differ between recipients.
        *
-       * Email is deliberately outside both of these. The flag is named for the in-app
-       * channel and it stays there: `billing.payment_failed` is mandatory by email, and
-       * a platform switch that silently muted a failed renewal would take the product
+       * The preference is the reader's: "do not put this in my centre", asked per
+       * person because it genuinely is.
+       *
+       * Email is deliberately outside both. The flag is named for the in-app channel
+       * and it stays there: `billing.payment_failed` is mandatory by email, and a
+       * platform switch that silently muted a failed renewal would take the product
        * away from somebody who never got told.
        */
-      const wantsInApp: string[] = [];
-      for (const id of input.userIds) {
-        if (!notificationEnabled(input.type, 'in_app', chosen.get(`${id}:in_app`))) continue;
-        const centreOn = await this.flags.isEnabled(IN_APP_NOTIFICATIONS_FLAG, {
-          userId: id,
-          organizationId: input.organizationId,
-        });
-        if (centreOn) wantsInApp.push(id);
-      }
+      const centreOn = await this.flags.isEnabled(IN_APP_NOTIFICATIONS_FLAG);
+      const wantsInApp = centreOn
+        ? input.userIds.filter((id) =>
+            notificationEnabled(input.type, 'in_app', chosen.get(`${id}:in_app`)),
+          )
+        : [];
       const wantsEmail = input.userIds.filter((id) =>
         notificationEnabled(input.type, 'email', chosen.get(`${id}:email`)),
       );

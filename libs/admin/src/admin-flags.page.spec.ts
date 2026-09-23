@@ -14,15 +14,13 @@ import { AdminFlagsPage } from './admin-flags.page';
 const flag = (over: Partial<FeatureFlag> & { key: string }): FeatureFlag => ({
   description: null,
   enabled: false,
-  rolloutPercent: 0,
-  overrideCount: 0,
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
   ...over,
 });
 
 const ON = flag({ key: 'billing.enabled', description: 'Checkout Stripe', enabled: true });
-const ROLLING = flag({ key: 'teams.beta', rolloutPercent: 40, overrideCount: 2 });
+const OFF = flag({ key: 'teams.beta', description: 'Sotto-team' });
 
 const pageOf = (items: FeatureFlag[]) =>
   of({ items, meta: { page: 0, size: 10, total: items.length, totalPages: 1 } });
@@ -79,22 +77,22 @@ describe('AdminFlagsPage', () => {
   beforeEach(() => TestBed.resetTestingModule());
 
   it('lists the flags with the state they are actually configured in', async () => {
-    const fixture = setup({ listFlags: () => pageOf([ON, ROLLING]) });
+    const fixture = setup({ listFlags: () => pageOf([ON, OFF]) });
     await fixture.whenStable();
 
     expect(rowFor(fixture, 'billing.enabled')?.textContent).toContain('attivo');
     expect(rowFor(fixture, 'billing.enabled')?.textContent).toContain('Checkout Stripe');
   });
 
-  it('shows the rollout and the exception count, which is what "off" really means here', async () => {
-    const fixture = setup({ listFlags: () => pageOf([ROLLING]) });
+  it('says plainly that a flag is off, with nothing left to contradict it', async () => {
+    const fixture = setup({ listFlags: () => pageOf([OFF]) });
     await fixture.whenStable();
 
-    // "spento" alone would be a lie for a flag that 40% of tenants are seeing.
+    // There is no percentage and no exception count any more, so "spento" is the whole
+    // truth rather than a headline the rest of the row could undercut.
     const row = rowFor(fixture, 'teams.beta')?.textContent ?? '';
     expect(row).toContain('spento');
-    expect(row).toContain('40');
-    expect(row).toContain('2');
+    expect(row).toContain('Sotto-team');
   });
 
   it('flips the global switch from the list and reloads', async () => {
@@ -125,12 +123,12 @@ describe('AdminFlagsPage', () => {
   });
 
   it('deletes a flag and reloads the list', async () => {
-    const listFlags = vi.fn(() => pageOf([ROLLING]));
+    const listFlags = vi.fn(() => pageOf([OFF]));
     const deleteFlag = vi.fn(() => of(undefined as unknown as void));
     const fixture = setup({ listFlags, deleteFlag });
     await fixture.whenStable();
 
-    actionNamed(fixture, 'Elimina')?.command(ROLLING, []);
+    actionNamed(fixture, 'Elimina')?.command(OFF, []);
     await settle(fixture);
 
     expect(deleteFlag).toHaveBeenCalledWith('teams.beta');

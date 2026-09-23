@@ -68,10 +68,7 @@ export class MeController {
     const reference = org ? this.subscriptions.referenceFor(org.organizationId, org.userId) : null;
     const entitling = reference ? await this.subscriptions.findEntitling(reference) : null;
 
-    const flags = await this.flags.resolve({
-      userId: session.user.id,
-      organizationId: org?.organizationId ?? null,
-    });
+    const flags = await this.flags.resolve();
 
     /**
      * Only ever non-null for somebody the guard let through — everybody else was

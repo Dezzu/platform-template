@@ -8,7 +8,6 @@ import {
   Param,
   Patch,
   Post,
-  Put,
   Query,
   Req,
 } from '@nestjs/common';
@@ -16,8 +15,6 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   FeatureFlagCreateSchema,
   FeatureFlagListQuerySchema,
-  FeatureFlagOverrideCreateSchema,
-  FeatureFlagOverrideSchema,
   FeatureFlagSchema,
   FeatureFlagUpdateSchema,
   PLATFORM_PERMISSIONS,
@@ -26,14 +23,11 @@ import {
   type FeatureFlag,
   type FeatureFlagCreate,
   type FeatureFlagListQuery,
-  type FeatureFlagOverride,
-  type FeatureFlagOverrideCreate,
   type FeatureFlagUpdate,
   type Paginated,
   type ResolvedFlags,
 } from '@app/contracts';
 import { ApiEnvelope, ApiStandardErrors } from '../../common';
-import { CurrentOrgOptional, type OrgContext } from '../../auth/org-context';
 import { OrgOptional, RequirePlatformPermission } from '../../auth/permissions.decorator';
 import { authHeaders } from '../../auth/better-auth.bridge';
 import type { PlatformActor } from '../admin/admin-users.service';
@@ -72,16 +66,10 @@ export class FlagsController {
    */
   @Get()
   @OrgOptional()
-  @ApiOperation({ summary: 'Every feature flag, resolved for the current caller' })
+  @ApiOperation({ summary: 'Every feature flag and whether it is on' })
   @ApiEnvelope(ResolvedFlagsSchema)
-  resolve(
-    @Req() request: RequestWithSession,
-    @CurrentOrgOptional() org: OrgContext | null,
-  ): Promise<ResolvedFlags> {
-    return this.flags.resolve({
-      userId: request.session?.user?.id ?? null,
-      organizationId: org?.organizationId ?? null,
-    });
+  resolve(): Promise<ResolvedFlags> {
+    return this.flags.resolve();
   }
 
   /**
@@ -135,38 +123,5 @@ export class FlagsController {
   @ApiOperation({ summary: 'Remove a flag and every override of it' })
   remove(@Req() request: RequestWithSession, @Param('key') key: string): Promise<void> {
     return this.flags.remove(this.actor(request), key);
-  }
-
-  @Get('definitions/:key/overrides')
-  @RequirePlatformPermission(PLATFORM_PERMISSIONS.FLAGS_MANAGE)
-  @ApiOperation({ summary: 'The per-user and per-organization exceptions' })
-  @ApiEnvelope(FeatureFlagOverrideSchema.array())
-  listOverrides(@Param('key') key: string): Promise<FeatureFlagOverride[]> {
-    return this.flags.listOverrides(key);
-  }
-
-  /** PUT, not POST: one subject has one answer, and sending it twice is not two rows. */
-  @Put('definitions/:key/overrides')
-  @RequirePlatformPermission(PLATFORM_PERMISSIONS.FLAGS_MANAGE)
-  @ApiOperation({ summary: 'Set the answer for one user or one organization' })
-  @ApiEnvelope(FeatureFlagOverrideSchema)
-  setOverride(
-    @Req() request: RequestWithSession,
-    @Param('key') key: string,
-    @Body({ schema: FeatureFlagOverrideCreateSchema }) body: FeatureFlagOverrideCreate,
-  ): Promise<FeatureFlagOverride> {
-    return this.flags.setOverride(this.actor(request), key, body);
-  }
-
-  @Delete('definitions/:key/overrides/:id')
-  @RequirePlatformPermission(PLATFORM_PERMISSIONS.FLAGS_MANAGE)
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Drop one exception, back to the global answer' })
-  removeOverride(
-    @Req() request: RequestWithSession,
-    @Param('key') key: string,
-    @Param('id') id: string,
-  ): Promise<void> {
-    return this.flags.removeOverride(this.actor(request), key, id);
   }
 }

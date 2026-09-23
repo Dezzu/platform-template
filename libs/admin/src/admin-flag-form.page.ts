@@ -8,13 +8,7 @@ import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { HlmSwitchImports } from '@spartan-ng/helm/switch';
 import { FLAG_KEY_PATTERN } from '@app/contracts';
-import type { FeatureFlagOverride } from '@app/contracts';
-import {
-  NumberInputComponent,
-  SelectInputComponent,
-  TextInputComponent,
-  TextareaInputComponent,
-} from '@app/ui/input';
+import { TextInputComponent, TextareaInputComponent } from '@app/ui/input';
 import { ToastService } from '@app/core';
 import { AdminApi } from './admin.api';
 import { AdminNavComponent } from './admin-nav.component';
@@ -24,18 +18,9 @@ interface FlagForm {
   key: string;
   description: string;
   enabled: boolean;
-  rolloutPercent: number;
 }
 
-/** The inline "add an exception" form. */
-interface OverrideForm {
-  subject: 'organization' | 'user';
-  subjectId: string;
-  enabled: boolean;
-}
-
-const BLANK: FlagForm = { key: '', description: '', enabled: false, rolloutPercent: 0 };
-const BLANK_OVERRIDE: OverrideForm = { subject: 'organization', subjectId: '', enabled: true };
+const BLANK: FlagForm = { key: '', description: '', enabled: false };
 
 /**
  * Declaring and configuring one flag — a page, not a modal, like every other form here.
@@ -45,8 +30,9 @@ const BLANK_OVERRIDE: OverrideForm = { subject: 'organization', subjectId: '', e
  * exists, and since an unknown key resolves to *off*, the feature would quietly
  * disappear for everyone rather than fail loudly. Delete and recreate instead.
  *
- * The exceptions live on this page rather than on a screen of their own: an override
- * only means anything next to the global value it contradicts.
+ * There is nothing else to configure. The rollout percentage and the per-customer
+ * exceptions that used to live here are gone — a flag is one switch, and what it means
+ * is "this feature is released" or "this feature is not".
  */
 @Component({
   selector: 'app-admin-flag-form-page',
@@ -56,8 +42,6 @@ const BLANK_OVERRIDE: OverrideForm = { subject: 'organization', subjectId: '', e
     FormField,
     TextInputComponent,
     TextareaInputComponent,
-    SelectInputComponent,
-    NumberInputComponent,
     HlmButtonImports,
     HlmCardImports,
     HlmSwitchImports,
@@ -107,7 +91,6 @@ export class AdminFlagFormPage {
           key: flag.key,
           description: flag.description ?? '',
           enabled: flag.enabled,
-          rolloutPercent: flag.rolloutPercent,
         }
       : BLANK;
   });
@@ -121,57 +104,12 @@ export class AdminFlagFormPage {
     maxLength(path.description, 500);
   });
 
-  // ── The exceptions ────────────────────────────────────────────────────────────
-
-  private readonly overridesResource = resource({
-    params: () => this.flagKey,
-    loader: ({ params }) =>
-      params ? firstValueFrom(this.api.listFlagOverrides(params)) : Promise.resolve([]),
-  });
-
-  protected readonly overrides = computed<FeatureFlagOverride[]>(() =>
-    this.overridesResource.hasValue() ? this.overridesResource.value() : [],
-  );
-  protected readonly overridesFailed = computed(() => this.overridesResource.error() !== undefined);
-
-  protected readonly overrideModel = signal<OverrideForm>(BLANK_OVERRIDE);
-  protected readonly overrideForm = form(this.overrideModel, (path) => {
-    required(path.subjectId);
-  });
-  protected readonly addingOverride = signal(false);
-
-  protected readonly subjectOptions = computed(() => {
-    this.translations();
-    return (['organization', 'user'] as const).map((subject) => ({
-      value: subject,
-      label: this.transloco.translate(`flags.subject.${subject}`),
-    }));
-  });
-
-  /** How an override names its subject: the readable half, with the id as the fallback. */
-  protected subjectLabel(override: FeatureFlagOverride): string {
-    return (
-      override.organizationName ??
-      override.userEmail ??
-      override.organizationId ??
-      override.userId ??
-      '—'
-    );
-  }
-
-  /**
-   * `(submit)` with an explicit preventDefault, not `(ngSubmit)`.
-   *
-   * `ngSubmit` is an output of NgForm, which only exists with FormsModule. With Signal
-   * Forms there is no NgForm on the element, the binding attaches to nothing, and the
-   * browser performs a native GET submit — putting every field in the query string.
-   */
   protected async save(event: Event): Promise<void> {
     event.preventDefault();
     if (this.flag().invalid() || this.saving()) return;
 
     this.saving.set(true);
-    const { key, description, enabled, rolloutPercent } = this.model();
+    const { key, description, enabled } = this.model();
     const trimmed = description.trim();
 
     try {
@@ -181,7 +119,6 @@ export class AdminFlagFormPage {
             // Empty is not the same as unset: the contract takes null to clear it.
             description: trimmed || null,
             enabled,
-            rolloutPercent,
           }),
         );
         this.toasts.success('flags.saved', { key: this.flagKey });
@@ -191,7 +128,6 @@ export class AdminFlagFormPage {
             key: key.trim(),
             description: trimmed || null,
             enabled,
-            rolloutPercent,
           }),
         );
         this.toasts.success('flags.created', { key: key.trim() });
@@ -204,61 +140,7 @@ export class AdminFlagFormPage {
     }
   }
 
-  protected async addOverride(event: Event): Promise<void> {
-    event.preventDefault();
-    const key = this.flagKey;
-    if (!key || this.overrideForm().invalid() || this.addingOverride()) return;
-
-    this.addingOverride.set(true);
-    const { subject, subjectId, enabled } = this.overrideModel();
-    const id = subjectId.trim();
-
-    try {
-      await firstValueFrom(
-        this.api.setFlagOverride(key, {
-          ...(subject === 'organization' ? { organizationId: id } : { userId: id }),
-          enabled,
-        }),
-      );
-      this.overrideModel.set(BLANK_OVERRIDE);
-      /**
-       * Clears touched and dirty as well as the value. Without it the emptied field is
-       * still "touched", so `required` fires and a form that has just succeeded paints
-       * its own label red — which reads as the save having failed.
-       */
-      this.overrideForm().reset();
-      this.overridesResource.reload();
-      this.existing.reload();
-      this.toasts.success('flags.overrideSaved');
-    } catch (error: unknown) {
-      this.toasts.error(error);
-    } finally {
-      this.addingOverride.set(false);
-    }
-  }
-
-  protected removeOverride(override: FeatureFlagOverride): void {
-    const key = this.flagKey;
-    if (!key) return;
-
-    void (async () => {
-      try {
-        await firstValueFrom(this.api.deleteFlagOverride(key, override.id));
-        this.overridesResource.reload();
-        this.existing.reload();
-        this.toasts.success('flags.overrideRemoved');
-      } catch (error: unknown) {
-        this.toasts.error(error);
-      }
-    })();
-  }
-
-  /** The switch is a control without a form field binding; it writes into the model. */
   protected setEnabled(value: boolean): void {
     this.model.update((current) => ({ ...current, enabled: value }));
-  }
-
-  protected setOverrideEnabled(value: boolean): void {
-    this.overrideModel.update((current) => ({ ...current, enabled: value }));
   }
 }

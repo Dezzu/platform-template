@@ -598,14 +598,16 @@ cancellare gli archivi produce esattamente la spazzatura che lo sweep esiste per
 
 Il piano completo è in `~/.claude/plans/voglio-realizzare-un-template-fancy-snail.md`.
 
-**381 test.** `pnpm verify` verde.
+**368 test.** `pnpm verify` verde.
 
 ### Cosa ha aggiunto la 9c
 
-- **I flag si risolvono sul server**, in un posto solo: eccezione utente → eccezione
-  organizzazione → rollout percentuale → interruttore globale. Il browser riceve la
-  risposta già risolta dentro `/me`, non le definizioni: una seconda implementazione
-  dell'ordine sarebbe una seconda implementazione da cui divergere.
+- **I flag si risolvono sul server**, e il browser riceve la risposta già risolta dentro
+  `/me`, non le definizioni. Dal taglio di cui sotto la risoluzione è un booleano solo,
+  ma il confine resta: il client chiede "è acceso", non "quali sono le regole".
+  **Nota storica:** qui c'era un ordine a quattro livelli (eccezione utente → eccezione
+  organizzazione → rollout percentuale → interruttore globale). È stato rimosso — vedi
+  «Un flag è un interruttore, non un sistema di rollout».
 - **Si applicano in tre punti**: `@RequireFeature('x')` sul backend (403
   `FEATURE_DISABLED`), `featureFlag` su una voce di `NAV_MANIFEST` — che ora `navGuard`
   e la sidebar leggono entrambi — e `*appIfFlag` nei template.
@@ -920,8 +922,33 @@ una schermata nuova:
 - `pnpm stripe:listen` **lo lancia l'utente nel suo terminale** — non avviarlo in
   background, non vedrebbe gli eventi.
 
+### Un flag è un interruttore, non un sistema di rollout
+
+La fase 9c aveva costruito flag con eccezioni per utente, eccezioni per organizzazione e
+rollout percentuale su hash stabile. Rimosso tutto: restano `key`, `description`,
+`enabled`.
+
+Il motivo è che quella macchina serve al **rilascio graduale a una fetta di clienti**,
+mentre il bisogno reale è che un superadmin possa dire «questa cosa è ancora in beta,
+tienila spenta». Quattro livelli di precedenza per esprimere un booleano sono quattro
+posti in cui può essere sbagliato, più una tabella, due schermate e un ordine di
+risoluzione da spiegare a chiunque legga il codice.
+
+**Cosa si perde**, ed è bene saperlo prima di rimpiangerlo: accendere una feature a un
+cliente pilota e non agli altri. Se serve davvero, la risposta onesta **non** è
+rimettere gli override — è un'entitlement del piano o un'impostazione
+sull'organizzazione. Quelli sono dati su un cliente; un flag è una decisione sul
+prodotto.
+
+Conseguenze pratiche: `FlagsService.resolve()` e `isEnabled(key)` non prendono più un
+soggetto, la cache è una sola voce, `@RequireFeature` non guarda la sessione, e la
+migration `0008` fa `DROP TABLE feature_flag_override` e toglie `rollout_percent`.
+
 ### Decisioni prese (non ri-discutere senza motivo)
 
+- **Un feature flag è un interruttore globale**, non un sistema di rollout: niente
+  override per utente o organizzazione, niente percentuali. Vedi la sezione qui sopra
+  per cosa si perde e qual è l'alternativa quando servirà.
 - **Il back office sta nella stessa applicazione**, isolato in `libs/admin` da un
   confine imposto dal linter. Un'app separata non serve finché il back office può
   stare sulla rete pubblica — vedi §6 per cosa costerebbe (l'impersonation attraversa

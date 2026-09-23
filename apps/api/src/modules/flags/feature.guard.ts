@@ -2,13 +2,8 @@ import { type CanActivate, type ExecutionContext, HttpStatus, Injectable } from 
 import { Reflector } from '@nestjs/core';
 import { ERROR_CODES } from '@app/contracts';
 import { AppException } from '../../common';
-import { ORG_CONTEXT_KEY, type OrgContext } from '../../auth/org-context';
 import { FEATURE_FLAG_METADATA } from './feature.decorator';
 import { FlagsService } from './flags.service';
-
-interface RequestWithSession extends Record<string, unknown> {
-  session?: { user?: { id: string } };
-}
 
 /**
  * Enforces @RequireFeature(). Inert on every route that declares none, which is almost
@@ -32,19 +27,14 @@ export class FeatureGuard implements CanActivate {
     ]);
     if (!key) return true;
 
-    const request = context.switchToHttp().getRequest<RequestWithSession>();
-    const org = request[ORG_CONTEXT_KEY] as OrgContext | undefined;
-
-    const enabled = await this.flags.isEnabled(key, {
-      userId: request.session?.user?.id ?? null,
-      organizationId: org?.organizationId ?? null,
-    });
+    // No subject: a flag is a decision about the product, the same for everybody.
+    const enabled = await this.flags.isEnabled(key);
 
     if (!enabled) {
       throw new AppException(
         ERROR_CODES.FEATURE_DISABLED,
         HttpStatus.FORBIDDEN,
-        `Feature "${key}" is not enabled for this caller`,
+        `Feature "${key}" is not enabled`,
         { flag: key },
       );
     }

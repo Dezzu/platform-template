@@ -63,11 +63,13 @@ describe('notifications (e2e)', () => {
    * cached answer in place for the next few seconds and make the test lie.
    */
   async function setFlag(enabled: boolean): Promise<void> {
-    await app.get(FlagsService).update(
-      { userId: owner.id, role: 'superadmin', headers: new Headers() },
-      'notifications.inApp',
-      { enabled },
-    );
+    await app
+      .get(FlagsService)
+      .update(
+        { userId: owner.id, role: 'superadmin', headers: new Headers() },
+        'notifications.inApp',
+        { enabled },
+      );
   }
 
   beforeAll(async () => {

@@ -7,13 +7,16 @@ import { createTestApp } from './app.factory';
 import { createOrganization, ORIGIN, signUp, type TestUser } from './helpers/auth';
 
 /**
- * Feature flags, and above all the order in which they resolve:
+ * Feature flags: one switch, the same answer for everybody.
  *
- *   user override -> organization override -> percentage rollout -> global `enabled`
+ * There used to be a resolution order here — user override, organization override,
+ * percentage rollout, then the global switch — and most of this file tested the cases
+ * where two levels disagreed. All of it is gone: a flag is now a platform decision
+ * about whether a feature is released, and a switch that could be true for one customer
+ * and false for another is an entitlement, not a flag.
  *
- * Each step exists to beat the one after it, so the tests that matter are the ones
- * where two levels disagree. A resolution that merely returns the global value is
- * indistinguishable from a broken one whenever nothing contradicts it.
+ * What remains is what still has teeth: who may configure them, that the answer is the
+ * same for every caller, and that the resolved set reaches the session.
  */
 describe('feature flags (e2e)', () => {
   let app: INestApplication;
@@ -36,12 +39,6 @@ describe('feature flags (e2e)', () => {
       .set(as(superadmin))
       .send(body);
 
-  const setOverride = (body: Record<string, unknown>) =>
-    request(app.getHttpServer())
-      .put(`/api/flags/definitions/${key}/overrides`)
-      .set(as(superadmin))
-      .send(body);
-
   /** What this user currently sees for the flag under test. */
   async function resolvedFor(u: TestUser): Promise<boolean | undefined> {
     const res = await request(app.getHttpServer()).get('/api/flags').set(as(u)).expect(200);
@@ -57,7 +54,7 @@ describe('feature flags (e2e)', () => {
 
     await db.update(user).set({ role: 'superadmin' }).where(eq(user.id, superadmin.id));
 
-    // The plain user's organization: the level an override targets most often.
+    // A second account in its own organization: the answer must be the same for it.
     orgId = await createOrganization(app, plain, 'FlagOrg');
   });
 
@@ -116,9 +113,9 @@ describe('feature flags (e2e)', () => {
     });
   });
 
-  describe('resolution order', () => {
+  describe('what the switch does', () => {
     it('creates the flag off, and it resolves off', async () => {
-      await createFlag({ key, description: 'resolution order', enabled: false }).expect(201);
+      await createFlag({ key, description: 'global switch', enabled: false }).expect(201);
       expect(await resolvedFor(plain)).toBe(false);
     });
 
@@ -130,97 +127,31 @@ describe('feature flags (e2e)', () => {
         });
     });
 
-    it('resolves on once the global switch is on', async () => {
+    it('resolves on for everybody once the switch is on', async () => {
       await patchFlag({ enabled: true }).expect(200);
+
+      // Two different accounts in two different organizations. That they agree is the
+      // whole property now: there is no level at which they could disagree.
       expect(await resolvedFor(plain)).toBe(true);
-    });
-
-    it('lets an organization override beat the global switch', async () => {
-      await setOverride({ organizationId: orgId, enabled: false }).expect(200);
-      expect(await resolvedFor(plain)).toBe(false);
-
-      // Nobody else is affected: an override is an exception, not a new default.
       expect(await resolvedFor(superadmin)).toBe(true);
     });
 
-    it('lets a user override beat the organization one', async () => {
-      await setOverride({ userId: plain.id, enabled: true }).expect(200);
-      expect(await resolvedFor(plain)).toBe(true);
-    });
-
-    it('sets rather than duplicates: the same subject twice is one override', async () => {
-      await setOverride({ userId: plain.id, enabled: false }).expect(200);
+    it('resolves off for everybody once it is switched back', async () => {
+      await patchFlag({ enabled: false }).expect(200);
       expect(await resolvedFor(plain)).toBe(false);
-
-      const res = await request(app.getHttpServer())
-        .get(`/api/flags/definitions/${key}/overrides`)
-        .set(as(superadmin))
-        .expect(200);
-
-      const overrides = res.body.data as { userId: string | null }[];
-      expect(overrides.filter((o) => o.userId === plain.id)).toHaveLength(1);
+      expect(await resolvedFor(superadmin)).toBe(false);
     });
 
-    it('refuses an override that names both a user and an organization', async () => {
-      await setOverride({ userId: plain.id, organizationId: orgId, enabled: true }).expect(422);
-    });
-
-    it('refuses an override for a subject that does not exist', async () => {
-      await setOverride({ userId: 'no-such-user', enabled: true }).expect(404);
-    });
-
-    it('falls back to the global answer once the overrides are dropped', async () => {
-      const res = await request(app.getHttpServer())
-        .get(`/api/flags/definitions/${key}/overrides`)
-        .set(as(superadmin))
-        .expect(200);
-
-      for (const override of res.body.data as { id: string }[]) {
-        await request(app.getHttpServer())
-          .delete(`/api/flags/definitions/${key}/overrides/${override.id}`)
-          .set(as(superadmin))
-          .expect(204);
-      }
-
-      expect(await resolvedFor(plain)).toBe(true);
-    });
-  });
-
-  describe('percentage rollout', () => {
-    it('is consulted only while the global switch is off', async () => {
-      // 0% and enabled: on. If the percentage could subtract from `enabled`, shipping
-      // to everyone would be impossible without first clearing the rollout.
-      await patchFlag({ enabled: true, rolloutPercent: 0 }).expect(200);
-      expect(await resolvedFor(plain)).toBe(true);
-    });
-
-    it('is off for everybody at 0%', async () => {
-      await patchFlag({ enabled: false, rolloutPercent: 0 }).expect(200);
-      expect(await resolvedFor(plain)).toBe(false);
-    });
-
-    it('is on for everybody at 100%', async () => {
-      await patchFlag({ rolloutPercent: 100 }).expect(200);
-      expect(await resolvedFor(plain)).toBe(true);
-    });
-
-    it('gives the same answer twice: the bucket is a hash, not a draw', async () => {
-      await patchFlag({ rolloutPercent: 50 }).expect(200);
-
-      const first = await resolvedFor(plain);
-      // Second call, cache dropped by the mutation in between, same answer expected.
-      await patchFlag({ description: 'stable bucket' }).expect(200);
-      expect(await resolvedFor(plain)).toBe(first);
-    });
-
-    it('rejects a percentage outside 0-100', async () => {
-      await patchFlag({ rolloutPercent: 101 }).expect(422);
+    it('refuses a rollout percentage, which is no longer a thing a flag has', async () => {
+      // Belt and braces on the contract: a client still sending the old field should be
+      // told, not silently ignored.
+      await patchFlag({ rolloutPercent: 50 }).expect(422);
     });
   });
 
   describe('the session payload', () => {
     it('carries the resolved set, so the shell needs no second call', async () => {
-      await patchFlag({ enabled: true, rolloutPercent: 0 }).expect(200);
+      await patchFlag({ enabled: true }).expect(200);
 
       const res = await request(app.getHttpServer()).get('/api/me').set(as(plain)).expect(200);
       expect(res.body.data.flags[key]).toBe(true);
@@ -228,14 +159,16 @@ describe('feature flags (e2e)', () => {
   });
 
   describe('deletion', () => {
-    it('takes the overrides with it and drops out of the resolved set', async () => {
-      await setOverride({ organizationId: orgId, enabled: false }).expect(200);
-
+    it('drops out of the resolved set entirely', async () => {
       await request(app.getHttpServer())
         .delete(`/api/flags/definitions/${key}`)
         .set(as(superadmin))
         .expect(204);
 
+      /**
+       * Absent, not false — and the difference matters: every guard reads an unknown
+       * key as off, so a deleted flag closes the feature rather than opening it.
+       */
       expect(await resolvedFor(plain)).toBeUndefined();
 
       await request(app.getHttpServer())

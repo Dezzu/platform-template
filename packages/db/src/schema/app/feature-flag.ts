@@ -1,18 +1,21 @@
-import { boolean, integer, pgTable, text } from 'drizzle-orm/pg-core';
+import { boolean, pgTable, text } from 'drizzle-orm/pg-core';
 import { timestamps } from '../_helpers';
 
 /**
- * Global feature flag definitions. Per-organization and per-user overrides live in
- * `feature_flag_override` (added once the auth tables exist).
+ * Feature flags: one row, one switch, the same answer for everybody.
  *
- * Resolution order: user override -> organization override -> percentage rollout
- * (stable hash of flagKey + organizationId) -> this global `enabled`.
+ * It used to carry a `rollout_percent` and have a companion `feature_flag_override`
+ * table for per-user and per-organization exceptions. Both are gone: a four-level
+ * resolution order and a hash-bucketing scheme are the machinery of gradual release to
+ * a slice of customers, and this product's need is "this is still beta, keep it off".
+ *
+ * A flag that has to be true for one customer and false for another is not a flag —
+ * it is an entitlement of their plan, or a setting on their organization. Those are
+ * data about a customer; this is a decision about the product.
  */
 export const featureFlag = pgTable('feature_flag', {
   key: text('key').primaryKey(),
   description: text('description'),
   enabled: boolean('enabled').notNull().default(false),
-  /** 0-100. Only consulted when `enabled` is false and no override matches. */
-  rolloutPercent: integer('rollout_percent').notNull().default(0),
   ...timestamps,
 });

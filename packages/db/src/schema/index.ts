@@ -19,7 +19,6 @@ export * from './app/plan';
 export * from './app/stripe-event';
 export * from './app/feature-flag';
 export * from './app/app-setting';
-export * from './app/feature-flag-override';
 export * from './app/audit-log';
 export * from './app/project';
 export * from './app/file';

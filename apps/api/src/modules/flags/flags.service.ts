@@ -1,28 +1,19 @@
-import { createHash } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, count, desc, eq, ilike, or, sql, type SQL } from 'drizzle-orm';
+import { asc, count, desc, eq, ilike, or } from 'drizzle-orm';
 import {
   ERROR_CODES,
   type FeatureFlag,
   type FeatureFlagCreate,
   type FeatureFlagListQuery,
-  type FeatureFlagOverride,
-  type FeatureFlagOverrideCreate,
   type FeatureFlagUpdate,
   type Paginated,
   type ResolvedFlags,
 } from '@app/contracts';
-import { featureFlag, featureFlagOverride, organization, user, type Database } from '@app/db';
+import { featureFlag, type Database } from '@app/db';
 import { AppException } from '../../common';
 import { DRIZZLE } from '../../database/database.module';
 import { AuditService } from '../audit/audit.service';
 import type { PlatformActor } from '../admin/admin-users.service';
-
-/** Who the flags are being resolved for. Either part may be absent. */
-export interface FlagSubject {
-  userId: string | null;
-  organizationId: string | null;
-}
 
 type FlagRow = typeof featureFlag.$inferSelect;
 
@@ -39,49 +30,51 @@ type FlagRow = typeof featureFlag.$inferSelect;
 const RESOLUTION_TTL_MS = 10_000;
 
 /**
- * Feature flags, and the one place their resolution order is implemented:
+ * Feature flags: one switch each, the same answer for everybody.
  *
- *   user override -> organization override -> percentage rollout -> global `enabled`
+ * There used to be a resolution order here — user override, then organization
+ * override, then a percentage rollout bucketed on a stable hash, then the global
+ * switch. It is gone. That machinery serves gradual release to a slice of customers;
+ * what this product needs is a superadmin saying "this is still beta, keep it off",
+ * and four levels of precedence to express one boolean is four places for it to be
+ * wrong.
  *
- * The percentage is consulted only when the global switch is off: "on for everyone"
- * has to mean on for everyone, and a rollout that could subtract from it would make
- * `enabled` a suggestion.
- *
- * The rollout bucket is a stable hash of `key:subject`, never a random draw. Random
- * would move a user in and out of the feature on every request, which is the worst
- * possible way to ship something gradually — the bug reports would describe a product
- * that changes shape while you use it.
+ * A flag that has to be true for one customer and false for another is not a flag —
+ * it is an entitlement of their plan or a setting on their organization. Those are
+ * data about a customer; this is a decision about the product.
  */
 @Injectable()
 export class FlagsService {
-  private readonly cache = new Map<string, { at: number; flags: ResolvedFlags }>();
+  private cache: { at: number; flags: ResolvedFlags } | null = null;
 
   constructor(
     private readonly audit: AuditService,
     @Inject(DRIZZLE) private readonly db: Database,
   ) {}
 
-  /** Every flag, resolved for one caller. Cached for {@link RESOLUTION_TTL_MS}. */
-  async resolve(subject: FlagSubject): Promise<ResolvedFlags> {
-    const key = `${subject.userId ?? '-'}:${subject.organizationId ?? '-'}`;
-    const hit = this.cache.get(key);
+  /**
+   * Every flag and whether it is on. Cached for {@link RESOLUTION_TTL_MS}.
+   *
+   * No argument any more: the answer no longer depends on who is asking, and a
+   * parameter kept "just in case" would be a parameter every caller has to invent a
+   * value for.
+   */
+  async resolve(): Promise<ResolvedFlags> {
+    const hit = this.cache;
     if (hit && Date.now() - hit.at < RESOLUTION_TTL_MS) return hit.flags;
 
     const definitions = await this.db.select().from(featureFlag);
-    const overrides = await this.loadOverridesFor(subject);
 
     const resolved: ResolvedFlags = {};
-    for (const flag of definitions) {
-      resolved[flag.key] = this.resolveOne(flag, subject, overrides);
-    }
+    for (const flag of definitions) resolved[flag.key] = flag.enabled;
 
-    this.cache.set(key, { at: Date.now(), flags: resolved });
+    this.cache = { at: Date.now(), flags: resolved };
     return resolved;
   }
 
-  /** Whether one flag is on for this caller. */
-  async isEnabled(key: string, subject: FlagSubject): Promise<boolean> {
-    const flags = await this.resolve(subject);
+  /** Whether one flag is on. */
+  async isEnabled(key: string): Promise<boolean> {
+    const flags = await this.resolve();
     // An unknown key is off. A typo in a guard must not open a feature: the safe
     // reading of "I have never heard of this flag" is "not for you".
     return flags[key] ?? false;
@@ -101,14 +94,9 @@ export class FlagsService {
         : featureFlag.key;
     const orderBy = query.dir === 'desc' ? desc(column) : asc(column);
 
-    const overrideCount = this.db
-      .select({ value: count() })
-      .from(featureFlagOverride)
-      .where(eq(featureFlagOverride.flagKey, featureFlag.key));
-
     const [rows, totals] = await Promise.all([
       this.db
-        .select({ flag: featureFlag, overrideCount: sql<number>`(${overrideCount})` })
+        .select()
         .from(featureFlag)
         .where(where)
         .orderBy(orderBy)
@@ -119,7 +107,7 @@ export class FlagsService {
 
     const total = totals[0]?.value ?? 0;
     return {
-      items: rows.map((row) => toDto(row.flag, Number(row.overrideCount))),
+      items: rows.map(toDto),
       meta: {
         page: query.page,
         size: query.size,
@@ -133,12 +121,7 @@ export class FlagsService {
     const [row] = await this.db.select().from(featureFlag).where(eq(featureFlag.key, key)).limit(1);
     if (!row) throw AppException.notFound('Feature flag', ERROR_CODES.FLAG_NOT_FOUND);
 
-    const [counted] = await this.db
-      .select({ value: count() })
-      .from(featureFlagOverride)
-      .where(eq(featureFlagOverride.flagKey, key));
-
-    return toDto(row, counted?.value ?? 0);
+    return toDto(row);
   }
 
   async create(actor: PlatformActor, input: FeatureFlagCreate): Promise<FeatureFlag> {
@@ -161,7 +144,6 @@ export class FlagsService {
           key: input.key,
           description: input.description ?? null,
           enabled: input.enabled ?? false,
-          rolloutPercent: input.rolloutPercent ?? 0,
         })
         .returning();
 
@@ -182,7 +164,7 @@ export class FlagsService {
     });
 
     this.invalidate();
-    return toDto(created as FlagRow, 0);
+    return toDto(created as FlagRow);
   }
 
   async update(actor: PlatformActor, key: string, input: FeatureFlagUpdate): Promise<FeatureFlag> {
@@ -195,7 +177,6 @@ export class FlagsService {
         .set({
           ...(input.description !== undefined ? { description: input.description } : {}),
           ...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
-          ...(input.rolloutPercent !== undefined ? { rolloutPercent: input.rolloutPercent } : {}),
           updatedAt: new Date(),
         })
         .where(eq(featureFlag.key, key))
@@ -245,233 +226,22 @@ export class FlagsService {
   }
 
   /** The exceptions for one flag, with the subject named rather than just identified. */
-  async listOverrides(key: string): Promise<FeatureFlagOverride[]> {
-    await this.getByKey(key);
-
-    const rows = await this.db
-      .select({
-        override: featureFlagOverride,
-        organizationName: organization.name,
-        userEmail: user.email,
-      })
-      .from(featureFlagOverride)
-      .leftJoin(organization, eq(organization.id, featureFlagOverride.organizationId))
-      .leftJoin(user, eq(user.id, featureFlagOverride.userId))
-      .where(eq(featureFlagOverride.flagKey, key))
-      .orderBy(desc(featureFlagOverride.createdAt));
-
-    return rows.map((row) => ({
-      id: row.override.id,
-      flagKey: row.override.flagKey,
-      organizationId: row.override.organizationId,
-      organizationName: row.organizationName ?? null,
-      userId: row.override.userId,
-      userEmail: row.userEmail ?? null,
-      enabled: row.override.enabled,
-      createdAt: row.override.createdAt.toISOString(),
-    }));
-  }
-
-  async setOverride(
-    actor: PlatformActor,
-    key: string,
-    input: FeatureFlagOverrideCreate,
-  ): Promise<FeatureFlagOverride> {
-    await this.getByKey(key);
-
-    const organizationId = input.organizationId ?? null;
-    const userId = input.userId ?? null;
-
-    // The subject must exist. Without this an override can be written against a typo,
-    // and it would sit in the list forever doing nothing anybody could explain.
-    if (organizationId) {
-      const [row] = await this.db
-        .select({ id: organization.id })
-        .from(organization)
-        .where(eq(organization.id, organizationId))
-        .limit(1);
-      if (!row) throw AppException.notFound('Organization', ERROR_CODES.ORGANIZATION_NOT_FOUND);
-    } else if (userId) {
-      const [row] = await this.db
-        .select({ id: user.id })
-        .from(user)
-        .where(eq(user.id, userId))
-        .limit(1);
-      if (!row) throw AppException.notFound('User');
-    }
-
-    const id = await this.db.transaction(async (tx) => {
-      const subject = organizationId
-        ? and(
-            eq(featureFlagOverride.flagKey, key),
-            eq(featureFlagOverride.organizationId, organizationId),
-          )
-        : and(eq(featureFlagOverride.flagKey, key), eq(featureFlagOverride.userId, userId ?? ''));
-
-      const [existing] = await tx
-        .select({ id: featureFlagOverride.id, enabled: featureFlagOverride.enabled })
-        .from(featureFlagOverride)
-        .where(subject)
-        .limit(1);
-
-      /**
-       * An existing override is updated rather than rejected. The administrator asked
-       * for "this subject, this answer"; refusing with a conflict and making them
-       * delete the old row first would be pedantry, and the partial unique indexes
-       * would refuse the insert anyway.
-       */
-      if (existing) {
-        await tx
-          .update(featureFlagOverride)
-          .set({ enabled: input.enabled, updatedAt: new Date() })
-          .where(eq(featureFlagOverride.id, existing.id));
-
-        await this.audit.record(
-          {
-            organizationId: null,
-            actorUserId: actor.userId,
-            action: 'flag.override.updated',
-            resourceType: 'feature_flag_override',
-            resourceId: existing.id,
-            before: { flagKey: key, organizationId, userId, enabled: existing.enabled },
-            after: { flagKey: key, organizationId, userId, enabled: input.enabled },
-          },
-          tx,
-        );
-
-        return existing.id;
-      }
-
-      const [created] = await tx
-        .insert(featureFlagOverride)
-        .values({ flagKey: key, organizationId, userId, enabled: input.enabled })
-        .returning({ id: featureFlagOverride.id });
-
-      await this.audit.record(
-        {
-          organizationId: null,
-          actorUserId: actor.userId,
-          action: 'flag.override.created',
-          resourceType: 'feature_flag_override',
-          resourceId: created?.id ?? null,
-          after: { flagKey: key, organizationId, userId, enabled: input.enabled },
-        },
-        tx,
-      );
-
-      return created?.id ?? '';
-    });
-
-    this.invalidate();
-
-    const overrides = await this.listOverrides(key);
-    const saved = overrides.find((o) => o.id === id);
-    if (!saved) throw AppException.notFound('Feature flag override');
-    return saved;
-  }
-
-  async removeOverride(actor: PlatformActor, key: string, id: string): Promise<void> {
-    await this.db.transaction(async (tx) => {
-      const [before] = await tx
-        .select()
-        .from(featureFlagOverride)
-        .where(and(eq(featureFlagOverride.id, id), eq(featureFlagOverride.flagKey, key)))
-        .limit(1);
-      if (!before) throw AppException.notFound('Feature flag override');
-
-      await tx.delete(featureFlagOverride).where(eq(featureFlagOverride.id, id));
-
-      await this.audit.record(
-        {
-          organizationId: null,
-          actorUserId: actor.userId,
-          action: 'flag.override.deleted',
-          resourceType: 'feature_flag_override',
-          resourceId: id,
-          before,
-        },
-        tx,
-      );
-    });
-
-    this.invalidate();
-  }
-
   /**
    * Drops every cached answer.
    *
-   * Coarse on purpose: a flag change is rare and a resolution is two cheap queries, so
-   * the simple thing that cannot be wrong beats working out which subjects an override
-   * could possibly have affected.
+   * One entry now, so there is nothing to be selective about — and a flag change is
+   * rare enough that re-reading a handful of rows costs nothing.
    */
   private invalidate(): void {
-    this.cache.clear();
-  }
-
-  private async loadOverridesFor(
-    subject: FlagSubject,
-  ): Promise<(typeof featureFlagOverride.$inferSelect)[]> {
-    const conditions: SQL[] = [];
-    if (subject.userId) conditions.push(eq(featureFlagOverride.userId, subject.userId));
-    if (subject.organizationId) {
-      conditions.push(eq(featureFlagOverride.organizationId, subject.organizationId));
-    }
-    if (conditions.length === 0) return [];
-
-    return this.db
-      .select()
-      .from(featureFlagOverride)
-      .where(conditions.length === 1 ? conditions[0] : or(...conditions));
-  }
-
-  private resolveOne(
-    flag: FlagRow,
-    subject: FlagSubject,
-    overrides: readonly (typeof featureFlagOverride.$inferSelect)[],
-  ): boolean {
-    const forUser = overrides.find(
-      (o) => o.flagKey === flag.key && o.userId !== null && o.userId === subject.userId,
-    );
-    if (forUser) return forUser.enabled;
-
-    const forOrg = overrides.find(
-      (o) =>
-        o.flagKey === flag.key &&
-        o.organizationId !== null &&
-        o.organizationId === subject.organizationId,
-    );
-    if (forOrg) return forOrg.enabled;
-
-    if (flag.enabled) return true;
-    if (flag.rolloutPercent <= 0) return false;
-
-    // The organization first: a gradual rollout that split the members of one tenant
-    // would have half a team describing a different product to the other half.
-    const bucketOn = subject.organizationId ?? subject.userId;
-    if (!bucketOn) return false;
-
-    return bucket(flag.key, bucketOn) < flag.rolloutPercent;
+    this.cache = null;
   }
 }
 
-/**
- * A stable number in [0, 100) for a flag and a subject.
- *
- * Stable across processes and restarts, which is the whole point: the same tenant must
- * stay on the same side of the line for as long as the percentage does not move.
- */
-export function bucket(flagKey: string, subjectId: string): number {
-  const digest = createHash('sha256').update(`${flagKey}:${subjectId}`).digest();
-  return digest.readUInt32BE(0) % 100;
-}
-
-function toDto(row: FlagRow, overrideCount: number): FeatureFlag {
+function toDto(row: FlagRow): FeatureFlag {
   return {
     key: row.key,
     description: row.description,
     enabled: row.enabled,
-    rolloutPercent: row.rolloutPercent,
-    overrideCount,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

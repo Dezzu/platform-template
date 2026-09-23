@@ -44,13 +44,6 @@
         <hlm-switch [checked]="model().enabled" (checkedChange)="setEnabled($event)" />
       </label>
 
-      <dui-number-input
-        [label]="'flags.columns.rollout' | transloco"
-        [showClear]="false"
-        [formField]="flag.rolloutPercent"
-      />
-      <p class="text-muted-foreground -mt-2 text-xs">{{ 'flags.rolloutHint' | transloco }}</p>
-
       <div class="flex items-center gap-3 pt-2">
         <button hlmBtn type="submit" [disabled]="saving()">
           {{ (saving() ? 'common.saving' : 'common.save') | transloco }}
@@ -60,84 +53,5 @@
       </div>
     </form>
   </section>
-
-  <!--
-    Exceptions live next to the value they contradict: "off for everyone except these
-    two" is one statement, and splitting it across two screens is how somebody turns a
-    flag on without noticing that a customer has been pinned off since March.
-  -->
-  @if (editing) {
-  <section hlmCard class="mt-6">
-    <div hlmCardHeader>
-      <h2 hlmCardTitle>{{ 'flags.overrides' | transloco }}</h2>
-      <p hlmCardDescription>{{ 'flags.overridesHint' | transloco }}</p>
-    </div>
-
-    <div hlmCardContent class="space-y-4">
-      @if (overridesFailed()) {
-      <p class="text-destructive text-sm" role="alert">{{ 'errors.INTERNAL_ERROR' | transloco }}</p>
-      } @else if (overrides().length === 0) {
-      <p class="text-muted-foreground text-sm">{{ 'flags.noOverrides' | transloco }}</p>
-      } @else {
-      <ul class="divide-border divide-y text-sm">
-        @for (override of overrides(); track override.id) {
-        <li class="flex flex-wrap items-center justify-between gap-2 py-2">
-          <span class="flex flex-wrap items-center gap-2">
-            <span class="text-muted-foreground text-xs">
-              {{ (override.userId ? 'flags.subject.user' : 'flags.subject.organization') | transloco }}
-            </span>
-            <span class="font-medium">{{ subjectLabel(override) }}</span>
-            <span
-              class="rounded-full px-2 py-0.5 text-xs font-medium"
-              [class]="
-                override.enabled
-                  ? 'bg-green-100 text-green-900 dark:bg-green-900/40 dark:text-green-100'
-                  : 'bg-muted text-muted-foreground'
-              "
-            >
-              {{ (override.enabled ? 'flags.on' : 'flags.off') | transloco }}
-            </span>
-          </span>
-
-          <button
-            type="button"
-            class="text-destructive text-xs underline underline-offset-4"
-            (click)="removeOverride(override)"
-          >
-            {{ 'common.delete' | transloco }}
-          </button>
-        </li>
-        }
-      </ul>
-      }
-
-      <form class="grid gap-3 sm:grid-cols-[10rem_1fr_auto]" (submit)="addOverride($event)">
-        <dui-select-input
-          [label]="'flags.subjectLabel' | transloco"
-          [options]="subjectOptions()"
-          [showClear]="false"
-          [formField]="overrideForm.subject"
-        />
-
-        <dui-text-input
-          autocomplete="off"
-          [label]="'flags.subjectIdLabel' | transloco"
-          [placeholder]="'flags.subjectIdPlaceholder' | transloco"
-          [formField]="overrideForm.subjectId"
-        />
-
-        <div class="flex items-end gap-3 pb-1">
-          <label class="flex items-center gap-2 text-sm">
-            <hlm-switch [checked]="overrideModel().enabled" (checkedChange)="setOverrideEnabled($event)" />
-            <span>{{ (overrideModel().enabled ? 'flags.on' : 'flags.off') | transloco }}</span>
-          </label>
-
-          <button hlmBtn type="submit" size="sm" [disabled]="addingOverride()">
-            {{ 'flags.addOverride' | transloco }}
-          </button>
-        </div>
-      </form>
-    </div>
-  </section>
-  } }
+  }
 </div>

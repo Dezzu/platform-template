@@ -249,7 +249,6 @@
     "columns": {
       "description": "Description",
       "key": "Key",
-      "rollout": "Gradual rollout (%)",
       "state": "State",
       "updatedAt": "Changed"
     },
@@ -265,21 +264,11 @@
     "keyHint": "Lowercase and dots, for example notifications.inApp. The key cannot be changed later: a name that disappears turns the feature off silently.",
     "keyPlaceholder": "area.feature",
     "new": "New feature flag",
-    "noOverrides": "No exceptions: everyone gets the same answer.",
     "off": "off",
     "on": "on",
-    "overrideCount": "{{count}} exceptions",
     "overrideRemoved": "Exception removed.",
     "overrideSaved": "Exception saved.",
-    "overrides": "Exceptions",
-    "overridesHint": "A different answer for one organization or one person. These beat both the rollout and the global switch.",
-    "rolloutAt": "rolling out at {{percent}}%",
-    "rolloutHint": "Share of organizations that see it while the global switch is off. The same organization always stays on the same side.",
     "saved": "Feature flag “{{key}}” saved.",
-    "subject": {
-      "organization": "Organization",
-      "user": "User"
-    },
     "subjectIdLabel": "Identifier",
     "subjectIdPlaceholder": "organization or user id",
     "subjectLabel": "Kind",

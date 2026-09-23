@@ -2,16 +2,18 @@ import { z } from 'zod';
 import { PageQuerySchema } from '../../common/pagination';
 
 /**
- * Feature flags: what the product does, changed without a deploy.
+ * Feature flags: an interruptor for a whole feature, changed without a deploy.
  *
- * Resolution order, most specific first — the same order the backend implements and
- * the only one any caller should assume:
+ * **One global switch, and nothing else.** No per-user overrides, no per-organization
+ * exceptions, no percentage rollout — those were here and were removed. What they
+ * bought was gradual release to a slice of customers; what they cost was a resolution
+ * order with four levels, a hash-bucketing scheme, two screens and a table, for a
+ * product whose actual need is "this is still beta, keep it off".
  *
- *   user override -> organization override -> percentage rollout -> global `enabled`
- *
- * The percentage is consulted only when the global switch is off and no override
- * matched: a flag that is on for everybody is on, and a rollout that could turn it
- * back off for a slice of users would make "enabled" mean something else.
+ * A flag is therefore a platform decision, taken by a superadmin, and it means the same
+ * thing for everybody. If a pilot customer ever needs a feature the others do not, the
+ * honest answer is a plan entitlement or a setting on the organization — both of which
+ * are data about that customer, not a switch about the product.
  */
 
 /**
@@ -25,10 +27,6 @@ export const FeatureFlagSchema = z.object({
   key: z.string().regex(FLAG_KEY_PATTERN),
   description: z.string().nullable(),
   enabled: z.boolean(),
-  /** 0-100. Consulted only when `enabled` is false and no override matches. */
-  rolloutPercent: z.number().int().min(0).max(100),
-  /** How many per-user or per-organization exceptions exist for this flag. */
-  overrideCount: z.number().int().nonnegative(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 });
@@ -38,7 +36,6 @@ export const FeatureFlagCreateSchema = z.object({
   key: z.string().trim().min(1).max(100).regex(FLAG_KEY_PATTERN),
   description: z.string().trim().max(500).nullable().optional(),
   enabled: z.boolean().optional(),
-  rolloutPercent: z.number().int().min(0).max(100).optional(),
 });
 export type FeatureFlagCreate = z.infer<typeof FeatureFlagCreateSchema>;
 
@@ -51,7 +48,6 @@ export const FeatureFlagUpdateSchema = z
   .object({
     description: z.string().trim().max(500).nullable(),
     enabled: z.boolean(),
-    rolloutPercent: z.number().int().min(0).max(100),
   })
   .partial()
   .refine((v) => Object.keys(v).length > 0, { message: 'at least one field is required' });
@@ -60,41 +56,12 @@ export type FeatureFlagUpdate = z.infer<typeof FeatureFlagUpdateSchema>;
 export const FeatureFlagListQuerySchema = PageQuerySchema;
 export type FeatureFlagListQuery = z.infer<typeof FeatureFlagListQuerySchema>;
 
-export const FeatureFlagOverrideSchema = z.object({
-  id: z.uuid(),
-  flagKey: z.string(),
-  organizationId: z.string().nullable(),
-  /** Denormalised for the admin screen: an id alone tells the reader nothing. */
-  organizationName: z.string().nullable(),
-  userId: z.string().nullable(),
-  userEmail: z.string().nullable(),
-  enabled: z.boolean(),
-  createdAt: z.iso.datetime(),
-});
-export type FeatureFlagOverride = z.infer<typeof FeatureFlagOverrideSchema>;
-
 /**
- * Exactly one subject, enforced here rather than only by the partial unique indexes:
- * an override with both set would be ambiguous, and one with neither would be a second
- * global switch competing with `enabled`.
- */
-export const FeatureFlagOverrideCreateSchema = z
-  .object({
-    organizationId: z.string().trim().min(1).nullable().optional(),
-    userId: z.string().trim().min(1).nullable().optional(),
-    enabled: z.boolean(),
-  })
-  .refine((v) => Boolean(v.organizationId) !== Boolean(v.userId), {
-    message: 'exactly one of organizationId or userId is required',
-  });
-export type FeatureFlagOverrideCreate = z.infer<typeof FeatureFlagOverrideCreateSchema>;
-
-/**
- * The resolved answer for one caller: flag key to boolean, every known flag present.
+ * Every known flag and whether it is on, shipped with the session.
  *
- * Resolved server-side for the same reason permissions are: the resolution rules have
- * one owner. A client that received the definitions and the overrides would be a
- * second implementation of the ordering above, drifting from the first.
+ * Still resolved server-side even though the answer is now the same for everyone: the
+ * client asks "is this on", not "what are the rules", and keeping that boundary is what
+ * lets the rules change again without touching a single screen.
  */
 export const ResolvedFlagsSchema = z.record(z.string(), z.boolean());
 export type ResolvedFlags = z.infer<typeof ResolvedFlagsSchema>;

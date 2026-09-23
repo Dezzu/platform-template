@@ -57,6 +57,13 @@
       "when": 1790150804342,
       "tag": "0007_notification_can_be_personal",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790185556243,
+      "tag": "0008_flags_are_a_global_switch",
+      "breakpoints": true
     }
   ]
 }

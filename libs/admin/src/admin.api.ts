@@ -6,8 +6,6 @@ import type {
   FeatureFlag,
   FeatureFlagCreate,
   FeatureFlagListQuery,
-  FeatureFlagOverride,
-  FeatureFlagOverrideCreate,
   FeatureFlagUpdate,
   MaintenanceMode,
   MaintenanceModeUpdate,
@@ -115,27 +113,6 @@ export class AdminApi {
 
   deleteFlag(key: string): Observable<void> {
     return this.http.delete<void>(`${this.flagsBase}/${encodeURIComponent(key)}`);
-  }
-
-  listFlagOverrides(key: string): Observable<FeatureFlagOverride[]> {
-    return this.http.get<FeatureFlagOverride[]>(
-      `${this.flagsBase}/${encodeURIComponent(key)}/overrides`,
-    );
-  }
-
-  /** PUT, like the API: one subject has one answer, and sending it twice is not two. */
-  setFlagOverride(
-    key: string,
-    payload: FeatureFlagOverrideCreate,
-  ): Observable<FeatureFlagOverride> {
-    return this.http.put<FeatureFlagOverride>(
-      `${this.flagsBase}/${encodeURIComponent(key)}/overrides`,
-      payload,
-    );
-  }
-
-  deleteFlagOverride(key: string, id: string): Observable<void> {
-    return this.http.delete<void>(`${this.flagsBase}/${encodeURIComponent(key)}/overrides/${id}`);
   }
 
   getMaintenance(): Observable<MaintenanceMode> {
